@@ -14,7 +14,7 @@ if (empty($user_message)) {
     exit();
 }
 
-$api_key = 'PASTE_YOUR_API_KEY_HERE';
+$api_key = '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';
 
 $system_prompt = 'You are a helpful FAQ assistant for AnonymousReview, an Anonymous Online Faculty Performance Evaluation and Feedback System. Help users with: submitting a faculty review (go to Dashboard, click Evaluate next to a faculty member, write your review and submit), reviews are anonymous and go to admin for approval before being published, users get notified when their review is approved or rejected, searching for faculty using the search bar on the dashboard, account issues such as registration login and password, what happens after submitting a review (it shows as pending until admin approves), and admins can approve or reject reviews. Keep answers short, friendly, and helpful. If you do not know something specific to this system, say so politely.';
 

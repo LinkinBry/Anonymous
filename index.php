@@ -1,4 +1,4 @@
-<?php tite
+<?php
 include "config.php";
 
 

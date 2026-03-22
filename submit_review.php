@@ -1,6 +1,5 @@
 <?php
 include "config.php";
-session_start();
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
@@ -17,15 +16,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $user_id = $_SESSION['user_id'];
     $review_text = mysqli_real_escape_string($conn, $_POST['review_text']);
 
-    // Insert review as pending for admin approval
-    mysqli_query($conn, "INSERT INTO reviews (user_id, faculty_id, review_text, status) 
-                         VALUES ('$user_id', '$faculty_id', '$review_text', 'pending')");
+    // --- Groq AI Analysis ---
+    $env = parse_ini_file(__DIR__ . '/.env');
+    $api_key = $env['GROQ_API_KEY'];
+
+    $prompt = 'Analyze this faculty review and return valid JSON only, no explanation:
+{
+  "sentiment": "positive or negative or neutral",
+  "is_toxic": true or false,
+  "summary": "one sentence summary in English"
+}
+
+Review: "' . $_POST['review_text'] . '"';
+
+    $payload = json_encode([
+        'model' => 'llama-3.3-70b-versatile',
+        'max_tokens' => 200,
+        'messages' => [
+            ['role' => 'user', 'content' => $prompt]
+        ]
+    ]);
+
+    $ch = curl_init('https://api.groq.com/openai/v1/chat/completions');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => $payload,
+        CURLOPT_HTTPHEADER => [
+            'Content-Type: application/json',
+            'Authorization: Bearer ' . $api_key
+        ]
+    ]);
+    $response = curl_exec($ch);
+    curl_close($ch);
+
+    $data = json_decode($response, true);
+    $ai_raw = $data['choices'][0]['message']['content'] ?? '{}';
+    $ai = json_decode($ai_raw, true);
+
+    $sentiment = mysqli_real_escape_string($conn, $ai['sentiment'] ?? 'neutral');
+    $is_toxic = isset($ai['is_toxic']) && $ai['is_toxic'] ? 1 : 0;
+    $summary = mysqli_real_escape_string($conn, $ai['summary'] ?? '');
+    // --- End Groq Analysis ---
+
+    mysqli_query($conn, "INSERT INTO reviews (user_id, faculty_id, review_text, status, sentiment, is_toxic, summary) 
+                         VALUES ('$user_id', '$faculty_id', '$review_text', 'pending', '$sentiment', '$is_toxic', '$summary')");
 
     header("Location: dashboard.php?submitted=1");
     exit();
 }
 
-// Optional: fetch faculty info to display name
 $faculty_result = mysqli_query($conn, "SELECT name FROM faculties WHERE id='$faculty_id' LIMIT 1");
 $faculty = mysqli_fetch_assoc($faculty_result);
 ?>

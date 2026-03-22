@@ -582,6 +582,24 @@ body {
     display: flex; align-items: center; gap: 8px;
 }
 
+/* ── Pagination ── */
+.pagination {
+    display: flex; align-items: center; justify-content: center;
+    gap: 6px; margin: 18px 0 28px;
+}
+.page-btn {
+    min-width: 36px; height: 36px; border-radius: 8px;
+    border: 1px solid var(--gray-200); background: white;
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; color: var(--gray-600);
+    transition: all 0.18s; display: flex; align-items: center; justify-content: center;
+    padding: 0 10px;
+}
+.page-btn:hover { border-color: var(--maroon); color: var(--maroon); }
+.page-btn.active { background: var(--maroon); color: white; border-color: var(--maroon); }
+.page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.page-info { font-size: 12px; color: var(--gray-400); margin: 0 6px; }
+
 #chat-bubble {
     position: fixed; bottom: 24px; right: 24px;
     width: 54px; height: 54px;
@@ -747,9 +765,9 @@ body {
 
     <!-- Faculty Grid -->
     <?php if (!empty($faculties)): ?>
-    <div class="faculty-grid">
-        <?php foreach ($faculties as $faculty): ?>
-        <div class="faculty-card">
+    <div class="faculty-grid" id="facultyGrid">
+        <?php foreach ($faculties as $i => $faculty): ?>
+        <div class="faculty-card" data-index="<?php echo $i; ?>">
             <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($faculty['name']); ?>&background=8B0000&color=fff&size=80" alt="Faculty">
             <h3><?php echo htmlspecialchars($faculty['name']); ?></h3>
             <p><?php echo htmlspecialchars($faculty['department'] ?? ''); ?></p>
@@ -757,6 +775,8 @@ body {
         </div>
         <?php endforeach; ?>
     </div>
+    <!-- Pagination -->
+    <div class="pagination" id="pagination"></div>
     <?php else: ?>
     <div class="empty-state">
         <svg width="64" height="64" fill="none" stroke="#9ca3af" stroke-width="1.5" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
@@ -899,6 +919,61 @@ body {
 </div>
 
 <script>
+// Faculty Pagination
+const CARDS_PER_PAGE = 6;
+const cards = document.querySelectorAll('.faculty-card');
+const pagination = document.getElementById('pagination');
+let currentPage = 1;
+const totalPages = Math.ceil(cards.length / CARDS_PER_PAGE);
+
+function showPage(page) {
+    currentPage = page;
+    const start = (page - 1) * CARDS_PER_PAGE;
+    const end = start + CARDS_PER_PAGE;
+    cards.forEach((card, i) => {
+        card.style.display = (i >= start && i < end) ? '' : 'none';
+    });
+    renderPagination();
+}
+
+function renderPagination() {
+    if (totalPages <= 1) return;
+    pagination.innerHTML = '';
+
+    // Prev button
+    const prev = document.createElement('button');
+    prev.className = 'page-btn';
+    prev.innerHTML = '← Prev';
+    prev.disabled = currentPage === 1;
+    prev.onclick = () => showPage(currentPage - 1);
+    pagination.appendChild(prev);
+
+    // Page info
+    const info = document.createElement('span');
+    info.className = 'page-info';
+    info.textContent = `Page ${currentPage} of ${totalPages}`;
+    pagination.appendChild(info);
+
+    // Page numbers
+    for (let i = 1; i <= totalPages; i++) {
+        const btn = document.createElement('button');
+        btn.className = 'page-btn' + (i === currentPage ? ' active' : '');
+        btn.textContent = i;
+        btn.onclick = () => showPage(i);
+        pagination.appendChild(btn);
+    }
+
+    // Next button
+    const next = document.createElement('button');
+    next.className = 'page-btn';
+    next.innerHTML = 'Next →';
+    next.disabled = currentPage === totalPages;
+    next.onclick = () => showPage(currentPage + 1);
+    pagination.appendChild(next);
+}
+
+if (cards.length > 0) showPage(1);
+
 // Modal
 let selectedFacultyId = null;
 

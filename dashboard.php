@@ -8,9 +8,13 @@ if (isset($_SESSION['user_id'])) {
     exit();
 }
 
-$query = "SELECT fullname FROM users WHERE id='$user_id' LIMIT 1";
+$query = "SELECT fullname, username, profile_pic FROM users WHERE id='$user_id' LIMIT 1";
 $result = mysqli_query($conn, $query);
-$user = ($result && mysqli_num_rows($result) > 0) ? mysqli_fetch_assoc($result) : ['fullname' => 'User'];
+$user = ($result && mysqli_num_rows($result) > 0) ? mysqli_fetch_assoc($result) : ['fullname' => 'User', 'username' => 'user', 'profile_pic' => null];
+
+$avatar = !empty($user['profile_pic']) && file_exists($user['profile_pic'])
+    ? $user['profile_pic']
+    : 'https://ui-avatars.com/api/?name=' . urlencode($user['fullname']) . '&background=6B0000&color=fff&size=80';
 
 $notif_count = 0;
 $notifications = [];
@@ -40,11 +44,110 @@ $pending_count = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as coun
 $approved_count = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as count FROM reviews WHERE user_id='$user_id' AND status='approved'"))['count'];
 $rejected_count = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as count FROM reviews WHERE user_id='$user_id' AND status='rejected'"))['count'];
 
+// Handle submit
 if (isset($_POST['submit_review'])) {
-    $faculty_id = intval($_POST['faculty_id']);
-    $review_text = mysqli_real_escape_string($conn, $_POST['review_text']);
-    mysqli_query($conn, "INSERT INTO reviews (user_id, faculty_id, review_text, status) VALUES ('$user_id','$faculty_id','$review_text','pending')");
-    header("Location: dashboard.php?submitted=1");
+    $faculty_id  = intval($_POST['faculty_id']);
+    $review_text = trim($_POST['review_text'] ?? '');
+
+    if (empty($review_text)) {
+        header("Location: dashboard.php?error=empty"); exit();
+    }
+
+    $exists = mysqli_fetch_assoc(mysqli_query($conn, "SELECT id FROM reviews WHERE user_id='$user_id' AND faculty_id='$faculty_id' LIMIT 1"));
+    if ($exists) {
+        header("Location: dashboard.php?error=duplicate"); exit();
+    }
+
+    // Groq AI toxic check
+    $env     = parse_ini_file(__DIR__ . '/.env');
+    $api_key = $env['GROQ_API_KEY'];
+    $prompt  = 'Analyze this faculty review and return valid JSON only, no explanation, no markdown:
+{
+  "sentiment": "positive or negative or neutral",
+  "is_toxic": true or false,
+  "is_hateful": true or false,
+  "summary": "one sentence summary in English"
+}
+A review is toxic or hateful if it contains: insults, slurs, personal attacks, threats, offensive language, harassment, or discriminatory content.
+Review: "' . addslashes($review_text) . '"';
+
+    $payload = json_encode(['model' => 'llama-3.3-70b-versatile', 'max_tokens' => 200,
+        'messages' => [['role' => 'user', 'content' => $prompt]]]);
+    $ch = curl_init('https://api.groq.com/openai/v1/chat/completions');
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => $payload,
+        CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'Authorization: Bearer ' . $api_key]]);
+    $response = curl_exec($ch);
+    curl_close($ch);
+
+    $data   = json_decode($response, true);
+    $ai_raw = preg_replace('/```json|```/', '', $data['choices'][0]['message']['content'] ?? '{}');
+    $ai     = json_decode(trim($ai_raw), true);
+
+    $sentiment = mysqli_real_escape_string($conn, $ai['sentiment'] ?? 'neutral');
+    $is_toxic  = (!empty($ai['is_toxic']) || !empty($ai['is_hateful'])) ? 1 : 0;
+    $summary   = mysqli_real_escape_string($conn, $ai['summary'] ?? '');
+
+    if ($is_toxic) {
+        header("Location: dashboard.php?error=toxic"); exit();
+    }
+
+    $review_text_safe = mysqli_real_escape_string($conn, $review_text);
+    mysqli_query($conn, "INSERT INTO reviews (user_id, faculty_id, review_text, status, sentiment, is_toxic, summary)
+                         VALUES ('$user_id','$faculty_id','$review_text_safe','pending','$sentiment','$is_toxic','$summary')");
+    header("Location: dashboard.php?submitted=1"); exit();
+}
+
+// Handle edit
+if (isset($_POST['edit_review'])) {
+    $review_id   = intval($_POST['review_id']);
+    $review_text = trim($_POST['review_text'] ?? '');
+
+    if (empty($review_text)) {
+        header("Location: dashboard.php?error=empty"); exit();
+    }
+
+    // Groq toxic check on edit too
+    $env     = parse_ini_file(__DIR__ . '/.env');
+    $api_key = $env['GROQ_API_KEY'];
+    $prompt  = 'Analyze this faculty review and return valid JSON only, no explanation, no markdown:
+{
+  "sentiment": "positive or negative or neutral",
+  "is_toxic": true or false,
+  "is_hateful": true or false,
+  "summary": "one sentence summary in English"
+}
+A review is toxic or hateful if it contains: insults, slurs, personal attacks, threats, offensive language, harassment, or discriminatory content.
+Review: "' . addslashes($review_text) . '"';
+
+    $payload = json_encode(['model' => 'llama-3.3-70b-versatile', 'max_tokens' => 200,
+        'messages' => [['role' => 'user', 'content' => $prompt]]]);
+    $ch = curl_init('https://api.groq.com/openai/v1/chat/completions');
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => $payload,
+        CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'Authorization: Bearer ' . $api_key]]);
+    $response = curl_exec($ch);
+    curl_close($ch);
+
+    $data   = json_decode($response, true);
+    $ai_raw = preg_replace('/```json|```/', '', $data['choices'][0]['message']['content'] ?? '{}');
+    $ai     = json_decode(trim($ai_raw), true);
+    $is_toxic = (!empty($ai['is_toxic']) || !empty($ai['is_hateful'])) ? 1 : 0;
+
+    if ($is_toxic) {
+        header("Location: dashboard.php?error=toxic"); exit();
+    }
+
+    $review_text_safe = mysqli_real_escape_string($conn, $review_text);
+    mysqli_query($conn, "UPDATE reviews SET review_text='$review_text_safe', status='pending' WHERE id='$review_id' AND user_id='$user_id'");
+    header("Location: dashboard.php?edited=1"); exit();
+}
+
+// Handle delete
+if (isset($_POST['delete_review'])) {
+    $review_id = intval($_POST['review_id']);
+    mysqli_query($conn, "DELETE FROM reviews WHERE id='$review_id' AND user_id='$user_id'");
+    header("Location: dashboard.php?deleted=1");
     exit();
 }
 
@@ -58,29 +161,27 @@ if ($dept_res && mysqli_num_rows($dept_res) > 0) {
     }
 }
 
-// Fetch user's recent reviews
+// Build map of faculty_id => user's review
+$user_reviews_map = [];
+$urev_res = mysqli_query($conn, "SELECT r.id, r.faculty_id, r.review_text, r.status FROM reviews r WHERE r.user_id='$user_id'");
+if ($urev_res) {
+    while ($row = mysqli_fetch_assoc($urev_res)) {
+        $user_reviews_map[$row['faculty_id']] = $row;
+    }
+}
+
+// Fetch user's reviews (all - filtering done client-side)
+$review_filter = isset($_GET['review_filter']) ? $_GET['review_filter'] : 'all';
 $recent_reviews = [];
 $recent_res = mysqli_query($conn, "
-    SELECT r.id, r.review_text, r.status, r.created_at, f.name AS faculty_name, f.department
+    SELECT r.id, r.faculty_id, r.review_text, r.status, r.created_at, f.name AS faculty_name, f.department
     FROM reviews r
     JOIN faculties f ON r.faculty_id = f.id
     WHERE r.user_id='$user_id'
-    ORDER BY r.created_at DESC LIMIT 5
+    ORDER BY r.created_at DESC
 ");
 if ($recent_res && mysqli_num_rows($recent_res) > 0) {
     while ($row = mysqli_fetch_assoc($recent_res)) $recent_reviews[] = $row;
-}
-
-$selected_faculty = null;
-$faculty_reviews = [];
-if (isset($_GET['faculty_id'])) {
-    $faculty_id = intval($_GET['faculty_id']);
-    $faculty_res = mysqli_query($conn, "SELECT * FROM faculties WHERE id='$faculty_id'");
-    if ($faculty_res && mysqli_num_rows($faculty_res) > 0) $selected_faculty = mysqli_fetch_assoc($faculty_res);
-    $review_res = mysqli_query($conn, "SELECT r.*, u.fullname FROM reviews r JOIN users u ON r.user_id = u.id WHERE r.faculty_id='$faculty_id' ORDER BY r.created_at DESC");
-    if ($review_res && mysqli_num_rows($review_res) > 0) {
-        while ($row = mysqli_fetch_assoc($review_res)) $faculty_reviews[] = $row;
-    }
 }
 ?>
 <!DOCTYPE html>
@@ -247,10 +348,12 @@ body {
 .notif-dropdown-header {
     padding: 14px 16px; border-bottom: 1px solid var(--gray-100);
     font-weight: 600; font-size: 14px; color: var(--gray-800);
+    display: flex; justify-content: space-between; align-items: center;
 }
 .notif-item { padding: 12px 16px; border-bottom: 1px solid var(--gray-100); font-size: 13px; }
-.notif-item small { display: block; color: var(--gray-400); font-size: 11px; margin-top: 3px; }
-.notif-empty { padding: 20px 16px; color: var(--gray-400); font-size: 13px; text-align: center; }
+.notif-item.notif-unread { background: #fafafa; }
+.notif-item small { display: block; color: var(--gray-400); font-size: 11px; margin-top: 4px; }
+.notif-empty { padding: 28px 16px; color: var(--gray-400); font-size: 13px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px; }
 
 /* ── Stat Cards ── */
 .stats-grid {
@@ -281,7 +384,6 @@ body {
 .stat-card.rejected .stat-value { color: #ef4444; }
 .stat-icon {
     position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
-    opacity: 0.08;
 }
 
 /* ── Search ── */
@@ -582,6 +684,54 @@ body {
     display: flex; align-items: center; gap: 8px;
 }
 
+/* ── Filter Tabs ── */
+.filter-tabs {
+    display: flex; gap: 6px; margin-bottom: 18px; flex-wrap: wrap;
+}
+.filter-tab {
+    padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 500;
+    text-decoration: none; color: var(--gray-600);
+    border: 1px solid var(--gray-200); background: white;
+    transition: all 0.18s;
+}
+.filter-tab:hover { border-color: var(--maroon); color: var(--maroon); }
+.filter-tab.active { background: var(--maroon); color: white; border-color: var(--maroon); }
+
+/* Filter select */
+.filter-select {
+    padding: 7px 12px; border-radius: 20px;
+    border: 1px solid var(--gray-200); background: white;
+    font-size: 13px; font-family: 'DM Sans', sans-serif;
+    color: var(--gray-600); outline: none; cursor: pointer;
+    transition: border-color 0.2s;
+}
+.filter-select:focus { border-color: var(--maroon); }
+
+.btn-evaluate {
+    display: inline-flex; align-items: center; gap: 5px;
+    text-decoration: none;
+    background: var(--maroon); color: white;
+    border: none; padding: 7px 18px; border-radius: 20px;
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; transition: background 0.2s;
+}
+.btn-evaluate:hover { background: var(--maroon-light); }
+.btn-edit { background: var(--maroon); }
+.btn-edit:hover { background: var(--maroon-light); }
+.btn-reviewed { background: var(--gray-400); cursor: default; pointer-events: none; }
+.btn-reviewed:hover { background: var(--gray-400); }
+.btn-rejected-card { background: #ef4444; }
+
+/* Action icon buttons */
+.action-icon-btn {
+    width: 26px; height: 26px; border-radius: 6px;
+    border: 1px solid var(--gray-200); background: white;
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--gray-400); transition: all 0.18s;
+}
+.action-icon-btn:hover { border-color: #1d4ed8; color: #1d4ed8; background: #eff6ff; }
+.action-icon-del:hover { border-color: #ef4444; color: #ef4444; background: #fee2e2; }
+
 /* ── Pagination ── */
 .pagination {
     display: flex; align-items: center; justify-content: center;
@@ -659,7 +809,7 @@ body {
 <!-- Sidebar -->
 <div class="sidebar">
     <div class="sidebar-brand">AnonymousReview</div>
-    <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($user['fullname']); ?>&background=6B0000&color=fff&size=80" class="sidebar-avatar" alt="Avatar">
+    <img src="<?php echo htmlspecialchars($avatar); ?>" class="sidebar-avatar" alt="Avatar">
     <div class="sidebar-name"><?php echo htmlspecialchars($user['fullname']); ?></div>
     <div class="sidebar-role">Student</div>
     <nav>
@@ -695,7 +845,7 @@ body {
     <!-- Topbar -->
     <div class="topbar">
         <div class="topbar-left">
-            <h1>Welcome back, <?php echo htmlspecialchars(explode(' ', $user['fullname'])[0]); ?>!</h1>
+            <h1>Welcome back, <?php echo htmlspecialchars($user['username']); ?>!</h1>
             <p>Here's what's happening with your faculty evaluations.</p>
         </div>
         <div class="topbar-right">
@@ -711,16 +861,36 @@ body {
                     <div class="notif-badge"><?php echo $notif_count; ?></div>
                 <?php endif; ?>
                 <div class="notif-dropdown" id="notifDropdown">
-                    <div class="notif-dropdown-header">🔔 Notifications</div>
+                    <div class="notif-dropdown-header">
+                        <span style="display:flex;align-items:center;gap:7px;">
+                            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
+                            Notifications
+                        </span>
+                        <?php if (!empty($notifications)): ?>
+                        <button onclick="clearNotifications(event)" style="font-size:11px;color:var(--maroon);background:none;border:1px solid var(--maroon);border-radius:10px;padding:2px 10px;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500;transition:all 0.2s;" onmouseover="this.style.background='var(--maroon)';this.style.color='white'" onmouseout="this.style.background='none';this.style.color='var(--maroon)'">
+                            Clear all
+                        </button>
+                        <?php endif; ?>
+                    </div>
                     <?php if (!empty($notifications)): ?>
                         <?php foreach ($notifications as $n): ?>
-                            <div class="notif-item">
-                                <?php echo htmlspecialchars($n['message']); ?>
+                            <div class="notif-item notif-<?php echo $n['status']; ?>">
+                                <span style="display:flex;align-items:flex-start;gap:8px;">
+                                    <?php if (strpos($n['message'], 'approved') !== false): ?>
+                                        <svg width="14" height="14" style="flex-shrink:0;margin-top:2px;color:#10b981;" fill="none" stroke="#10b981" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                                    <?php else: ?>
+                                        <svg width="14" height="14" style="flex-shrink:0;margin-top:2px;" fill="none" stroke="#ef4444" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                    <?php endif; ?>
+                                    <span><?php echo htmlspecialchars($n['message']); ?></span>
+                                </span>
                                 <small><?php echo date("M j, g:i A", strtotime($n['created_at'])); ?></small>
                             </div>
                         <?php endforeach; ?>
                     <?php else: ?>
-                        <div class="notif-empty">No notifications yet</div>
+                        <div class="notif-empty">
+                            <svg width="28" height="28" fill="none" stroke="#9ca3af" stroke-width="1.5" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
+                            <p>No notifications yet</p>
+                        </div>
                     <?php endif; ?>
                 </div>
             </div>
@@ -732,46 +902,107 @@ body {
         <div class="stat-card total">
             <div class="stat-label">Total Reviews</div>
             <div class="stat-value"><?php echo $total_reviews; ?></div>
-            <div class="stat-icon"><svg width="52" height="52" fill="#4b5563" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+            <div class="stat-icon">
+                <div style="width:48px;height:48px;border-radius:50%;background:rgba(75,85,99,0.1);display:flex;align-items:center;justify-content:center;">
+                    <svg width="22" height="22" fill="none" stroke="#4b5563" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                </div>
+            </div>
         </div>
         <div class="stat-card pending">
             <div class="stat-label">Pending</div>
             <div class="stat-value"><?php echo $pending_count; ?></div>
-            <div class="stat-icon"><svg width="52" height="52" fill="#f59e0b" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+            <div class="stat-icon">
+                <div style="width:48px;height:48px;border-radius:50%;background:rgba(245,158,11,0.12);display:flex;align-items:center;justify-content:center;">
+                    <svg width="22" height="22" fill="none" stroke="#f59e0b" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </div>
+            </div>
         </div>
         <div class="stat-card approved">
             <div class="stat-label">Approved</div>
             <div class="stat-value"><?php echo $approved_count; ?></div>
-            <div class="stat-icon"><svg width="52" height="52" fill="#10b981" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+            <div class="stat-icon">
+                <div style="width:48px;height:48px;border-radius:50%;background:rgba(16,185,129,0.12);display:flex;align-items:center;justify-content:center;">
+                    <svg width="22" height="22" fill="none" stroke="#10b981" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                </div>
+            </div>
         </div>
         <div class="stat-card rejected">
             <div class="stat-label">Rejected</div>
             <div class="stat-value"><?php echo $rejected_count; ?></div>
-            <div class="stat-icon"><svg width="52" height="52" fill="#ef4444" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
+            <div class="stat-icon">
+                <div style="width:48px;height:48px;border-radius:50%;background:rgba(239,68,68,0.12);display:flex;align-items:center;justify-content:center;">
+                    <svg width="22" height="22" fill="none" stroke="#ef4444" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                </div>
+            </div>
         </div>
     </div>
 
     <!-- Faculty Section -->
     <div class="section-header">
         <div class="section-title">Faculty Members</div>
-        <form class="search-form" method="GET" action="dashboard.php">
-            <svg width="15" height="15" fill="none" stroke="#9ca3af" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" id="searchInput" name="search" placeholder="Search faculty..."
-                value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>">
-            <span class="search-clear" id="clearSearch">×</span>
-            <button type="submit">Search</button>
-        </form>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <!-- Dept filter -->
+            <select id="deptFilter" class="filter-select" onchange="filterFaculty()">
+                <option value="all">All Departments</option>
+                <?php foreach (array_keys($departments) as $dept): ?>
+                <option value="<?php echo htmlspecialchars($dept); ?>"><?php echo htmlspecialchars($dept); ?></option>
+                <?php endforeach; ?>
+            </select>
+            <!-- Search -->
+            <form class="search-form" method="GET" action="dashboard.php">
+                <?php if ($review_filter !== 'all'): ?><input type="hidden" name="review_filter" value="<?php echo htmlspecialchars($review_filter); ?>"><?php endif; ?>
+                <svg width="15" height="15" fill="none" stroke="#9ca3af" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="searchInput" name="search" placeholder="Search faculty..."
+                    value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>">
+                <span class="search-clear" id="clearSearch">×</span>
+                <button type="submit">Search</button>
+            </form>
+        </div>
     </div>
 
     <!-- Faculty Grid -->
     <?php if (!empty($faculties)): ?>
     <div class="faculty-grid" id="facultyGrid">
-        <?php foreach ($faculties as $i => $faculty): ?>
-        <div class="faculty-card" data-index="<?php echo $i; ?>">
+        <?php foreach ($faculties as $i => $faculty): 
+            $user_review = $user_reviews_map[$faculty['id']] ?? null;
+            $has_reviewed = $user_review !== null;
+            $review_status = $has_reviewed ? $user_review['status'] : null;
+        ?>
+        <div class="faculty-card" data-index="<?php echo $i; ?>" data-dept="<?php echo htmlspecialchars($faculty['department'] ?? ''); ?>">
             <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($faculty['name']); ?>&background=8B0000&color=fff&size=80" alt="Faculty">
             <h3><?php echo htmlspecialchars($faculty['name']); ?></h3>
             <p><?php echo htmlspecialchars($faculty['department'] ?? ''); ?></p>
-            <a href="dashboard.php?faculty_id=<?php echo $faculty['id']; ?>">Evaluate</a>
+            <?php if ($has_reviewed): ?>
+                <span class="status-badge status-<?php echo $review_status; ?>" style="display:inline-flex;align-items:center;gap:4px;margin-bottom:10px;">
+                    <?php if ($review_status === 'pending'): ?>
+                        <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Pending
+                    <?php elseif ($review_status === 'approved'): ?>
+                        <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Approved
+                    <?php else: ?>
+                        <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Rejected
+                    <?php endif; ?>
+                </span><br>
+                <?php if ($review_status === 'approved'): ?>
+                    <button class="btn-evaluate btn-edit" onclick="openEditModal(<?php echo $user_review['id']; ?>, '<?php echo htmlspecialchars(addslashes($user_review['review_text'])); ?>', '<?php echo htmlspecialchars(addslashes($faculty['name'])); ?>', '<?php echo htmlspecialchars(addslashes($faculty['department'] ?? '')); ?>', <?php echo $faculty['id']; ?>)">
+                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        Edit Review
+                    </button>
+                <?php elseif ($review_status === 'pending'): ?>
+                    <span class="btn-evaluate btn-reviewed">
+                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        Awaiting Review
+                    </span>
+                <?php else: ?>
+                    <span class="btn-evaluate btn-reviewed btn-rejected-card">
+                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        Rejected
+                    </span>
+                <?php endif; ?>
+            <?php else: ?>
+                <button class="btn-evaluate" onclick="openModalForFaculty(<?php echo $faculty['id']; ?>, '<?php echo htmlspecialchars(addslashes($faculty['name'])); ?>', '<?php echo htmlspecialchars(addslashes($faculty['department'] ?? '')); ?>')">
+                    Evaluate
+                </button>
+            <?php endif; ?>
         </div>
         <?php endforeach; ?>
     </div>
@@ -789,7 +1020,7 @@ body {
         <div class="review-card-header">
             <div class="review-card-title">
                 <svg width="18" height="18" fill="none" stroke="var(--maroon)" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                Recent Reviews
+                My Reviews
             </div>
             <button class="write-review-btn" onclick="openReviewModal()">
                 <svg width="14" height="14" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -797,34 +1028,81 @@ body {
             </button>
         </div>
 
+        <!-- Filter Tabs -->
+        <div class="filter-tabs" id="reviewFilterTabs">
+            <a href="#reviews" onclick="setReviewFilter('all')" class="filter-tab <?php echo $review_filter === 'all' ? 'active' : ''; ?>">All</a>
+            <a href="#reviews" onclick="setReviewFilter('pending')" class="filter-tab <?php echo $review_filter === 'pending' ? 'active' : ''; ?>">
+                <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Pending
+            </a>
+            <a href="#reviews" onclick="setReviewFilter('approved')" class="filter-tab <?php echo $review_filter === 'approved' ? 'active' : ''; ?>">
+                <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Approved
+            </a>
+            <a href="#reviews" onclick="setReviewFilter('rejected')" class="filter-tab <?php echo $review_filter === 'rejected' ? 'active' : ''; ?>">
+                <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Rejected
+            </a>
+        </div>
+
         <?php if (isset($_GET['submitted'])): ?>
-            <div class="success-banner">
-                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                Your review has been submitted and is pending admin approval.
+            <div class="success-banner"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Your review has been submitted and is pending admin approval.</div>
+        <?php endif; ?>
+        <?php if (isset($_GET['edited'])): ?>
+            <div class="success-banner"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Your review has been updated and is pending re-approval.</div>
+        <?php endif; ?>
+        <?php if (isset($_GET['deleted'])): ?>
+            <div class="success-banner" style="background:#fee2e2;color:#991b1b;"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg> Your review has been deleted.</div>
+        <?php endif; ?>
+        <?php if (isset($_GET['error'])): ?>
+            <?php if ($_GET['error'] === 'toxic'): ?>
+            <div class="success-banner" style="background:#fee2e2;color:#991b1b;">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                Your review was flagged as hateful or offensive and could not be submitted. Please keep feedback respectful and constructive.
             </div>
+            <?php elseif ($_GET['error'] === 'duplicate'): ?>
+            <div class="success-banner" style="background:#fef3c7;color:#92400e;">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                You have already submitted a review for this faculty member.
+            </div>
+            <?php elseif ($_GET['error'] === 'empty'): ?>
+            <div class="success-banner" style="background:#fef3c7;color:#92400e;">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                Review cannot be empty.
+            </div>
+            <?php endif; ?>
         <?php endif; ?>
 
         <?php if (empty($recent_reviews)): ?>
-        <div class="review-empty">
+        <div class="review-empty" id="reviewEmptyState">
             <div class="review-empty-icon">
                 <svg width="32" height="32" fill="none" stroke="var(--maroon)" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
             </div>
-            <p>You haven't submitted any reviews yet.<br>Share your feedback on a faculty member!</p>
+            <p><?php echo $review_filter !== 'all' ? "No $review_filter reviews found." : "You haven't submitted any reviews yet.<br>Share your feedback on a faculty member!"; ?></p>
+            <?php if ($review_filter === 'all'): ?>
             <button class="write-review-btn" onclick="openReviewModal()">
                 <svg width="14" height="14" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 Write Your First Review
             </button>
+            <?php endif; ?>
         </div>
         <?php else: ?>
         <?php foreach ($recent_reviews as $rev): ?>
-        <div class="review-row">
+        <div class="review-row" data-status="<?php echo $rev['status']; ?>">
             <div class="review-row-icon">
                 <svg width="18" height="18" fill="none" stroke="var(--maroon)" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
             </div>
             <div class="review-row-body">
                 <div class="review-row-top">
                     <div class="review-row-faculty"><?php echo htmlspecialchars($rev['faculty_name']); ?></div>
-                    <span class="status-badge status-<?php echo $rev['status']; ?>"><?php echo ucfirst($rev['status']); ?></span>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span class="status-badge status-<?php echo $rev['status']; ?>"><?php echo ucfirst($rev['status']); ?></span>
+                        <?php if ($rev['status'] === 'approved'): ?>
+                        <button class="action-icon-btn" title="Edit" onclick="openEditModal(<?php echo $rev['id']; ?>, '<?php echo htmlspecialchars(addslashes($rev['review_text'])); ?>', '<?php echo htmlspecialchars(addslashes($rev['faculty_name'])); ?>', '<?php echo htmlspecialchars(addslashes($rev['department'])); ?>', <?php echo $rev['faculty_id']; ?>)">
+                            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        </button>
+                        <?php endif; ?>
+                        <button class="action-icon-btn action-icon-del" title="Delete" onclick="openDeleteModal(<?php echo $rev['id']; ?>, '<?php echo htmlspecialchars(addslashes($rev['faculty_name'])); ?>')">
+                            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                        </button>
+                    </div>
                 </div>
                 <div class="review-row-dept"><?php echo htmlspecialchars($rev['department'] ?? ''); ?></div>
                 <div class="review-row-text"><?php echo htmlspecialchars($rev['review_text']); ?></div>
@@ -837,7 +1115,59 @@ body {
 
 </div>
 
-<!-- Write Review Modal -->
+<!-- Edit Review Modal -->
+<div class="modal-overlay" id="editModal">
+    <div class="modal-box" style="max-width:500px;">
+        <div class="modal-header">
+            <h3>Edit Review</h3>
+            <button class="modal-close" onclick="closeEditModal()">&times;</button>
+        </div>
+        <form method="POST" id="editForm">
+            <div class="modal-body">
+                <div class="selected-preview show" id="editPreview">
+                    <img id="editPreviewImg" src="" alt="">
+                    <div class="selected-preview-info">
+                        <strong id="editPreviewName"></strong>
+                        <span id="editPreviewDept"></span>
+                    </div>
+                </div>
+                <textarea class="modal-textarea" name="review_text" id="editReviewText" placeholder="Update your review..." required></textarea>
+                <input type="hidden" name="review_id" id="editReviewId">
+                <p style="font-size:12px;color:var(--gray-400);margin-top:8px;">⚠️ Editing will reset your review to pending status for re-approval.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="closeEditModal()">Cancel</button>
+                <button type="submit" name="edit_review" class="btn-primary">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div class="modal-overlay" id="deleteModal">
+    <div class="modal-box" style="max-width:420px;">
+        <div class="modal-header">
+            <h3>Delete Review</h3>
+            <button class="modal-close" onclick="closeDeleteModal()">&times;</button>
+        </div>
+        <form method="POST">
+            <div class="modal-body" style="text-align:center;padding:30px 24px;">
+                <div style="width:56px;height:56px;border-radius:50%;background:#fee2e2;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+                    <svg width="26" height="26" fill="none" stroke="#ef4444" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                </div>
+                <p style="font-size:15px;font-weight:600;color:var(--gray-800);margin-bottom:8px;">Delete this review?</p>
+                <p style="font-size:13px;color:var(--gray-400);">Your review for <strong id="deleteFacultyName"></strong> will be permanently removed.</p>
+                <input type="hidden" name="review_id" id="deleteReviewId">
+            </div>
+            <div class="modal-footer" style="justify-content:center;gap:12px;">
+                <button type="button" class="btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+                <button type="submit" name="delete_review" style="padding:9px 22px;border-radius:20px;background:#ef4444;color:white;border:none;font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">Delete</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+
 <div class="modal-overlay" id="reviewModal">
     <div class="modal-box">
         <div class="modal-header">
@@ -919,60 +1249,107 @@ body {
 </div>
 
 <script>
-// Faculty Pagination
-const CARDS_PER_PAGE = 6;
-const cards = document.querySelectorAll('.faculty-card');
-const pagination = document.getElementById('pagination');
-let currentPage = 1;
-const totalPages = Math.ceil(cards.length / CARDS_PER_PAGE);
-
-function showPage(page) {
-    currentPage = page;
-    const start = (page - 1) * CARDS_PER_PAGE;
-    const end = start + CARDS_PER_PAGE;
-    cards.forEach((card, i) => {
-        card.style.display = (i >= start && i < end) ? '' : 'none';
-    });
-    renderPagination();
+// Open modal pre-selected for a specific faculty (from card)
+function openModalForFaculty(id, name, dept) {
+    openReviewModal();
+    selectFaculty(id, name, dept);
+    setTimeout(() => goStep(2), 100);
 }
 
-function renderPagination() {
-    if (totalPages <= 1) return;
-    pagination.innerHTML = '';
+// Edit modal
+function openEditModal(reviewId, reviewText, facultyName, dept, facultyId) {
+    document.getElementById('editReviewId').value = reviewId;
+    document.getElementById('editReviewText').value = reviewText;
+    document.getElementById('editPreviewName').textContent = facultyName;
+    document.getElementById('editPreviewDept').textContent = dept;
+    document.getElementById('editPreviewImg').src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(facultyName) + '&background=8B0000&color=fff&size=42';
+    document.getElementById('editModal').classList.add('open');
+}
+function closeEditModal() { document.getElementById('editModal').classList.remove('open'); }
+document.getElementById('editModal').addEventListener('click', function(e) { if (e.target === this) closeEditModal(); });
 
-    // Prev button
+// Delete modal
+function openDeleteModal(reviewId, facultyName) {
+    document.getElementById('deleteReviewId').value = reviewId;
+    document.getElementById('deleteFacultyName').textContent = facultyName;
+    document.getElementById('deleteModal').classList.add('open');
+}
+function closeDeleteModal() { document.getElementById('deleteModal').classList.remove('open'); }
+document.getElementById('deleteModal').addEventListener('click', function(e) { if (e.target === this) closeDeleteModal(); });
+
+// Department filter (client-side)
+function filterFaculty() {
+    const dept = document.getElementById('deptFilter').value;
+    const allCards = document.querySelectorAll('.faculty-card');
+    allCards.forEach(card => {
+        card.style.display = (dept === 'all' || card.dataset.dept === dept) ? '' : 'none';
+    });
+    // Reset pagination
+    const visible = [...allCards].filter(c => c.style.display !== 'none');
+    paginateCards(visible);
+}
+
+// Faculty Pagination (updated to work with filter)
+const CARDS_PER_PAGE = 6;
+let currentPage = 1;
+const pagination = document.getElementById('pagination');
+
+function paginateCards(cards) {
+    const totalPages = Math.ceil(cards.length / CARDS_PER_PAGE);
+    currentPage = 1;
+    renderPage(cards, currentPage, totalPages);
+}
+
+function renderPage(cards, page, totalPages) {
+    const start = (page - 1) * CARDS_PER_PAGE;
+    const end = start + CARDS_PER_PAGE;
+    // Hide all visible cards first, then show only current page
+    const allCards = document.querySelectorAll('.faculty-card');
+    const dept = document.getElementById('deptFilter') ? document.getElementById('deptFilter').value : 'all';
+    allCards.forEach(card => {
+        const inDept = dept === 'all' || card.dataset.dept === dept;
+        card.style.display = 'none';
+    });
+    cards.slice(start, end).forEach(card => card.style.display = '');
+    renderPagination(cards, page, totalPages);
+}
+
+function renderPagination(cards, page, totalPages) {
+    if (!pagination) return;
+    pagination.innerHTML = '';
+    if (totalPages <= 1) return;
+
     const prev = document.createElement('button');
     prev.className = 'page-btn';
     prev.innerHTML = '← Prev';
-    prev.disabled = currentPage === 1;
-    prev.onclick = () => showPage(currentPage - 1);
+    prev.disabled = page === 1;
+    prev.onclick = () => { currentPage--; renderPage(cards, currentPage, totalPages); };
     pagination.appendChild(prev);
 
-    // Page info
     const info = document.createElement('span');
     info.className = 'page-info';
-    info.textContent = `Page ${currentPage} of ${totalPages}`;
+    info.textContent = `Page ${page} of ${totalPages}`;
     pagination.appendChild(info);
 
-    // Page numbers
     for (let i = 1; i <= totalPages; i++) {
         const btn = document.createElement('button');
-        btn.className = 'page-btn' + (i === currentPage ? ' active' : '');
+        btn.className = 'page-btn' + (i === page ? ' active' : '');
         btn.textContent = i;
-        btn.onclick = () => showPage(i);
+        btn.onclick = () => { currentPage = i; renderPage(cards, currentPage, totalPages); };
         pagination.appendChild(btn);
     }
 
-    // Next button
     const next = document.createElement('button');
     next.className = 'page-btn';
     next.innerHTML = 'Next →';
-    next.disabled = currentPage === totalPages;
-    next.onclick = () => showPage(currentPage + 1);
+    next.disabled = page === totalPages;
+    next.onclick = () => { currentPage++; renderPage(cards, currentPage, totalPages); };
     pagination.appendChild(next);
 }
 
-if (cards.length > 0) showPage(1);
+// Init pagination
+const allFacultyCards = [...document.querySelectorAll('.faculty-card')];
+if (allFacultyCards.length > 0) paginateCards(allFacultyCards);
 
 // Modal
 let selectedFacultyId = null;
@@ -1028,13 +1405,70 @@ toggleClear();
 searchInput.addEventListener('input', toggleClear);
 clearSearch.addEventListener('click', () => { searchInput.value = ''; toggleClear(); window.location.href = 'dashboard.php'; });
 
-// Notification dropdown
+// Clear notifications
+function clearNotifications(e) {
+    e.stopPropagation();
+    fetch('clear_notifications.php', { method: 'POST' })
+        .then(() => {
+            // Clear dropdown content
+            const dropdown = document.getElementById('notifDropdown');
+            dropdown.querySelector('.notif-dropdown-header').innerHTML = `
+                <span style="display:flex;align-items:center;gap:7px;">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
+                    Notifications
+                </span>`;
+            // Replace items with empty state
+            const items = dropdown.querySelectorAll('.notif-item');
+            items.forEach(i => i.remove());
+            const existing = dropdown.querySelector('.notif-empty');
+            if (!existing) {
+                const empty = document.createElement('div');
+                empty.className = 'notif-empty';
+                empty.innerHTML = `<svg width="28" height="28" fill="none" stroke="#9ca3af" stroke-width="1.5" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg><p>No notifications yet</p>`;
+                dropdown.appendChild(empty);
+            }
+            // Remove badge
+            const badge = document.getElementById('notifWrap').querySelector('.notif-badge');
+            if (badge) badge.remove();
+        });
+}
+
+// Notification bell - mark as read on open
 const notifWrap = document.getElementById('notifWrap');
 const notifDropdown = document.getElementById('notifDropdown');
 notifWrap.addEventListener('click', () => {
-    notifDropdown.style.display = notifDropdown.style.display === 'block' ? 'none' : 'block';
+    const isOpen = notifDropdown.style.display === 'block';
+    notifDropdown.style.display = isOpen ? 'none' : 'block';
+    if (!isOpen) {
+        // Mark notifications as read via AJAX
+        fetch('mark_notifications_read.php', { method: 'POST' })
+            .then(() => {
+                const badge = notifWrap.querySelector('.notif-badge');
+                if (badge) badge.remove();
+            });
+    }
 });
 document.addEventListener('click', (e) => { if (!notifWrap.contains(e.target)) notifDropdown.style.display = 'none'; });
+
+// Client-side review filter (no page reload, no scroll jump)
+function setReviewFilter(filter) {
+    // Update active tab
+    document.querySelectorAll('.filter-tab').forEach(tab => tab.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+
+    // Show/hide review rows
+    const rows = document.querySelectorAll('.review-row');
+    let visibleCount = 0;
+    rows.forEach(row => {
+        const match = filter === 'all' || row.dataset.status === filter;
+        row.style.display = match ? '' : 'none';
+        if (match) visibleCount++;
+    });
+
+    // Show/hide empty state
+    const emptyState = document.getElementById('reviewEmptyState');
+    if (emptyState) emptyState.style.display = visibleCount === 0 ? 'flex' : 'none';
+}
 
 // Chatbot
 function toggleChat() {

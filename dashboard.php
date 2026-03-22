@@ -764,6 +764,33 @@ body {
 .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .page-info { font-size: 12px; color: var(--gray-400); margin: 0 6px; }
 
+/* FAQ suggestions */
+.faq-suggestions {
+    padding: 8px 10px 6px;
+    border-bottom: 1px solid var(--gray-100);
+    display: flex; flex-direction: column; gap: 5px;
+    background: white;
+}
+.faq-label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--gray-400); font-weight: 600; margin-bottom: 2px; padding: 0 2px;
+}
+.faq-chip {
+    display: block; padding: 6px 10px;
+    background: var(--maroon-pale); color: var(--maroon);
+    border: 1px solid rgba(139,0,0,0.15); border-radius: 14px;
+    font-size: 12px; cursor: pointer; text-align: left;
+    font-family: 'DM Sans', sans-serif; transition: all 0.18s; width: 100%;
+}
+.faq-chip:hover { background: var(--maroon); color: white; border-color: var(--maroon); }
+
+/* Review rows pagination */
+.review-pagination {
+    display: flex; align-items: center; justify-content: center;
+    gap: 6px; padding: 14px 0 2px;
+    border-top: 1px solid var(--gray-100); margin-top: 6px;
+}
+
 #chat-bubble {
     position: fixed; bottom: 24px; right: 24px;
     width: 54px; height: 54px;
@@ -776,7 +803,7 @@ body {
 #chat-bubble:hover { transform: scale(1.08); box-shadow: 0 6px 24px rgba(139,0,0,0.4); }
 #chat-window {
     display: none; position: fixed; bottom: 90px; right: 24px;
-    width: 330px; height: 430px;
+    width: 330px; max-height: 500px;
     background: white; border-radius: var(--radius);
     box-shadow: var(--shadow-lg); z-index: 9999;
     flex-direction: column; overflow: hidden;
@@ -1253,6 +1280,15 @@ body {
         <span>FAQ Assistant</span>
         <span onclick="toggleChat()">&times;</span>
     </div>
+    <div class="faq-suggestions" id="faqSuggestions">
+        <div class="faq-label">Frequently Asked</div>
+        <button class="faq-chip" onclick="askFaq('How do I submit a review?')">How do I submit a review?</button>
+        <button class="faq-chip" onclick="askFaq('Are my reviews anonymous?')">Are my reviews anonymous?</button>
+        <button class="faq-chip" onclick="askFaq('Why is my review still pending?')">Why is my review still pending?</button>
+        <button class="faq-chip" onclick="askFaq('Can I edit or delete my review?')">Can I edit or delete my review?</button>
+        <button class="faq-chip" onclick="askFaq('What happens after my review is approved?')">What happens after approval?</button>
+        <button class="faq-chip" onclick="askFaq('Why was my review rejected?')">Why was my review rejected?</button>
+    </div>
     <div id="chat-messages">
         <div class="chat-msg bot">Hi! Ask me anything about using AnonymousReview. 👋</div>
     </div>
@@ -1466,22 +1502,101 @@ document.addEventListener('click', (e) => { if (!notifWrap.contains(e.target)) n
 
 // Client-side review filter (no page reload, no scroll jump)
 function setReviewFilter(filter) {
-    // Update active tab
     document.querySelectorAll('.filter-tab').forEach(tab => tab.classList.remove('active'));
     event.currentTarget.classList.add('active');
 
-    // Show/hide review rows
+    // Mark rows as filtered or not using data attribute
     const rows = document.querySelectorAll('.review-row');
-    let visibleCount = 0;
     rows.forEach(row => {
         const match = filter === 'all' || row.dataset.status === filter;
-        row.style.display = match ? '' : 'none';
-        if (match) visibleCount++;
+        row.dataset.filtered = match ? 'show' : 'hide';
     });
 
-    // Show/hide empty state
+    const visibleCount = [...rows].filter(r => r.dataset.filtered === 'show').length;
     const emptyState = document.getElementById('reviewEmptyState');
     if (emptyState) emptyState.style.display = visibleCount === 0 ? 'flex' : 'none';
+
+    reviewPage = 1;
+    paginateReviews();
+}
+
+// Review rows pagination
+const REVIEWS_PER_PAGE = 5;
+let reviewPage = 1;
+
+function paginateReviews() {
+    // Get all rows that pass the filter
+    const allRows = [...document.querySelectorAll('.review-row')];
+    const visibleRows = allRows.filter(r => r.dataset.filtered !== 'hide');
+    const total      = visibleRows.length;
+    const totalPages = Math.ceil(total / REVIEWS_PER_PAGE);
+    const start      = (reviewPage - 1) * REVIEWS_PER_PAGE;
+    const end        = start + REVIEWS_PER_PAGE;
+
+    // Hide ALL rows first
+    allRows.forEach(r => r.style.display = 'none');
+    // Show only current page of visible rows
+    visibleRows.slice(start, end).forEach(r => r.style.display = '');
+
+    // Render pagination controls
+    let pag = document.getElementById('reviewPagination');
+    if (!pag) {
+        pag = document.createElement('div');
+        pag.id = 'reviewPagination';
+        pag.className = 'review-pagination';
+        document.querySelector('.review-card').appendChild(pag);
+    }
+    pag.innerHTML = '';
+    if (totalPages <= 1) return;
+
+    const prev = document.createElement('button');
+    prev.className = 'page-btn'; prev.textContent = '← Prev';
+    prev.disabled = reviewPage === 1;
+    prev.onclick = () => { reviewPage--; paginateReviews(); };
+    pag.appendChild(prev);
+
+    const info = document.createElement('span');
+    info.className = 'page-info';
+    info.textContent = `${reviewPage} / ${totalPages}`;
+    pag.appendChild(info);
+
+    for (let i = 1; i <= totalPages; i++) {
+        const btn = document.createElement('button');
+        btn.className = 'page-btn' + (i === reviewPage ? ' active' : '');
+        btn.textContent = i;
+        btn.onclick = () => { reviewPage = i; paginateReviews(); };
+        pag.appendChild(btn);
+    }
+
+    const next = document.createElement('button');
+    next.className = 'page-btn'; next.textContent = 'Next →';
+    next.disabled = reviewPage === totalPages;
+    next.onclick = () => { reviewPage++; paginateReviews(); };
+    pag.appendChild(next);
+}
+
+// Init review pagination and mark all rows as visible by default
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.review-row').forEach(r => r.dataset.filtered = 'show');
+    if (document.querySelectorAll('.review-row').length > REVIEWS_PER_PAGE) paginateReviews();
+
+    // Auto-dismiss success/error banners after 4 seconds
+    document.querySelectorAll('.success-banner').forEach(banner => {
+        setTimeout(() => {
+            banner.style.transition = 'opacity 0.6s ease';
+            banner.style.opacity = '0';
+            setTimeout(() => banner.style.display = 'none', 600);
+        }, 4000);
+    });
+});
+
+// FAQ suggestions
+function askFaq(question) {
+    // Hide suggestions after first click
+    document.getElementById('faqSuggestions').style.display = 'none';
+    // Put question in input and send
+    document.getElementById('chat-input').value = question;
+    sendChat();
 }
 
 // Chatbot
@@ -1493,6 +1608,10 @@ function toggleChat() {
         document.getElementById('chat-input').focus();
     }
 }
+// Hide FAQ on manual input
+document.getElementById('chat-input').addEventListener('input', function() {
+    if (this.value.trim()) document.getElementById('faqSuggestions').style.display = 'none';
+});
 function sendChat() {
     var input = document.getElementById('chat-input');
     var msg = input.value.trim();

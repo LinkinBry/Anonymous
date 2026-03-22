@@ -1,10 +1,12 @@
 <?php
 session_start();
 
-$host = "127.0.0.1";
-$user = "root";
-$password = "root";  // now has a password
-$dbname = "faculty_review_system";
+$env = parse_ini_file(__DIR__ . '/.env');
+
+$host = $env['DB_HOST'];
+$user = $env['DB_USER'];
+$password = $env['DB_PASS'];
+$dbname = $env['DB_NAME'];
 
 $conn = mysqli_connect($host, $user, $password, $dbname);
 

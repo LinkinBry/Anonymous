@@ -19,7 +19,7 @@ $api_key = ['GROQ_API_KEY'];
 $system_prompt = 'You are a helpful FAQ assistant for AnonymousReview, an Anonymous Online Faculty Performance Evaluation and Feedback System. Help users with: submitting a faculty review (go to Dashboard, click Evaluate next to a faculty member, write your review and submit), reviews are anonymous and go to admin for approval before being published, users get notified when their review is approved or rejected, searching for faculty using the search bar on the dashboard, account issues such as registration login and password, what happens after submitting a review (it shows as pending until admin approves), and admins can approve or reject reviews. Keep answers short, friendly, and helpful. If you do not know something specific to this system, say so politely.';
 
 $payload = json_encode([
-    'model' => 'llama3-8b-8192',
+    'model' => 'llama-3.3-70b-versatile',
     'max_tokens' => 300,
     'messages' => [
         ['role' => 'system', 'content' => $system_prompt],

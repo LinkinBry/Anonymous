@@ -44,8 +44,31 @@ if (isset($_POST['submit_review'])) {
     $faculty_id = intval($_POST['faculty_id']);
     $review_text = mysqli_real_escape_string($conn, $_POST['review_text']);
     mysqli_query($conn, "INSERT INTO reviews (user_id, faculty_id, review_text, status) VALUES ('$user_id','$faculty_id','$review_text','pending')");
-    header("Location: dashboard.php?faculty_id=" . $faculty_id . "&submitted=1");
+    header("Location: dashboard.php?submitted=1");
     exit();
+}
+
+// Fetch faculties grouped by department for the modal
+$departments = [];
+$dept_res = mysqli_query($conn, "SELECT id, name, department FROM faculties ORDER BY department ASC, name ASC");
+if ($dept_res && mysqli_num_rows($dept_res) > 0) {
+    while ($row = mysqli_fetch_assoc($dept_res)) {
+        $dept = $row['department'] ?: 'General';
+        $departments[$dept][] = $row;
+    }
+}
+
+// Fetch user's recent reviews
+$recent_reviews = [];
+$recent_res = mysqli_query($conn, "
+    SELECT r.id, r.review_text, r.status, r.created_at, f.name AS faculty_name, f.department
+    FROM reviews r
+    JOIN faculties f ON r.faculty_id = f.id
+    WHERE r.user_id='$user_id'
+    ORDER BY r.created_at DESC LIMIT 5
+");
+if ($recent_res && mysqli_num_rows($recent_res) > 0) {
+    while ($row = mysqli_fetch_assoc($recent_res)) $recent_reviews[] = $row;
 }
 
 $selected_faculty = null;
@@ -387,7 +410,178 @@ body {
     font-size: 13px; margin-bottom: 14px;
 }
 
-/* ── Chatbot ── */
+/* ── Review Card ── */
+.review-card {
+    background: white; border-radius: var(--radius);
+    padding: 24px 26px; box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-200); margin-bottom: 28px;
+}
+.review-card-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 20px; padding-bottom: 14px;
+    border-bottom: 1px solid var(--gray-100);
+}
+.review-card-title {
+    font-size: 16px; font-weight: 600; color: var(--gray-800);
+    display: flex; align-items: center; gap: 8px;
+}
+.write-review-btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: var(--maroon); color: white;
+    border: none; border-radius: 20px;
+    padding: 8px 18px; font-size: 13px; font-weight: 500;
+    cursor: pointer; font-family: 'DM Sans', sans-serif;
+    transition: background 0.2s, transform 0.15s;
+    text-decoration: none;
+}
+.write-review-btn:hover { background: var(--maroon-light); transform: translateY(-1px); }
+
+/* Empty review state */
+.review-empty {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; padding: 40px 20px; text-align: center;
+}
+.review-empty-icon {
+    width: 72px; height: 72px; border-radius: 50%;
+    background: var(--maroon-pale);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 16px;
+}
+.review-empty p { color: var(--gray-400); font-size: 14px; margin-bottom: 18px; }
+
+/* Review rows */
+.review-row {
+    display: flex; align-items: flex-start; gap: 14px;
+    padding: 14px 0; border-bottom: 1px solid var(--gray-100);
+}
+.review-row:last-child { border-bottom: none; }
+.review-row-icon {
+    width: 38px; height: 38px; border-radius: 50%;
+    background: var(--maroon-pale);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 2px;
+}
+.review-row-body { flex: 1; min-width: 0; }
+.review-row-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.review-row-faculty { font-size: 14px; font-weight: 600; color: var(--gray-800); }
+.review-row-dept { font-size: 11px; color: var(--gray-400); margin-bottom: 4px; }
+.review-row-text { font-size: 13px; color: var(--gray-600); line-height: 1.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 480px; }
+.review-row-date { font-size: 11px; color: var(--gray-400); margin-top: 4px; }
+
+/* ── Modal ── */
+.modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5); z-index: 1000;
+    align-items: center; justify-content: center;
+    backdrop-filter: blur(2px);
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+    background: white; border-radius: var(--radius);
+    width: 100%; max-width: 560px; max-height: 88vh;
+    overflow-y: auto; box-shadow: var(--shadow-lg);
+    animation: slideUp 0.25s ease;
+}
+@keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.modal-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 20px 24px; border-bottom: 1px solid var(--gray-100);
+    position: sticky; top: 0; background: white; z-index: 2;
+}
+.modal-header h3 { font-size: 17px; font-weight: 600; color: var(--gray-800); }
+.modal-close {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--gray-100); border: none; cursor: pointer;
+    font-size: 18px; display: flex; align-items: center; justify-content: center;
+    color: var(--gray-600); transition: background 0.2s;
+}
+.modal-close:hover { background: var(--gray-200); }
+.modal-body { padding: 24px; }
+
+/* Steps */
+.step { display: none; }
+.step.active { display: block; }
+.step-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--gray-400); margin-bottom: 14px; font-weight: 600; }
+
+/* Department accordion */
+.dept-group { margin-bottom: 10px; border: 1px solid var(--gray-200); border-radius: var(--radius-sm); overflow: hidden; }
+.dept-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 16px; cursor: pointer;
+    background: var(--gray-50); font-size: 14px; font-weight: 600;
+    color: var(--gray-800); transition: background 0.2s;
+    user-select: none;
+}
+.dept-header:hover { background: var(--gray-100); }
+.dept-header .chevron { transition: transform 0.2s; font-size: 12px; color: var(--gray-400); }
+.dept-header.open .chevron { transform: rotate(180deg); }
+.dept-body { display: none; padding: 8px; background: white; }
+.dept-body.open { display: block; }
+.faculty-option {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; border-radius: var(--radius-sm);
+    cursor: pointer; transition: background 0.15s;
+    font-size: 14px; color: var(--gray-700);
+}
+.faculty-option:hover { background: var(--maroon-pale); color: var(--maroon); }
+.faculty-option img { width: 34px; height: 34px; border-radius: 50%; }
+.faculty-option.selected { background: var(--maroon-pale); color: var(--maroon); font-weight: 600; }
+
+/* Selected faculty preview */
+.selected-preview {
+    display: none; align-items: center; gap: 12px;
+    background: var(--maroon-pale); border-radius: var(--radius-sm);
+    padding: 12px 16px; margin-bottom: 16px;
+}
+.selected-preview.show { display: flex; }
+.selected-preview img { width: 42px; height: 42px; border-radius: 50%; }
+.selected-preview-info strong { font-size: 14px; color: var(--maroon); display: block; }
+.selected-preview-info span { font-size: 12px; color: var(--gray-400); }
+.change-faculty-btn {
+    margin-left: auto; font-size: 12px; color: var(--maroon);
+    background: none; border: 1px solid var(--maroon);
+    border-radius: 12px; padding: 4px 10px; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; transition: all 0.2s;
+}
+.change-faculty-btn:hover { background: var(--maroon); color: white; }
+
+/* Textarea */
+.modal-textarea {
+    width: 100%; padding: 12px 14px;
+    border: 1px solid var(--gray-200); border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif; font-size: 14px;
+    resize: vertical; outline: none; color: var(--gray-800);
+    min-height: 120px; transition: border-color 0.2s;
+}
+.modal-textarea:focus { border-color: var(--maroon); }
+.modal-footer {
+    display: flex; justify-content: flex-end; gap: 10px;
+    padding: 16px 24px; border-top: 1px solid var(--gray-100);
+    position: sticky; bottom: 0; background: white;
+}
+.btn-secondary {
+    padding: 9px 20px; border-radius: 20px;
+    border: 1px solid var(--gray-200); background: white;
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; color: var(--gray-600);
+    transition: background 0.2s;
+}
+.btn-secondary:hover { background: var(--gray-100); }
+.btn-primary {
+    padding: 9px 22px; border-radius: 20px;
+    background: var(--maroon); color: white; border: none;
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; transition: background 0.2s;
+}
+.btn-primary:hover { background: var(--maroon-light); }
+.btn-primary:disabled { background: var(--gray-400); cursor: not-allowed; }
+
+.success-banner {
+    background: #d1fae5; color: #065f46; border-radius: var(--radius-sm);
+    padding: 12px 16px; font-size: 13px; margin-bottom: 20px;
+    display: flex; align-items: center; gap: 8px;
+}
+
 #chat-bubble {
     position: fixed; bottom: 24px; right: 24px;
     width: 54px; height: 54px;
@@ -570,44 +764,119 @@ body {
     </div>
     <?php endif; ?>
 
-    <!-- Review Section -->
-    <?php if ($selected_faculty): ?>
-    <div class="review-section">
-        <h2>Reviews for <?php echo htmlspecialchars($selected_faculty['name']); ?></h2>
+    <!-- Recent Reviews Card -->
+    <div class="review-card">
+        <div class="review-card-header">
+            <div class="review-card-title">
+                <svg width="18" height="18" fill="none" stroke="var(--maroon)" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                Recent Reviews
+            </div>
+            <button class="write-review-btn" onclick="openReviewModal()">
+                <svg width="14" height="14" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Write a Review
+            </button>
+        </div>
 
-        <?php if (!empty($faculty_reviews)): ?>
-            <ul class="review-list">
-                <?php foreach ($faculty_reviews as $rev): ?>
-                <li class="review-item">
-                    <strong>Anonymous</strong>
-                    <span class="status-badge status-<?php echo $rev['status']; ?>"><?php echo ucfirst($rev['status']); ?></span>
-                    <div style="margin-top:6px;"><?php echo htmlspecialchars($rev['review_text']); ?></div>
-                    <div class="review-meta">Submitted on <?php echo date("F j, Y g:i A", strtotime($rev['created_at'])); ?></div>
-                </li>
-                <?php endforeach; ?>
-            </ul>
-        <?php else: ?>
-            <div class="empty-state" style="padding:30px 20px;">
-                <svg width="48" height="48" fill="none" stroke="#9ca3af" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                <p>No reviews yet for this faculty.</p>
+        <?php if (isset($_GET['submitted'])): ?>
+            <div class="success-banner">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                Your review has been submitted and is pending admin approval.
             </div>
         <?php endif; ?>
 
-        <div class="submit-form">
-            <h3>Submit a New Review</h3>
-            <?php if (isset($_GET['submitted'])): ?>
-                <div class="success-msg">✅ Your review has been submitted and is pending admin approval.</div>
-            <?php endif; ?>
-            <form method="POST">
-                <textarea name="review_text" required placeholder="Write your anonymous review here..."></textarea><br>
-                <input type="hidden" name="faculty_id" value="<?php echo $selected_faculty['id']; ?>">
-                <button type="submit" name="submit_review" class="submit-btn">Submit Review</button>
-            </form>
+        <?php if (empty($recent_reviews)): ?>
+        <div class="review-empty">
+            <div class="review-empty-icon">
+                <svg width="32" height="32" fill="none" stroke="var(--maroon)" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            </div>
+            <p>You haven't submitted any reviews yet.<br>Share your feedback on a faculty member!</p>
+            <button class="write-review-btn" onclick="openReviewModal()">
+                <svg width="14" height="14" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Write Your First Review
+            </button>
         </div>
+        <?php else: ?>
+        <?php foreach ($recent_reviews as $rev): ?>
+        <div class="review-row">
+            <div class="review-row-icon">
+                <svg width="18" height="18" fill="none" stroke="var(--maroon)" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            </div>
+            <div class="review-row-body">
+                <div class="review-row-top">
+                    <div class="review-row-faculty"><?php echo htmlspecialchars($rev['faculty_name']); ?></div>
+                    <span class="status-badge status-<?php echo $rev['status']; ?>"><?php echo ucfirst($rev['status']); ?></span>
+                </div>
+                <div class="review-row-dept"><?php echo htmlspecialchars($rev['department'] ?? ''); ?></div>
+                <div class="review-row-text"><?php echo htmlspecialchars($rev['review_text']); ?></div>
+                <div class="review-row-date"><?php echo date("F j, Y · g:i A", strtotime($rev['created_at'])); ?></div>
+            </div>
+        </div>
+        <?php endforeach; ?>
+        <?php endif; ?>
     </div>
-    <?php endif; ?>
 
 </div>
+
+<!-- Write Review Modal -->
+<div class="modal-overlay" id="reviewModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3>
+                <span id="modalStepTitle">Select a Faculty Member</span>
+            </h3>
+            <button class="modal-close" onclick="closeReviewModal()">&times;</button>
+        </div>
+        <form method="POST" id="reviewForm">
+            <div class="modal-body">
+
+                <!-- Step 1: Choose Faculty -->
+                <div class="step active" id="step1">
+                    <div class="step-label">Step 1 of 2 · Choose Faculty</div>
+                    <?php foreach ($departments as $dept => $dept_faculties): ?>
+                    <div class="dept-group">
+                        <div class="dept-header" onclick="toggleDept(this)">
+                            <span><?php echo htmlspecialchars($dept); ?> <span style="font-weight:400;color:var(--gray-400);font-size:12px;">(<?php echo count($dept_faculties); ?>)</span></span>
+                            <span class="chevron">▼</span>
+                        </div>
+                        <div class="dept-body">
+                            <?php foreach ($dept_faculties as $f): ?>
+                            <div class="faculty-option" onclick="selectFaculty(<?php echo $f['id']; ?>, '<?php echo htmlspecialchars(addslashes($f['name'])); ?>', '<?php echo htmlspecialchars(addslashes($dept)); ?>')">
+                                <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($f['name']); ?>&background=8B0000&color=fff&size=40" alt="">
+                                <?php echo htmlspecialchars($f['name']); ?>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+
+                <!-- Step 2: Write Review -->
+                <div class="step" id="step2">
+                    <div class="step-label">Step 2 of 2 · Write Your Review</div>
+                    <div class="selected-preview show" id="selectedPreview">
+                        <img id="previewImg" src="" alt="">
+                        <div class="selected-preview-info">
+                            <strong id="previewName"></strong>
+                            <span id="previewDept"></span>
+                        </div>
+                        <button type="button" class="change-faculty-btn" onclick="goStep(1)">Change</button>
+                    </div>
+                    <textarea class="modal-textarea" name="review_text" id="reviewText" placeholder="Write your anonymous review here... Be honest, constructive, and respectful." required></textarea>
+                    <input type="hidden" name="faculty_id" id="facultyIdInput">
+                    <p style="font-size:12px;color:var(--gray-400);margin-top:8px;">🔒 Your identity remains anonymous. Reviews are reviewed by admin before publishing.</p>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" id="backBtn" style="display:none;" onclick="goStep(1)">← Back</button>
+                <button type="button" class="btn-secondary" onclick="closeReviewModal()">Cancel</button>
+                <button type="button" class="btn-primary" id="nextBtn" disabled onclick="goStep(2)">Next →</button>
+                <button type="submit" name="submit_review" class="btn-primary" id="submitBtn" style="display:none;">Submit Review</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 
 <!-- Chatbot Bubble -->
 <div id="chat-bubble" onclick="toggleChat()">
@@ -630,7 +899,53 @@ body {
 </div>
 
 <script>
-// Search clear
+// Modal
+let selectedFacultyId = null;
+
+function openReviewModal() {
+    document.getElementById('reviewModal').classList.add('open');
+    goStep(1);
+}
+function closeReviewModal() {
+    document.getElementById('reviewModal').classList.remove('open');
+    selectedFacultyId = null;
+    document.getElementById('reviewText').value = '';
+    document.querySelectorAll('.faculty-option').forEach(o => o.classList.remove('selected'));
+    document.getElementById('nextBtn').disabled = true;
+}
+function goStep(n) {
+    document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+    document.getElementById('step' + n).classList.add('active');
+    document.getElementById('modalStepTitle').textContent = n === 1 ? 'Select a Faculty Member' : 'Write Your Review';
+    document.getElementById('backBtn').style.display = n === 2 ? 'inline-flex' : 'none';
+    document.getElementById('nextBtn').style.display = n === 1 ? 'inline-flex' : 'none';
+    document.getElementById('submitBtn').style.display = n === 2 ? 'inline-flex' : 'none';
+}
+function selectFaculty(id, name, dept) {
+    selectedFacultyId = id;
+    document.getElementById('facultyIdInput').value = id;
+    document.getElementById('previewName').textContent = name;
+    document.getElementById('previewDept').textContent = dept;
+    document.getElementById('previewImg').src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&background=8B0000&color=fff&size=42';
+    document.querySelectorAll('.faculty-option').forEach(o => o.classList.remove('selected'));
+    event.currentTarget.classList.add('selected');
+    document.getElementById('nextBtn').disabled = false;
+}
+function toggleDept(header) {
+    header.classList.toggle('open');
+    const body = header.nextElementSibling;
+    body.classList.toggle('open');
+}
+// Close modal on overlay click
+document.getElementById('reviewModal').addEventListener('click', function(e) {
+    if (e.target === this) closeReviewModal();
+});
+// Open first dept by default
+document.addEventListener('DOMContentLoaded', () => {
+    const first = document.querySelector('.dept-header');
+    if (first) { first.classList.add('open'); first.nextElementSibling.classList.add('open'); }
+});
+
 const searchInput = document.getElementById('searchInput');
 const clearSearch = document.getElementById('clearSearch');
 function toggleClear() { clearSearch.style.display = searchInput.value.length > 0 ? 'inline' : 'none'; }

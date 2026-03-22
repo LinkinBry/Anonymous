@@ -124,7 +124,7 @@ body { margin:0; font-family:Arial, sans-serif; background:#f5f5f5; }
 /* Search Bar */
 .search-container {
     display: flex;
-    justify-content: flex-end; /* pushes search bar to the right */
+    justify-content: flex-end;
     margin: 10px 20px;
 }
 .search-container form {
@@ -153,7 +153,7 @@ body { margin:0; font-family:Arial, sans-serif; background:#f5f5f5; }
     height: 18px;
     text-align: center;
     line-height: 18px;
-    display: none; /* hidden until text entered */
+    display: none;
 }
 .search-container button {
     padding: 8px 12px;
@@ -186,14 +186,11 @@ body { margin:0; font-family:Arial, sans-serif; background:#f5f5f5; }
     right: 20px;
     cursor: pointer;
 }
-
 .bell-icon {
     width: 28px;
     height: 28px;
     margin-bottom: 10px;
-    /* no filter here */
 }
-
 .badge {
     position: absolute;
     top: -5px;
@@ -225,7 +222,93 @@ body { margin:0; font-family:Arial, sans-serif; background:#f5f5f5; }
 .dropdown li small { display:block; color:#666; font-size:12px; }
 .dropdown p { padding:10px; margin:0; }
 
-
+/* Chatbot */
+#chat-bubble {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 52px;
+    height: 52px;
+    background: #8B0000;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    transition: transform 0.2s;
+}
+#chat-bubble:hover { transform: scale(1.1); }
+#chat-window {
+    display: none;
+    position: fixed;
+    bottom: 90px;
+    right: 24px;
+    width: 320px;
+    height: 420px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    z-index: 9999;
+    flex-direction: column;
+    overflow: hidden;
+}
+#chat-header {
+    background: #8B0000;
+    color: white;
+    padding: 12px 16px;
+    font-weight: 500;
+    font-size: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+#chat-header span { cursor: pointer; font-size: 18px; }
+#chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    height: 320px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.chat-msg {
+    border-radius: 8px;
+    padding: 8px 10px;
+    max-width: 90%;
+    font-size: 13px;
+    line-height: 1.5;
+    word-wrap: break-word;
+}
+.chat-msg.bot { background: #f5f5f5; align-self: flex-start; }
+.chat-msg.user { background: #8B0000; color: white; align-self: flex-end; }
+#chat-footer {
+    padding: 8px;
+    border-top: 1px solid #eee;
+    display: flex;
+    gap: 6px;
+}
+#chat-input {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 13px;
+    outline: none;
+}
+#chat-input:focus { border-color: #8B0000; }
+#chat-send {
+    background: #8B0000;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 0 14px;
+    cursor: pointer;
+    font-size: 16px;
+}
+#chat-send:hover { background: #a30000; }
 </style>
 </head>
 <body>
@@ -238,6 +321,10 @@ body { margin:0; font-family:Arial, sans-serif; background:#f5f5f5; }
     <a href="#">Evaluation History</a>
     <a href="avatar.php">Profile</a>
     <a href="#">Analytics</a>
+    <a href="#" onclick="toggleChat(); return false;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+        FAQ Chat
+    </a>
     <a href="logout.php">Logout</a>
 </div>
 
@@ -272,9 +359,7 @@ body { margin:0; font-family:Arial, sans-serif; background:#f5f5f5; }
             <?php endif; ?>
         </div>
     </div>
-
 </div>
-
 
     <!-- Search Bar -->
     <div class="search-container">
@@ -285,7 +370,8 @@ body { margin:0; font-family:Arial, sans-serif; background:#f5f5f5; }
             <button type="submit">Search</button>
         </form>
     </div>
-        <!-- Faculty Grid -->
+
+    <!-- Faculty Grid -->
     <div class="faculty-grid">
         <?php if (!empty($faculties)): ?>
             <?php foreach ($faculties as $faculty): ?>
@@ -336,12 +422,32 @@ body { margin:0; font-family:Arial, sans-serif; background:#f5f5f5; }
     <?php endif; ?>
 </div>
 
-<!-- JavaScript for Search Clear + Notification Dropdown -->
+<!-- Chatbot Bubble -->
+<div id="chat-bubble" onclick="toggleChat()">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+        <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
+    </svg>
+</div>
+
+<!-- Chatbot Window -->
+<div id="chat-window">
+    <div id="chat-header">
+        <span>FAQ Assistant</span>
+        <span onclick="toggleChat()">&times;</span>
+    </div>
+    <div id="chat-messages">
+        <div class="chat-msg bot">Hi! Ask me anything about using AnonymousReview. &#128075;</div>
+    </div>
+    <div id="chat-footer">
+        <input id="chat-input" type="text" placeholder="Type a question..." onkeydown="if(event.key==='Enter') sendChat()">
+        <button id="chat-send" onclick="sendChat()">&#9658;</button>
+    </div>
+</div>
+
 <script>
-// Show/hide X icon depending on input value
+// Search clear button
 const searchInput = document.getElementById('searchInput');
 const clearSearch = document.getElementById('clearSearch');
-
 function toggleClearIcon() {
     clearSearch.style.display = searchInput.value.length > 0 ? 'inline' : 'none';
 }
@@ -353,17 +459,61 @@ clearSearch.addEventListener('click', function() {
     window.location.href = 'dashboard.php';
 });
 
-// Notification dropdown toggle
+// Notification dropdown
 const bell = document.querySelector('.notification');
 const dropdown = document.getElementById('notifDropdown');
 bell.addEventListener('click', () => {
     dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
 });
 document.addEventListener('click', (e) => {
-    if (!bell.contains(e.target)) {
-        dropdown.style.display = 'none';
-    }
+    if (!bell.contains(e.target)) dropdown.style.display = 'none';
 });
+
+// Chatbot
+function toggleChat() {
+    var w = document.getElementById('chat-window');
+    if (w.style.display === 'flex') {
+        w.style.display = 'none';
+    } else {
+        w.style.display = 'flex';
+        w.style.flexDirection = 'column';
+        document.getElementById('chat-input').focus();
+    }
+}
+
+function sendChat() {
+    var input = document.getElementById('chat-input');
+    var msg = input.value.trim();
+    if (!msg) return;
+    addBubble(msg, 'user');
+    input.value = '';
+    var typing = addBubble('Typing...', 'bot', 'typing-indicator');
+    fetch('chatbot.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'message=' + encodeURIComponent(msg)
+    })
+    .then(r => r.json())
+    .then(data => {
+        document.getElementById('typing-indicator').remove();
+        addBubble(data.reply || 'Sorry, try again.', 'bot');
+    })
+    .catch(() => {
+        document.getElementById('typing-indicator').remove();
+        addBubble('Connection error. Please try again.', 'bot');
+    });
+}
+
+function addBubble(text, from, id) {
+    var box = document.getElementById('chat-messages');
+    var d = document.createElement('div');
+    d.className = 'chat-msg ' + from;
+    if (id) d.id = id;
+    d.textContent = text;
+    box.appendChild(d);
+    box.scrollTop = box.scrollHeight;
+    return d;
+}
 </script>
 
 </body>

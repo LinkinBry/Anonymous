@@ -61,14 +61,21 @@ if (isset($_POST['submit_review'])) {
     // Groq AI toxic check
     $env     = parse_ini_file(__DIR__ . '/.env');
     $api_key = $env['GROQ_API_KEY'];
-    $prompt  = 'Analyze this faculty review and return valid JSON only, no explanation, no markdown:
+    $prompt  = 'You are a multilingual content moderator. The review below may be written in English, Filipino, Tagalog, or a mix (Taglish). Analyze it carefully considering the language and cultural context, then return valid JSON only, no explanation, no markdown:
 {
   "sentiment": "positive or negative or neutral",
   "is_toxic": true or false,
   "is_hateful": true or false,
   "summary": "one sentence summary in English"
 }
-A review is toxic or hateful if it contains: insults, slurs, personal attacks, threats, offensive language, harassment, or discriminatory content.
+
+IMPORTANT RULES:
+- Only flag as toxic or hateful if the review contains CLEAR insults, slurs, personal attacks, threats, explicit offensive language, harassment, or discriminatory content.
+- Do NOT flag a review just because it is written in Filipino or Tagalog.
+- Negative opinions about teaching style, punctuality, or performance are NOT toxic — they are valid feedback.
+- Words like "bobo", "tamad", "pangit" are mild and context-dependent — only flag if used as a direct personal attack.
+- When in doubt, do NOT flag as toxic.
+
 Review: "' . addslashes($review_text) . '"';
 
     $payload = json_encode(['model' => 'llama-3.3-70b-versatile', 'max_tokens' => 200,
@@ -110,14 +117,21 @@ if (isset($_POST['edit_review'])) {
     // Groq toxic check on edit too
     $env     = parse_ini_file(__DIR__ . '/.env');
     $api_key = $env['GROQ_API_KEY'];
-    $prompt  = 'Analyze this faculty review and return valid JSON only, no explanation, no markdown:
+    $prompt  = 'You are a multilingual content moderator. The review below may be written in English, Filipino, Tagalog, or a mix (Taglish). Analyze it carefully considering the language and cultural context, then return valid JSON only, no explanation, no markdown:
 {
   "sentiment": "positive or negative or neutral",
   "is_toxic": true or false,
   "is_hateful": true or false,
   "summary": "one sentence summary in English"
 }
-A review is toxic or hateful if it contains: insults, slurs, personal attacks, threats, offensive language, harassment, or discriminatory content.
+
+IMPORTANT RULES:
+- Only flag as toxic or hateful if the review contains CLEAR insults, slurs, personal attacks, threats, explicit offensive language, harassment, or discriminatory content.
+- Do NOT flag a review just because it is written in Filipino or Tagalog.
+- Negative opinions about teaching style, punctuality, or performance are NOT toxic — they are valid feedback.
+- Words like "bobo", "tamad", "pangit" are mild and context-dependent — only flag if used as a direct personal attack.
+- When in doubt, do NOT flag as toxic.
+
 Review: "' . addslashes($review_text) . '"';
 
     $payload = json_encode(['model' => 'llama-3.3-70b-versatile', 'max_tokens' => 200,

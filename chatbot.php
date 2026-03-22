@@ -14,28 +14,27 @@ if (empty($user_message)) {
     exit();
 }
 
-$api_key = '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';
+$api_key = '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';
 
 $system_prompt = 'You are a helpful FAQ assistant for AnonymousReview, an Anonymous Online Faculty Performance Evaluation and Feedback System. Help users with: submitting a faculty review (go to Dashboard, click Evaluate next to a faculty member, write your review and submit), reviews are anonymous and go to admin for approval before being published, users get notified when their review is approved or rejected, searching for faculty using the search bar on the dashboard, account issues such as registration login and password, what happens after submitting a review (it shows as pending until admin approves), and admins can approve or reject reviews. Keep answers short, friendly, and helpful. If you do not know something specific to this system, say so politely.';
 
 $payload = json_encode([
-    'model' => 'claude-haiku-4-5-20251001',
+    'model' => 'llama3-8b-8192',
     'max_tokens' => 300,
-    'system' => $system_prompt,
     'messages' => [
+        ['role' => 'system', 'content' => $system_prompt],
         ['role' => 'user', 'content' => $user_message]
     ]
 ]);
 
-$ch = curl_init('https://api.anthropic.com/v1/messages');
+$ch = curl_init('https://api.groq.com/openai/v1/chat/completions');
 curl_setopt_array($ch, [
     CURLOPT_RETURNTRANSFER => true,
     CURLOPT_POST => true,
     CURLOPT_POSTFIELDS => $payload,
     CURLOPT_HTTPHEADER => [
         'Content-Type: application/json',
-        'x-api-key: ' . $api_key,
-        'anthropic-version: 2023-06-01'
+        'Authorization: Bearer ' . $api_key
     ]
 ]);
 
@@ -43,7 +42,7 @@ $response = curl_exec($ch);
 curl_close($ch);
 
 $data = json_decode($response, true);
-$reply = $data['content'][0]['text'] ?? 'Sorry, I could not process that.';
+$reply = $data['choices'][0]['message']['content'] ?? 'Sorry, I could not process that.';
 
 echo json_encode(['reply' => $reply]);
 ?>

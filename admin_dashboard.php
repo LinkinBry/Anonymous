@@ -103,7 +103,8 @@ $rejected_count = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as cou
 
 // Fetch pending reviews
 $pending_reviews = mysqli_query($conn, "
-    SELECT r.id, u.username AS user_name, f.name AS faculty_name, r.review_text
+    SELECT r.id, u.username AS user_name, f.name AS faculty_name, r.review_text,
+           r.sentiment, r.is_toxic, r.summary
     FROM reviews r
     JOIN users u ON r.user_id = u.id
     JOIN faculties f ON r.faculty_id = f.id
@@ -282,18 +283,38 @@ document.addEventListener('DOMContentLoaded', function() {
 
     <h1 id="pending">Pending Reviews</h1>
     <table>
-        <tr><th>ID</th><th>User</th><th>Faculty</th><th>Action</th></tr>
-        <?php while($review = mysqli_fetch_assoc($pending_reviews)): ?>
-        <tr>
-            <td><?php echo $review['id']; ?></td>
-            <td><?php echo htmlspecialchars($review['user_name']); ?></td>
-            <td><?php echo htmlspecialchars($review['faculty_name']); ?></td>
-            <td>
-                <a class="button" onclick="openModal('<?php echo htmlspecialchars(addslashes($review['review_text'])); ?>')">View</a>
-                <a href="approve_review.php?id=<?php echo $review['id']; ?>" class="button">Approve</a>
-                <a href="reject_review.php?id=<?php echo $review['id']; ?>" class="button">Reject</a>
-            </td>
-        </tr>
+        <tr><th>ID</th><th>User</th><th>Faculty</th><th>AI Analysis</th><th>Action</th></tr>
+<?php while($review = mysqli_fetch_assoc($pending_reviews)): ?>
+<tr>
+    <td><?php echo $review['id']; ?></td>
+    <td><?php echo htmlspecialchars($review['user_name']); ?></td>
+    <td><?php echo htmlspecialchars($review['faculty_name']); ?></td>
+    <td>
+        <?php
+        $sentiment = $review['sentiment'] ?? 'neutral';
+        $is_toxic = $review['is_toxic'];
+        $summary = $review['summary'] ?? '';
+
+        $badge = match($sentiment) {
+            'positive' => '<span style="background:#28a745;color:white;padding:3px 8px;border-radius:12px;font-size:12px;">🟢 Positive</span>',
+            'negative' => '<span style="background:#dc3545;color:white;padding:3px 8px;border-radius:12px;font-size:12px;">🔴 Negative</span>',
+            default    => '<span style="background:#6c757d;color:white;padding:3px 8px;border-radius:12px;font-size:12px;">⚪ Neutral</span>',
+        };
+
+        $toxic_badge = $is_toxic 
+            ? '<span style="background:#ff6600;color:white;padding:3px 8px;border-radius:12px;font-size:12px;margin-left:5px;">🚩 Toxic</span>' 
+            : '';
+
+        echo $badge . $toxic_badge;
+        echo $summary ? '<br><small style="color:#666;font-style:italic;">' . htmlspecialchars($summary) . '</small>' : '';
+        ?>
+    </td>
+    <td>
+        <a class="button" onclick="openModal('<?php echo htmlspecialchars(addslashes($review['review_text'])); ?>')">View</a>
+        <a href="approve_review.php?id=<?php echo $review['id']; ?>" class="button">Approve</a>
+        <a href="reject_review.php?id=<?php echo $review['id']; ?>" class="button">Reject</a>
+    </td>
+</tr>
         <?php endwhile; ?>
     </table>
 

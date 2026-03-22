@@ -1,31 +1,35 @@
 <?php
 include "config.php";
+include "email_helper.php";
 
 if(isset($_POST['register'])){
 
 $fullname = $_POST['fullname'];
 $username = $_POST['username'];
-$email = $_POST['email'];
+$email    = $_POST['email'];
 $password = $_POST['password'];
 $confirm_password = $_POST['confirm_password'];
 
-// Check if passwords match
 if($password !== $confirm_password){
     $error = "Passwords do not match";
 } else {
-    // Check if username or email already exist
-    $check_sql = "SELECT * FROM users WHERE username='$username' OR email='$email'";
-    $check_result = mysqli_query($conn, $check_sql);
+    $check_result = mysqli_query($conn, "SELECT * FROM users WHERE username='$username' OR email='$email'");
 
     if(mysqli_num_rows($check_result) > 0){
         $error = "Username or Email already exists";
     } else {
-        // Save to database
         $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
-        $sql = "INSERT INTO users (fullname, username, email, password)
-                VALUES ('$fullname','$username','$email','$hashed_password')";
-        mysqli_query($conn,$sql);
+        mysqli_query($conn, "INSERT INTO users (fullname, username, email, password)
+                VALUES ('$fullname','$username','$email','$hashed_password')");
+
+        // Send welcome email
+        sendBrevoEmail(
+            $email,
+            $fullname,
+            'Welcome to AnonymousReview!',
+            welcomeEmailHtml($username)
+        );
 
         header("Location: index.php");
         exit();

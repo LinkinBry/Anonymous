@@ -1,0 +1,10 @@
+php8.3 -r "
+include '/workspaces/Anonymous/email_helper.php';
+\$result = sendBrevoEmail(
+    'jinjerouparkou@gmail.com',
+    'Test User',
+    'Test Email from AnonymousReview',
+    '<h1>It works!</h1>'
+);
+echo \$result ? 'Email sent!' : 'Failed to send';
+"

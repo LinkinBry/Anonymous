@@ -131,4 +131,38 @@ function welcomeEmailHtml($username) {
     </body>
     </html>';
 }
+function deletedEmailHtml($username, $faculty_name) {
+    return '
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="UTF-8"></head>
+    <body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;">
+        <div style="max-width:560px;margin:40px auto;background:white;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
+            <div style="background:#8B0000;padding:32px;text-align:center;">
+                <h1 style="color:white;margin:0;font-size:22px;">AnonymousReview</h1>
+                <p style="color:rgba(255,255,255,0.8);margin:6px 0 0;font-size:14px;">Faculty Performance Evaluation System</p>
+            </div>
+            <div style="padding:32px;">
+                <div style="text-align:center;margin-bottom:24px;">
+                    <div style="width:56px;height:56px;background:#fef3c7;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px;">
+                        <span style="font-size:28px;">🗑️</span>
+                    </div>
+                    <h2 style="color:#1f2937;margin:0;font-size:20px;">Review Removed</h2>
+                </div>
+                <p style="color:#4b5563;font-size:15px;line-height:1.6;">Hi <strong>' . htmlspecialchars($username) . '</strong>,</p>
+                <p style="color:#4b5563;font-size:15px;line-height:1.6;">
+                    Your published review for <strong style="color:#8B0000;">' . htmlspecialchars($faculty_name) . '</strong> has been removed by the admin.
+                </p>
+                <div style="background:#f9fafb;border-left:4px solid #f59e0b;padding:14px 18px;border-radius:4px;margin:20px 0;">
+                    <p style="margin:0;color:#4b5563;font-size:14px;">You are welcome to submit a new review for this faculty member. Please ensure your feedback follows our community guidelines.</p>
+                </div>
+                <p style="color:#4b5563;font-size:15px;line-height:1.6;">Log in to your dashboard to submit a new review.</p>
+            </div>
+            <div style="background:#f9fafb;padding:20px;text-align:center;border-top:1px solid #e5e7eb;">
+                <p style="color:#9ca3af;font-size:12px;margin:0;">This is an automated message from AnonymousReview. Please do not reply to this email.</p>
+            </div>
+        </div>
+    </body>
+    </html>';
+}
 ?>

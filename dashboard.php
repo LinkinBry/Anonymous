@@ -157,6 +157,56 @@ Review: "' . addslashes($review_text) . '"';
     header("Location: dashboard.php?edited=1"); exit();
 }
 
+// Handle resubmit (delete rejected + insert new)
+if (isset($_POST['resubmit_review'])) {
+    $old_id      = intval($_POST['old_review_id']);
+    $faculty_id  = intval($_POST['faculty_id']);
+    $review_text = trim($_POST['review_text'] ?? '');
+
+    if (empty($review_text)) { header("Location: dashboard.php?error=empty"); exit(); }
+
+    // Delete old rejected review
+    mysqli_query($conn, "DELETE FROM reviews WHERE id='$old_id' AND user_id='$user_id' AND status='rejected'");
+
+    // Groq toxic check
+    $env     = parse_ini_file(__DIR__ . '/.env');
+    $api_key = $env['GROQ_API_KEY'];
+    $prompt  = 'You are a multilingual content moderator. The review below may be written in English, Filipino, Tagalog, or a mix (Taglish). Analyze it carefully considering the language and cultural context, then return valid JSON only, no explanation, no markdown:
+{
+  "sentiment": "positive or negative or neutral",
+  "is_toxic": true or false,
+  "is_hateful": true or false,
+  "summary": "one sentence summary in English"
+}
+IMPORTANT RULES:
+- Only flag as toxic or hateful if the review contains CLEAR insults, slurs, personal attacks, threats, explicit offensive language, harassment, or discriminatory content.
+- Do NOT flag a review just because it is written in Filipino or Tagalog.
+- Negative opinions about teaching style, punctuality, or performance are NOT toxic.
+- When in doubt, do NOT flag as toxic.
+Review: "' . addslashes($review_text) . '"';
+
+    $payload = json_encode(['model' => 'llama-3.3-70b-versatile', 'max_tokens' => 200,
+        'messages' => [['role' => 'user', 'content' => $prompt]]]);
+    $ch = curl_init('https://api.groq.com/openai/v1/chat/completions');
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => $payload,
+        CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'Authorization: Bearer ' . $api_key]]);
+    $response = curl_exec($ch); curl_close($ch);
+    $data   = json_decode($response, true);
+    $ai_raw = preg_replace('/```json|```/', '', $data['choices'][0]['message']['content'] ?? '{}');
+    $ai     = json_decode(trim($ai_raw), true);
+    $sentiment = mysqli_real_escape_string($conn, $ai['sentiment'] ?? 'neutral');
+    $is_toxic  = (!empty($ai['is_toxic']) || !empty($ai['is_hateful'])) ? 1 : 0;
+    $summary   = mysqli_real_escape_string($conn, $ai['summary'] ?? '');
+
+    if ($is_toxic) { header("Location: dashboard.php?error=toxic"); exit(); }
+
+    $review_text_safe = mysqli_real_escape_string($conn, $review_text);
+    mysqli_query($conn, "INSERT INTO reviews (user_id, faculty_id, review_text, status, sentiment, is_toxic, summary)
+                         VALUES ('$user_id','$faculty_id','$review_text_safe','pending','$sentiment','$is_toxic','$summary')");
+    header("Location: dashboard.php?submitted=1"); exit();
+}
+
 // Handle delete
 if (isset($_POST['delete_review'])) {
     $review_id = intval($_POST['review_id']);
@@ -734,7 +784,8 @@ body {
 .btn-edit:hover { background: var(--maroon-light); }
 .btn-reviewed { background: var(--gray-400); cursor: default; pointer-events: none; }
 .btn-reviewed:hover { background: var(--gray-400); }
-.btn-rejected-card { background: #ef4444; }
+.btn-rejected-card { background: #ef4444; pointer-events: auto; cursor: pointer; }
+.btn-rejected-card:hover { background: #dc2626; }
 
 /* Action icon buttons */
 .action-icon-btn {
@@ -863,7 +914,7 @@ body {
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
             Evaluation History
         </a>
-        <a href="avatar.php">
+        <a href="profile.php">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
             Profile
         </a>
@@ -1034,10 +1085,10 @@ body {
                         Awaiting Review
                     </span>
                 <?php else: ?>
-                    <span class="btn-evaluate btn-reviewed btn-rejected-card">
-                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                        Rejected
-                    </span>
+                    <button class="btn-evaluate btn-reviewed btn-rejected-card" onclick="openDeleteAndResubmitModal(<?php echo $user_review['id']; ?>, '<?php echo htmlspecialchars(addslashes($faculty['name'])); ?>', <?php echo $faculty['id']; ?>, '<?php echo htmlspecialchars(addslashes($faculty['name'])); ?>', '<?php echo htmlspecialchars(addslashes($faculty['department'] ?? '')); ?>')">
+                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                        Resubmit
+                    </button>
                 <?php endif; ?>
             <?php else: ?>
                 <button class="btn-evaluate" onclick="openModalForFaculty(<?php echo $faculty['id']; ?>, '<?php echo htmlspecialchars(addslashes($faculty['name'])); ?>', '<?php echo htmlspecialchars(addslashes($faculty['department'] ?? '')); ?>')">
@@ -1208,6 +1259,35 @@ body {
     </div>
 </div>
 
+<!-- Resubmit Modal (after rejection) -->
+<div class="modal-overlay" id="resubmitModal">
+    <div class="modal-box" style="max-width:460px;">
+        <div class="modal-header">
+            <h3>Resubmit Review</h3>
+            <button class="modal-close" onclick="closeResubmitModal()">&times;</button>
+        </div>
+        <form method="POST">
+            <div class="modal-body">
+                <div class="selected-preview show">
+                    <img id="resubmitPreviewImg" src="" alt="">
+                    <div class="selected-preview-info">
+                        <strong id="resubmitPreviewName"></strong>
+                        <span style="font-size:12px;color:#991b1b;">Previously rejected</span>
+                    </div>
+                </div>
+                <p style="font-size:13px;color:var(--gray-600);margin-bottom:12px;margin-top:8px;line-height:1.6;">Your previous review was rejected. Write a new one below — it will replace the rejected one.</p>
+                <textarea class="modal-textarea" name="review_text" id="resubmitText" placeholder="Write your new review here..." required></textarea>
+                <input type="hidden" name="old_review_id" id="resubmitReviewId">
+                <input type="hidden" name="faculty_id" id="resubmitFacultyId">
+                <p style="font-size:12px;color:var(--gray-400);margin-top:8px;">🔒 Your identity remains anonymous.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="closeResubmitModal()">Cancel</button>
+                <button type="submit" name="resubmit_review" class="btn-primary">Submit Review</button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <div class="modal-overlay" id="reviewModal">
     <div class="modal-box">
@@ -1299,6 +1379,18 @@ body {
 </div>
 
 <script>
+// Resubmit modal
+function openDeleteAndResubmitModal(reviewId, facultyName, facultyId, name, dept) {
+    document.getElementById('resubmitReviewId').value = reviewId;
+    document.getElementById('resubmitFacultyId').value = facultyId;
+    document.getElementById('resubmitPreviewName').textContent = facultyName;
+    document.getElementById('resubmitPreviewImg').src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&background=8B0000&color=fff&size=42';
+    document.getElementById('resubmitText').value = '';
+    document.getElementById('resubmitModal').classList.add('open');
+}
+function closeResubmitModal() { document.getElementById('resubmitModal').classList.remove('open'); }
+document.getElementById('resubmitModal').addEventListener('click', function(e) { if (e.target === this) closeResubmitModal(); });
+
 // Open modal pre-selected for a specific faculty (from card)
 function openModalForFaculty(id, name, dept) {
     openReviewModal();

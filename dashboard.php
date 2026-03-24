@@ -61,6 +61,11 @@ if (isset($_POST['submit_review'])) {
     // Groq AI toxic check
     $env     = parse_ini_file(__DIR__ . '/.env');
     $api_key = $env['GROQ_API_KEY'];
+
+    // Pre-process: add spaces to known concatenated Filipino profanity
+    $normalized = preg_replace('/tanginamo|tangina|punyeta|gago|putangina|ulol|bobo|tanga|hinayupak|pakingshet|pakshet|tarantado|bwisit|lintik|ampota|inamo|kingina|kupalmerda|leche|pesteng yawa/i',
+        ' [PROFANITY] ', $review_text);
+
     $prompt  = 'You are a multilingual content moderator. The review below may be written in English, Filipino, Tagalog, or a mix (Taglish). Analyze it carefully considering the language and cultural context, then return valid JSON only, no explanation, no markdown:
 {
   "sentiment": "positive or negative or neutral",
@@ -70,13 +75,15 @@ if (isset($_POST['submit_review'])) {
 }
 
 IMPORTANT RULES:
-- Only flag as toxic or hateful if the review contains CLEAR insults, slurs, personal attacks, threats, explicit offensive language, harassment, or discriminatory content.
-- Do NOT flag a review just because it is written in Filipino or Tagalog.
-- Negative opinions about teaching style, punctuality, or performance are NOT toxic — they are valid feedback.
-- Words like "bobo", "tamad", "pangit" are mild and context-dependent — only flag if used as a direct personal attack.
-- When in doubt, do NOT flag as toxic.
+- Flag as toxic if the review contains ANY of: insults, slurs, personal attacks, threats, explicit offensive language, harassment, discriminatory content, or profanity.
+- [PROFANITY] markers in the text indicate detected Filipino/Tagalog profanity — ALWAYS flag these as toxic.
+- Words like "tanginamo", "putangina", "gago", "tanga", "ulol", "ampota" — with or without spaces — are profanity and MUST be flagged as toxic.
+- Concatenated or misspelled profanity (e.g. "tanginamo", "pukinamo", "t4ngina") must still be flagged.
+- Do NOT flag a review just because it is written in Filipino or Tagalog without profanity.
+- Negative opinions about teaching style, punctuality, or performance WITHOUT profanity are NOT toxic — they are valid feedback.
+- When in doubt about profanity, DO flag as toxic.
 
-Review: "' . addslashes($review_text) . '"';
+Review: "' . addslashes($normalized) . '"';
 
     $payload = json_encode(['model' => 'llama-3.3-70b-versatile', 'max_tokens' => 200,
         'messages' => [['role' => 'user', 'content' => $prompt]]]);
@@ -100,12 +107,15 @@ Review: "' . addslashes($review_text) . '"';
     }
 
     $review_text_safe = mysqli_real_escape_string($conn, $review_text);
-    mysqli_query($conn, "INSERT INTO reviews (user_id, faculty_id, review_text, status, sentiment, is_toxic, summary)
-                         VALUES ('$user_id','$faculty_id','$review_text_safe','pending','$sentiment','$is_toxic','$summary')");
+    $r_teaching      = intval($_POST['rating_teaching']      ?? 0);
+    $r_communication = intval($_POST['rating_communication'] ?? 0);
+    $r_punctuality   = intval($_POST['rating_punctuality']   ?? 0);
+    $r_fairness      = intval($_POST['rating_fairness']      ?? 0);
+    $r_overall       = intval($_POST['rating_overall']       ?? 0);
+    mysqli_query($conn, "INSERT INTO reviews (user_id, faculty_id, review_text, status, sentiment, is_toxic, summary, rating_teaching, rating_communication, rating_punctuality, rating_fairness, rating_overall)
+                         VALUES ('$user_id','$faculty_id','$review_text_safe','pending','$sentiment','$is_toxic','$summary','$r_teaching','$r_communication','$r_punctuality','$r_fairness','$r_overall')");
     header("Location: dashboard.php?submitted=1"); exit();
 }
-
-// Handle edit
 if (isset($_POST['edit_review'])) {
     $review_id   = intval($_POST['review_id']);
     $review_text = trim($_POST['review_text'] ?? '');
@@ -117,6 +127,8 @@ if (isset($_POST['edit_review'])) {
     // Groq toxic check on edit too
     $env     = parse_ini_file(__DIR__ . '/.env');
     $api_key = $env['GROQ_API_KEY'];
+    $normalized = preg_replace('/tanginamo|tangina|punyeta|gago|putangina|ulol|bobo|tanga|hinayupak|pakingshet|pakshet|tarantado|bwisit|lintik|ampota|inamo|kingina|kupalmerda|leche|pesteng yawa/i',
+        ' [PROFANITY] ', $review_text);
     $prompt  = 'You are a multilingual content moderator. The review below may be written in English, Filipino, Tagalog, or a mix (Taglish). Analyze it carefully considering the language and cultural context, then return valid JSON only, no explanation, no markdown:
 {
   "sentiment": "positive or negative or neutral",
@@ -124,15 +136,14 @@ if (isset($_POST['edit_review'])) {
   "is_hateful": true or false,
   "summary": "one sentence summary in English"
 }
-
 IMPORTANT RULES:
-- Only flag as toxic or hateful if the review contains CLEAR insults, slurs, personal attacks, threats, explicit offensive language, harassment, or discriminatory content.
-- Do NOT flag a review just because it is written in Filipino or Tagalog.
-- Negative opinions about teaching style, punctuality, or performance are NOT toxic — they are valid feedback.
-- Words like "bobo", "tamad", "pangit" are mild and context-dependent — only flag if used as a direct personal attack.
-- When in doubt, do NOT flag as toxic.
-
-Review: "' . addslashes($review_text) . '"';
+- Flag as toxic if the review contains ANY of: insults, slurs, personal attacks, threats, explicit offensive language, harassment, discriminatory content, or profanity.
+- [PROFANITY] markers in the text indicate detected Filipino/Tagalog profanity — ALWAYS flag these as toxic.
+- Words like "tanginamo", "putangina", "gago", "tanga", "ulol", "ampota" — with or without spaces — are profanity and MUST be flagged as toxic.
+- Do NOT flag a review just because it is written in Filipino or Tagalog without profanity.
+- Negative opinions about teaching style, punctuality, or performance WITHOUT profanity are NOT toxic.
+- When in doubt about profanity, DO flag as toxic.
+Review: "' . addslashes($normalized) . '"';
 
     $payload = json_encode(['model' => 'llama-3.3-70b-versatile', 'max_tokens' => 200,
         'messages' => [['role' => 'user', 'content' => $prompt]]]);
@@ -835,6 +846,27 @@ body {
 }
 .faq-chip:hover { background: var(--maroon); color: white; border-color: var(--maroon); }
 
+/* ── Star Rating ── */
+.rating-group { margin-bottom: 14px; }
+.rating-group-label { font-size: 13px; font-weight: 500; color: var(--gray-700, #374151); margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
+.rating-group-label span { font-size: 11px; color: var(--gray-400); font-weight: 400; }
+.stars { display: flex; gap: 4px; flex-direction: row-reverse; justify-content: flex-end; }
+.stars input { display: none; }
+.stars label {
+    font-size: 26px; cursor: pointer; color: #d1d5db;
+    transition: color 0.15s; line-height: 1;
+}
+.stars label:hover,
+.stars label:hover ~ label,
+.stars input:checked ~ label { color: #f59e0b; }
+.rating-section-title {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--gray-400); font-weight: 600; margin: 16px 0 10px;
+    padding-bottom: 6px; border-bottom: 1px solid var(--gray-100);
+}
+.avg-rating { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--gray-600); }
+.avg-stars { color: #f59e0b; font-size: 14px; letter-spacing: 1px; }
+
 /* Review rows pagination */
 .review-pagination {
     display: flex; align-items: center; justify-content: center;
@@ -914,7 +946,7 @@ body {
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
             Evaluation History
         </a>
-        <a href="profile.php">
+        <a href="avatar.php">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
             Profile
         </a>
@@ -1323,7 +1355,7 @@ body {
 
                 <!-- Step 2: Write Review -->
                 <div class="step" id="step2">
-                    <div class="step-label">Step 2 of 2 · Write Your Review</div>
+                    <div class="step-label">Step 2 of 2 · Rate &amp; Write Your Review</div>
                     <div class="selected-preview show" id="selectedPreview">
                         <img id="previewImg" src="" alt="">
                         <div class="selected-preview-info">
@@ -1332,6 +1364,34 @@ body {
                         </div>
                         <button type="button" class="change-faculty-btn" onclick="goStep(1)">Change</button>
                     </div>
+
+                    <!-- Star Ratings -->
+                    <div class="rating-section-title">Rate the Faculty</div>
+                    <?php
+                    $rating_categories = [
+                        ['teaching',       'Teaching Effectiveness',  'How well does the faculty explain and deliver lessons?'],
+                        ['communication',  'Communication Skills',    'How clear and approachable is the faculty?'],
+                        ['punctuality',    'Punctuality & Availability', 'Does the faculty arrive on time and is available when needed?'],
+                        ['fairness',       'Fairness in Grading',     'Are grades given fairly and consistently?'],
+                        ['overall',        'Overall Satisfaction',    'Your overall experience with this faculty.'],
+                    ];
+                    foreach ($rating_categories as $cat):
+                    ?>
+                    <div class="rating-group">
+                        <div class="rating-group-label">
+                            <?php echo $cat[1]; ?>
+                            <span><?php echo $cat[2]; ?></span>
+                        </div>
+                        <div class="stars" id="stars_<?php echo $cat[0]; ?>">
+                            <?php for ($i = 5; $i >= 1; $i--): ?>
+                            <input type="radio" name="rating_<?php echo $cat[0]; ?>" id="star_<?php echo $cat[0].$i; ?>" value="<?php echo $i; ?>" required>
+                            <label for="star_<?php echo $cat[0].$i; ?>" title="<?php echo $i; ?> star<?php echo $i > 1 ? 's' : ''; ?>">★</label>
+                            <?php endfor; ?>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+
+                    <div class="rating-section-title" style="margin-top:18px;">Write Your Review</div>
                     <textarea class="modal-textarea" name="review_text" id="reviewText" placeholder="Write your anonymous review here... Be honest, constructive, and respectful." required></textarea>
                     <input type="hidden" name="faculty_id" id="facultyIdInput">
                     <p style="font-size:12px;color:var(--gray-400);margin-top:8px;">🔒 Your identity remains anonymous. Reviews are reviewed by admin before publishing.</p>

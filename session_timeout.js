@@ -1,4 +1,4 @@
-const SESSION_DURATION = 30;
+const SESSION_DURATION = 300;
 const WARNING_AT       = 10;
 
 let inactivityTimer;

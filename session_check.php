@@ -1,7 +1,7 @@
 <?php
 
-define('SESSION_TIMEOUT', 30); 
-define('SESSION_WARNING', 20); 
+define('SESSION_TIMEOUT', 300); 
+define('SESSION_WARNING', 290); 
 
 
 if (isset($_SESSION['user_id'])) {

@@ -1,6 +1,7 @@
 <?php
 include "config.php";
 include "email_helper.php";
+include "session_check.php";
 
 if (!isset($_SESSION['user_id'])) { header("Location: login.php"); exit(); }
 
@@ -747,5 +748,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 </script>
+<script src="session_timeout.js"></script>
+</body>
 </body>
 </html>

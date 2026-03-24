@@ -1,6 +1,6 @@
 <?php
 include "config.php";
-
+include "session_check.php";
 if (isset($_SESSION['user_id'])) {
     $user_id = $_SESSION['user_id'];
 } else {
@@ -1737,5 +1737,7 @@ function addBubble(text, from, id) {
     return d;
 }
 </script>
+<script src="session_timeout.js"></script>
+</body>
 </body>
 </html>

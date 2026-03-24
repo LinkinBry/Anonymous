@@ -1,5 +1,6 @@
 <?php
 include "config.php";
+include "session_check.php";
 
 if (!isset($_SESSION['user_id'])) { header("Location: login.php"); exit(); }
 $user_id = $_SESSION['user_id'];
@@ -343,5 +344,7 @@ document.getElementById('profileForm').addEventListener('submit', function(e) {
     }
 });
 </script>
+<script src="session_timeout.js"></script>
+</body>
 </body>
 </html>

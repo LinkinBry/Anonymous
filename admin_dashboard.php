@@ -522,7 +522,10 @@ function generateFacultySummary(){
     const monthName=document.getElementById('summaryMonth').options[month-1].text;
     btn.disabled=true;btn.innerHTML='<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg> Generating...';
     el.innerHTML='<span style="color:var(--gray-400);">Analyzing faculty ratings for '+monthName+' '+year+'...</span>';
-    fetch('faculty_summary.php?month='+month+'&year='+year,{headers:{'X-Requested-With':'XMLHttpRequest'}})
+    fetch('faculty_summary.php?month='+month+'&year='+year,{
+  headers:{'X-Requested-With':'XMLHttpRequest'},
+  credentials: 'include'   // <-- this ensures cookies are sent
+})
     .then(r=>{
         const ct=r.headers.get('content-type')||'';
         if(!ct.includes('application/json')) throw new Error('Session may have expired. Please refresh.');

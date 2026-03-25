@@ -1,6 +1,7 @@
 <?php
 include "config.php";
 include "session_check.php";
+
 if (isset($_SESSION['user_id'])) {
     $user_id = $_SESSION['user_id'];
 } else {
@@ -29,9 +30,18 @@ if ($notif_res && mysqli_num_rows($notif_res) > 0) {
 $faculties = [];
 if (isset($_GET['search']) && !empty($_GET['search'])) {
     $search = mysqli_real_escape_string($conn, $_GET['search']);
-    $faculty_query = "SELECT id, name, department FROM faculties WHERE name LIKE '%$search%' OR department LIKE '%$search%' ORDER BY name ASC";
+    $faculty_query = "SELECT f.id, f.name, f.department,
+        ROUND((AVG(r.rating_teaching)+AVG(r.rating_communication)+AVG(r.rating_punctuality)+AVG(r.rating_fairness)+AVG(r.rating_overall))/5,1) AS avg_stars,
+        COUNT(r.id) AS review_count
+        FROM faculties f LEFT JOIN reviews r ON r.faculty_id=f.id AND r.status='approved'
+        WHERE f.name LIKE '%$search%' OR f.department LIKE '%$search%'
+        GROUP BY f.id ORDER BY f.name ASC";
 } else {
-    $faculty_query = "SELECT id, name, department FROM faculties ORDER BY name ASC";
+    $faculty_query = "SELECT f.id, f.name, f.department,
+        ROUND((AVG(r.rating_teaching)+AVG(r.rating_communication)+AVG(r.rating_punctuality)+AVG(r.rating_fairness)+AVG(r.rating_overall))/5,1) AS avg_stars,
+        COUNT(r.id) AS review_count
+        FROM faculties f LEFT JOIN reviews r ON r.faculty_id=f.id AND r.status='approved'
+        GROUP BY f.id ORDER BY f.name ASC";
 }
 $faculty_result = mysqli_query($conn, $faculty_query);
 if ($faculty_result && mysqli_num_rows($faculty_result) > 0) {
@@ -164,7 +174,15 @@ Review: "' . addslashes($normalized) . '"';
     }
 
     $review_text_safe = mysqli_real_escape_string($conn, $review_text);
-    mysqli_query($conn, "UPDATE reviews SET review_text='$review_text_safe', status='pending' WHERE id='$review_id' AND user_id='$user_id'");
+    $r_teaching      = intval($_POST['rating_teaching']      ?? 0);
+    $r_communication = intval($_POST['rating_communication'] ?? 0);
+    $r_punctuality   = intval($_POST['rating_punctuality']   ?? 0);
+    $r_fairness      = intval($_POST['rating_fairness']      ?? 0);
+    $r_overall       = intval($_POST['rating_overall']       ?? 0);
+    mysqli_query($conn, "UPDATE reviews SET review_text='$review_text_safe', status='pending',
+        rating_teaching='$r_teaching', rating_communication='$r_communication',
+        rating_punctuality='$r_punctuality', rating_fairness='$r_fairness', rating_overall='$r_overall'
+        WHERE id='$review_id' AND user_id='$user_id'");
     header("Location: dashboard.php?edited=1"); exit();
 }
 
@@ -236,9 +254,9 @@ if ($dept_res && mysqli_num_rows($dept_res) > 0) {
     }
 }
 
-// Build map of faculty_id => user's review
+// Build map of faculty_id => user's review (include ratings)
 $user_reviews_map = [];
-$urev_res = mysqli_query($conn, "SELECT r.id, r.faculty_id, r.review_text, r.status FROM reviews r WHERE r.user_id='$user_id'");
+$urev_res = mysqli_query($conn, "SELECT r.id, r.faculty_id, r.review_text, r.status, r.rating_teaching, r.rating_communication, r.rating_punctuality, r.rating_fairness, r.rating_overall FROM reviews r WHERE r.user_id='$user_id'");
 if ($urev_res) {
     while ($row = mysqli_fetch_assoc($urev_res)) {
         $user_reviews_map[$row['faculty_id']] = $row;
@@ -249,7 +267,8 @@ if ($urev_res) {
 $review_filter = isset($_GET['review_filter']) ? $_GET['review_filter'] : 'all';
 $recent_reviews = [];
 $recent_res = mysqli_query($conn, "
-    SELECT r.id, r.faculty_id, r.review_text, r.status, r.created_at, f.name AS faculty_name, f.department
+    SELECT r.id, r.faculty_id, r.review_text, r.status, r.created_at, f.name AS faculty_name, f.department,
+        r.rating_teaching, r.rating_communication, r.rating_punctuality, r.rating_fairness, r.rating_overall
     FROM reviews r
     JOIN faculties f ON r.faculty_id = f.id
     WHERE r.user_id='$user_id'
@@ -933,7 +952,9 @@ body {
 <!-- Sidebar -->
 <div class="sidebar">
     <div class="sidebar-brand">AnonymousReview</div>
-    <img src="<?php echo htmlspecialchars($avatar); ?>" class="sidebar-avatar" alt="Avatar">
+    <a href="profile.php" style="display:block;text-align:center;margin-bottom:0;" title="Edit Profile">
+        <img src="<?php echo htmlspecialchars($avatar); ?>" class="sidebar-avatar" alt="Avatar" style="transition:opacity 0.2s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+    </a>
     <div class="sidebar-name"><?php echo htmlspecialchars($user['fullname']); ?></div>
     <div class="sidebar-role">Student</div>
     <nav>
@@ -1096,6 +1117,16 @@ body {
             <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($faculty['name']); ?>&background=8B0000&color=fff&size=80" alt="Faculty">
             <h3><?php echo htmlspecialchars($faculty['name']); ?></h3>
             <p><?php echo htmlspecialchars($faculty['department'] ?? ''); ?></p>
+            <?php
+            $avg = floatval($faculty['avg_stars'] ?? 0);
+            if ($avg > 0):
+                $full = floor($avg); $half = ($avg - $full) >= 0.3;
+            ?>
+            <div style="margin-bottom:10px;">
+                <span style="color:#f59e0b;font-size:16px;"><?php echo str_repeat('★',$full); ?><?php if($half) echo '½'; ?></span><span style="color:#d1d5db;font-size:16px;"><?php echo str_repeat('★', max(0,5-$full-($half?1:0))); ?></span>
+                <span style="font-size:12px;color:var(--gray-400);margin-left:4px;"><?php echo number_format($avg,1); ?> (<?php echo $faculty['review_count']; ?>)</span>
+            </div>
+            <?php endif; ?>
             <?php if ($has_reviewed): ?>
                 <span class="status-badge status-<?php echo $review_status; ?>" style="display:inline-flex;align-items:center;gap:4px;margin-bottom:10px;">
                     <?php if ($review_status === 'pending'): ?>
@@ -1107,7 +1138,7 @@ body {
                     <?php endif; ?>
                 </span><br>
                 <?php if ($review_status === 'approved'): ?>
-                    <button class="btn-evaluate btn-edit" onclick="openEditModal(<?php echo $user_review['id']; ?>, '<?php echo htmlspecialchars(addslashes($user_review['review_text'])); ?>', '<?php echo htmlspecialchars(addslashes($faculty['name'])); ?>', '<?php echo htmlspecialchars(addslashes($faculty['department'] ?? '')); ?>', <?php echo $faculty['id']; ?>)">
+                    <button class="btn-evaluate btn-edit" onclick="openEditModal(<?php echo $user_review['id']; ?>, '<?php echo htmlspecialchars(addslashes($user_review['review_text'])); ?>', '<?php echo htmlspecialchars(addslashes($faculty['name'])); ?>', '<?php echo htmlspecialchars(addslashes($faculty['department'] ?? '')); ?>', <?php echo $faculty['id']; ?>, <?php echo intval($user_review['rating_teaching']); ?>, <?php echo intval($user_review['rating_communication']); ?>, <?php echo intval($user_review['rating_punctuality']); ?>, <?php echo intval($user_review['rating_fairness']); ?>, <?php echo intval($user_review['rating_overall']); ?>)">
                         <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                         Edit Review
                     </button>
@@ -1154,14 +1185,14 @@ body {
 
         <!-- Filter Tabs -->
         <div class="filter-tabs" id="reviewFilterTabs">
-            <a href="#reviews" onclick="setReviewFilter('all')" class="filter-tab <?php echo $review_filter === 'all' ? 'active' : ''; ?>">All</a>
-            <a href="#reviews" onclick="setReviewFilter('pending')" class="filter-tab <?php echo $review_filter === 'pending' ? 'active' : ''; ?>">
+            <a href="#reviews" onclick="setReviewFilter('all',event)" class="filter-tab <?php echo $review_filter === 'all' ? 'active' : ''; ?>">All</a>
+            <a href="#reviews" onclick="setReviewFilter('pending',event)" class="filter-tab <?php echo $review_filter === 'pending' ? 'active' : ''; ?>">
                 <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Pending
             </a>
-            <a href="#reviews" onclick="setReviewFilter('approved')" class="filter-tab <?php echo $review_filter === 'approved' ? 'active' : ''; ?>">
+            <a href="#reviews" onclick="setReviewFilter('approved',event)" class="filter-tab <?php echo $review_filter === 'approved' ? 'active' : ''; ?>">
                 <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Approved
             </a>
-            <a href="#reviews" onclick="setReviewFilter('rejected')" class="filter-tab <?php echo $review_filter === 'rejected' ? 'active' : ''; ?>">
+            <a href="#reviews" onclick="setReviewFilter('rejected',event)" class="filter-tab <?php echo $review_filter === 'rejected' ? 'active' : ''; ?>">
                 <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Rejected
             </a>
         </div>
@@ -1219,7 +1250,7 @@ body {
                     <div style="display:flex;align-items:center;gap:8px;">
                         <span class="status-badge status-<?php echo $rev['status']; ?>"><?php echo ucfirst($rev['status']); ?></span>
                         <?php if ($rev['status'] === 'approved'): ?>
-                        <button class="action-icon-btn" title="Edit" onclick="openEditModal(<?php echo $rev['id']; ?>, '<?php echo htmlspecialchars(addslashes($rev['review_text'])); ?>', '<?php echo htmlspecialchars(addslashes($rev['faculty_name'])); ?>', '<?php echo htmlspecialchars(addslashes($rev['department'])); ?>', <?php echo $rev['faculty_id']; ?>)">
+                        <button class="action-icon-btn" title="Edit" onclick="openEditModal(<?php echo $rev['id']; ?>, '<?php echo htmlspecialchars(addslashes($rev['review_text'])); ?>', '<?php echo htmlspecialchars(addslashes($rev['faculty_name'])); ?>', '<?php echo htmlspecialchars(addslashes($rev['department'])); ?>', <?php echo $rev['faculty_id']; ?>, <?php echo intval($rev['rating_teaching']); ?>, <?php echo intval($rev['rating_communication']); ?>, <?php echo intval($rev['rating_punctuality']); ?>, <?php echo intval($rev['rating_fairness']); ?>, <?php echo intval($rev['rating_overall']); ?>)">
                             <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                         </button>
                         <?php endif; ?>
@@ -1241,7 +1272,7 @@ body {
 
 <!-- Edit Review Modal -->
 <div class="modal-overlay" id="editModal">
-    <div class="modal-box" style="max-width:500px;">
+    <div class="modal-box" style="max-width:520px;">
         <div class="modal-header">
             <h3>Edit Review</h3>
             <button class="modal-close" onclick="closeEditModal()">&times;</button>
@@ -1255,6 +1286,29 @@ body {
                         <span id="editPreviewDept"></span>
                     </div>
                 </div>
+                <!-- Star Ratings for Edit -->
+                <div class="rating-section-title">Update Ratings</div>
+                <?php
+                $rating_categories = [
+                    ['teaching',      'Teaching Effectiveness'],
+                    ['communication', 'Communication Skills'],
+                    ['punctuality',   'Punctuality & Availability'],
+                    ['fairness',      'Fairness in Grading'],
+                    ['overall',       'Overall Satisfaction'],
+                ];
+                foreach ($rating_categories as $cat):
+                ?>
+                <div class="rating-group">
+                    <div class="rating-group-label"><?php echo $cat[1]; ?></div>
+                    <div class="stars" id="edit_stars_<?php echo $cat[0]; ?>">
+                        <?php for ($i = 5; $i >= 1; $i--): ?>
+                        <input type="radio" name="rating_<?php echo $cat[0]; ?>" id="edit_star_<?php echo $cat[0].$i; ?>" value="<?php echo $i; ?>">
+                        <label for="edit_star_<?php echo $cat[0].$i; ?>">★</label>
+                        <?php endfor; ?>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+                <div class="rating-section-title" style="margin-top:16px;">Update Review Text</div>
                 <textarea class="modal-textarea" name="review_text" id="editReviewText" placeholder="Update your review..." required></textarea>
                 <input type="hidden" name="review_id" id="editReviewId">
                 <p style="font-size:12px;color:var(--gray-400);margin-top:8px;">⚠️ Editing will reset your review to pending status for re-approval.</p>
@@ -1459,12 +1513,18 @@ function openModalForFaculty(id, name, dept) {
 }
 
 // Edit modal
-function openEditModal(reviewId, reviewText, facultyName, dept, facultyId) {
+function openEditModal(reviewId, reviewText, facultyName, dept, facultyId, rt, rc, rp, rf, ro) {
     document.getElementById('editReviewId').value = reviewId;
     document.getElementById('editReviewText').value = reviewText;
     document.getElementById('editPreviewName').textContent = facultyName;
     document.getElementById('editPreviewDept').textContent = dept;
     document.getElementById('editPreviewImg').src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(facultyName) + '&background=8B0000&color=fff&size=42';
+    // Prefill star ratings
+    const ratings = {teaching:rt, communication:rc, punctuality:rp, fairness:rf, overall:ro};
+    Object.entries(ratings).forEach(([cat, val]) => {
+        const input = document.getElementById('edit_star_' + cat + val);
+        if (input) input.checked = true;
+    });
     document.getElementById('editModal').classList.add('open');
 }
 function closeEditModal() { document.getElementById('editModal').classList.remove('open'); }
@@ -1653,11 +1713,11 @@ notifWrap.addEventListener('click', () => {
 document.addEventListener('click', (e) => { if (!notifWrap.contains(e.target)) notifDropdown.style.display = 'none'; });
 
 // Client-side review filter (no page reload, no scroll jump)
-function setReviewFilter(filter) {
+function setReviewFilter(filter, e) {
+    if (e) e.preventDefault();
     document.querySelectorAll('.filter-tab').forEach(tab => tab.classList.remove('active'));
-    event.currentTarget.classList.add('active');
+    if (e) e.currentTarget.classList.add('active');
 
-    // Mark rows as filtered or not using data attribute
     const rows = document.querySelectorAll('.review-row');
     rows.forEach(row => {
         const match = filter === 'all' || row.dataset.status === filter;
@@ -1732,13 +1792,13 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.review-row').forEach(r => r.dataset.filtered = 'show');
     if (document.querySelectorAll('.review-row').length > REVIEWS_PER_PAGE) paginateReviews();
 
-    // Auto-dismiss success/error banners after 4 seconds
+    // Auto-dismiss success/error banners after 8 seconds
     document.querySelectorAll('.success-banner').forEach(banner => {
         setTimeout(() => {
             banner.style.transition = 'opacity 0.6s ease';
             banner.style.opacity = '0';
             setTimeout(() => banner.style.display = 'none', 600);
-        }, 4000);
+        }, 8000);
     });
 });
 
@@ -1798,6 +1858,5 @@ function addBubble(text, from, id) {
 }
 </script>
 <script src="session_timeout.js"></script>
-</body>
 </body>
 </html>

@@ -5,7 +5,6 @@ include "session_check.php";
 if (!isset($_SESSION['user_id'])) { header("Location: login.php"); exit(); }
 $user_id = $_SESSION['user_id'];
 
-// Check admin
 $me = mysqli_fetch_assoc(mysqli_query($conn, "SELECT role, fullname, profile_pic FROM users WHERE id='$user_id' LIMIT 1"));
 if ($me['role'] !== 'admin') { header("Location: dashboard.php"); exit(); }
 
@@ -13,32 +12,38 @@ $admin_avatar = !empty($me['profile_pic']) && file_exists($me['profile_pic'])
     ? $me['profile_pic']
     : 'https://ui-avatars.com/api/?name=' . urlencode($me['fullname']) . '&background=6B0000&color=fff&size=80';
 
-$errors  = [];
-$success = false;
+$faculty_id = intval($_GET['id'] ?? 0);
+if ($faculty_id <= 0) { header("Location: admin_dashboard.php#faculties"); exit(); }
 
-if (isset($_POST['add_faculty'])) {
+$fac_res = mysqli_query($conn, "SELECT * FROM faculties WHERE id='$faculty_id' LIMIT 1");
+if (!$fac_res || mysqli_num_rows($fac_res) === 0) { header("Location: admin_dashboard.php#faculties"); exit(); }
+$faculty = mysqli_fetch_assoc($fac_res);
+
+$errors = [];
+
+if (isset($_POST['edit_faculty'])) {
     $name       = trim(mysqli_real_escape_string($conn, $_POST['name'] ?? ''));
     $department = trim(mysqli_real_escape_string($conn, $_POST['department'] ?? ''));
-    $email      = trim(mysqli_real_escape_string($conn, $_POST['email'] ?? ''));
-    $position   = trim(mysqli_real_escape_string($conn, $_POST['position'] ?? ''));
 
     if (empty($name))       $errors[] = "Faculty name is required.";
     if (empty($department)) $errors[] = "Department is required.";
 
-    // Check duplicate
     if (empty($errors)) {
-        $dup = mysqli_fetch_assoc(mysqli_query($conn, "SELECT id FROM faculties WHERE name='$name' AND department='$department' LIMIT 1"));
-        if ($dup) $errors[] = "A faculty with this name already exists in that department.";
+        $dup = mysqli_fetch_assoc(mysqli_query($conn, "SELECT id FROM faculties WHERE name='$name' AND department='$department' AND id!='$faculty_id' LIMIT 1"));
+        if ($dup) $errors[] = "Another faculty with this name already exists in that department.";
     }
 
     if (empty($errors)) {
-        mysqli_query($conn, "INSERT INTO faculties (name, department) VALUES ('$name', '$department')");
-        header("Location: admin_dashboard.php?added=1#faculties");
+        mysqli_query($conn, "UPDATE faculties SET name='$name', department='$department' WHERE id='$faculty_id'");
+        header("Location: admin_dashboard.php?edited_faculty=1#faculties");
         exit();
+    } else {
+        // Keep submitted values for re-display
+        $faculty['name']       = $_POST['name'];
+        $faculty['department'] = $_POST['department'];
     }
 }
 
-// Get existing departments for datalist
 $dept_res = mysqli_query($conn, "SELECT DISTINCT department FROM faculties WHERE department IS NOT NULL AND department != '' ORDER BY department ASC");
 $existing_depts = [];
 while ($d = mysqli_fetch_assoc($dept_res)) $existing_depts[] = $d['department'];
@@ -48,7 +53,7 @@ while ($d = mysqli_fetch_assoc($dept_res)) $existing_depts[] = $d['department'];
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Add Faculty - AnonymousReview</title>
+<title>Edit Faculty - AnonymousReview</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -65,8 +70,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--gra
 .sidebar-avatar{width:70px;height:70px;border-radius:50%;border:3px solid rgba(255,255,255,0.4);display:block;margin:0 auto 10px;object-fit:cover;}
 .sidebar-name{text-align:center;color:white;font-size:14px;font-weight:600;margin-bottom:4px;}
 .sidebar-role{text-align:center;color:rgba(255,255,255,0.6);font-size:11px;margin-bottom:24px;text-transform:uppercase;letter-spacing:1px;}
-.sidebar nav{flex:1;}
-.nav-label{font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:rgba(255,255,255,0.4);padding:0 10px;margin-bottom:6px;margin-top:16px;}
+.sidebar nav{flex:1;}.nav-label{font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:rgba(255,255,255,0.4);padding:0 10px;margin-bottom:6px;margin-top:16px;}
 .sidebar a{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--radius-sm);color:rgba(255,255,255,0.85);text-decoration:none;font-size:14px;font-weight:500;transition:all 0.2s;margin-bottom:2px;}
 .sidebar a:hover,.sidebar a.active{background:rgba(255,255,255,0.15);color:white;}
 .sidebar-footer{border-top:1px solid rgba(255,255,255,0.15);padding-top:14px;margin-top:auto;}
@@ -79,16 +83,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--gra
 .form-group{margin-bottom:20px;}
 .form-group label{display:block;font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:7px;}
 .form-group label span{color:#ef4444;margin-left:2px;}
-.form-group input,.form-group select,.form-group textarea{
-    width:100%;padding:11px 14px;border:1.5px solid var(--gray-200);
-    border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;
-    font-size:14px;color:var(--gray-800);outline:none;transition:border-color 0.2s;
-    background:white;
-}
-.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--maroon);box-shadow:0 0 0 3px rgba(139,0,0,0.07);}
-.form-group textarea{resize:vertical;min-height:80px;}
+.form-group input{width:100%;padding:11px 14px 11px 38px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--gray-800);outline:none;transition:border-color 0.2s;background:white;}
+.form-group input:focus{border-color:var(--maroon);box-shadow:0 0 0 3px rgba(139,0,0,0.07);}
 .form-hint{font-size:11px;color:var(--gray-400);margin-top:5px;}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
 .alert{padding:12px 16px;border-radius:var(--radius-sm);font-size:13px;margin-bottom:20px;display:flex;align-items:flex-start;gap:8px;}
 .alert-error{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;}
 .card-footer{padding:16px 28px;border-top:1px solid var(--gray-100);display:flex;gap:12px;justify-content:flex-end;background:var(--gray-100);}
@@ -100,8 +97,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--gra
 .dept-chip{padding:4px 12px;background:var(--maroon-pale);color:var(--maroon);border:1px solid rgba(139,0,0,0.15);border-radius:12px;font-size:12px;cursor:pointer;transition:all 0.15s;font-family:'DM Sans',sans-serif;}
 .dept-chip:hover{background:var(--maroon);color:white;}
 .field-icon{position:relative;}
-.field-icon input{padding-left:38px;}
 .field-icon svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--gray-400);}
+.current-values{background:var(--gray-100);border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:20px;font-size:13px;color:var(--gray-600);border:1px solid var(--gray-200);}
+.current-values strong{color:var(--maroon);}
 </style>
 </head>
 <body>
@@ -127,11 +125,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--gra
     <div class="card">
         <div class="card-header">
             <div style="width:44px;height:44px;border-radius:50%;background:var(--maroon-pale);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                <svg width="22" height="22" fill="none" stroke="var(--maroon)" stroke-width="2" viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
+                <svg width="22" height="22" fill="none" stroke="var(--maroon)" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             </div>
             <div>
-                <h1>Add New Faculty</h1>
-                <p>Fill in the details to add a new faculty member to the system.</p>
+                <h1>Edit Faculty</h1>
+                <p>Update the details for this faculty member.</p>
             </div>
         </div>
 
@@ -151,9 +149,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--gra
                     <div class="field-icon">
                         <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                         <input type="text" name="name" placeholder="e.g. Dr. Juan dela Cruz"
-                            value="<?php echo htmlspecialchars($_POST['name'] ?? ''); ?>" required autofocus>
+                            value="<?php echo htmlspecialchars($faculty['name']); ?>" required>
                     </div>
-                    <div class="form-hint">Enter the faculty member's full name including title (Dr., Prof., etc.)</div>
                 </div>
 
                 <!-- Department -->
@@ -161,9 +158,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--gra
                     <label>Department <span>*</span></label>
                     <div class="field-icon">
                         <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
-                        <input type="text" name="department" id="deptInput" placeholder="Type or select a department..."
-                            value="<?php echo htmlspecialchars($_POST['department'] ?? ''); ?>"
-                            list="deptList" required autocomplete="off">
+                        <input type="text" name="department" id="deptInput" placeholder="e.g. College of Engineering"
+                            value="<?php echo htmlspecialchars($faculty['department']); ?>"
+                            list="deptList" required>
                     </div>
                     <datalist id="deptList">
                         <?php foreach ($existing_depts as $d): ?>
@@ -171,19 +168,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--gra
                         <?php endforeach; ?>
                     </datalist>
                     <?php if (!empty($existing_depts)): ?>
-                    <div class="form-hint" style="margin-bottom:6px;">Select an existing department or type a new one:</div>
+                    <div class="form-hint" style="margin-bottom:6px;">Or click an existing department:</div>
                     <div class="dept-suggestions">
                         <?php foreach ($existing_depts as $d): ?>
                         <button type="button" class="dept-chip" onclick="document.getElementById('deptInput').value='<?php echo htmlspecialchars(addslashes($d)); ?>'">
                             <?php echo htmlspecialchars($d); ?>
                         </button>
                         <?php endforeach; ?>
-                        <button type="button" class="dept-chip" onclick="document.getElementById('deptInput').value='';document.getElementById('deptInput').focus();" style="background:white;color:var(--gray-600);border-color:var(--gray-200);">
-                            + New department
-                        </button>
                     </div>
-                    <?php else: ?>
-                    <div class="form-hint">No departments yet — type a new department name above.</div>
                     <?php endif; ?>
                 </div>
 
@@ -194,9 +186,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--gra
                     <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
                     Cancel
                 </a>
-                <button type="submit" name="add_faculty" class="btn-primary">
-                    <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                    Add Faculty
+                <button type="submit" name="edit_faculty" class="btn-primary">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                    Save Changes
                 </button>
             </div>
         </form>

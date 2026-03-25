@@ -161,9 +161,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--gra
                     <label>Department <span>*</span></label>
                     <div class="field-icon">
                         <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
-                        <input type="text" name="department" id="deptInput" placeholder="Type or select a department..."
+                        <input type="text" name="department" id="deptInput" placeholder="e.g. College of Engineering"
                             value="<?php echo htmlspecialchars($_POST['department'] ?? ''); ?>"
-                            list="deptList" required autocomplete="off">
+                            list="deptList" required>
                     </div>
                     <datalist id="deptList">
                         <?php foreach ($existing_depts as $d): ?>
@@ -171,19 +171,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--gra
                         <?php endforeach; ?>
                     </datalist>
                     <?php if (!empty($existing_depts)): ?>
-                    <div class="form-hint" style="margin-bottom:6px;">Select an existing department or type a new one:</div>
+                    <div class="form-hint" style="margin-bottom:6px;">Or click an existing department:</div>
                     <div class="dept-suggestions">
                         <?php foreach ($existing_depts as $d): ?>
                         <button type="button" class="dept-chip" onclick="document.getElementById('deptInput').value='<?php echo htmlspecialchars(addslashes($d)); ?>'">
                             <?php echo htmlspecialchars($d); ?>
                         </button>
                         <?php endforeach; ?>
-                        <button type="button" class="dept-chip" onclick="document.getElementById('deptInput').value='';document.getElementById('deptInput').focus();" style="background:white;color:var(--gray-600);border-color:var(--gray-200);">
-                            + New department
-                        </button>
                     </div>
                     <?php else: ?>
-                    <div class="form-hint">No departments yet — type a new department name above.</div>
+                    <div class="form-hint">No departments yet — type a new one above.</div>
                     <?php endif; ?>
                 </div>
 

@@ -1,6 +1,5 @@
 <?php
 include "config.php";
-include "session_check.php";
 
 if (isset($_SESSION['user_id'])) {
     $user_id = $_SESSION['user_id'];
@@ -1120,10 +1119,18 @@ body {
             <?php
             $avg = floatval($faculty['avg_stars'] ?? 0);
             if ($avg > 0):
-                $full = floor($avg); $half = ($avg - $full) >= 0.3;
+                $full = floor($avg); $half = ($avg - $full) >= 0.25 && ($avg - $full) < 0.75;
             ?>
             <div style="margin-bottom:10px;">
-                <span style="color:#f59e0b;font-size:16px;"><?php echo str_repeat('★',$full); ?><?php if($half) echo '½'; ?></span><span style="color:#d1d5db;font-size:16px;"><?php echo str_repeat('★', max(0,5-$full-($half?1:0))); ?></span>
+                <?php
+                // Full stars
+                echo str_repeat('<span style="color:#f59e0b;font-size:16px;">★</span>', intval($full));
+                // Half star using CSS clip
+                if ($half) echo '<span style="color:#f59e0b;font-size:15px;position:relative;display:inline-block;width:0.6em;overflow:hidden;">★</span><span style="color:#d1d5db;font-size:16px;margin-left:-0.05em;">★</span>';
+                // Empty stars
+                $empty = 5 - $full - ($half ? 1 : 0);
+                echo str_repeat('<span style="color:#d1d5db;font-size:16px;">★</span>', max(0,$empty));
+                ?>
                 <span style="font-size:12px;color:var(--gray-400);margin-left:4px;"><?php echo number_format($avg,1); ?> (<?php echo $faculty['review_count']; ?>)</span>
             </div>
             <?php endif; ?>
@@ -1856,6 +1863,15 @@ function addBubble(text, from, id) {
     box.scrollTop = box.scrollHeight;
     return d;
 }
+// ── Prevent scroll-to-top after page actions ─────────────────────────────
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+document.addEventListener('DOMContentLoaded', () => {
+    const hash = window.location.hash;
+    if (hash) {
+        const el = document.getElementById(hash.slice(1));
+        if (el) setTimeout(() => el.scrollIntoView({ behavior: 'auto', block: 'start' }), 60);
+    }
+});
 </script>
 <script src="session_timeout.js"></script>
 </body>

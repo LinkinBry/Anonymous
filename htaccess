@@ -1,0 +1,66 @@
+# ── Error handling ───────────────────────────────────────────────────────────
+php_flag display_errors Off
+php_flag log_errors On
+php_value error_reporting 0
+
+# ── Security headers ──────────────────────────────────────────────────────────
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# ── Protect sensitive files ───────────────────────────────────────────────────
+<FilesMatch "^\.env$|^config\.php$|^\.htaccess$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# ── Block direct access to scratch/uploads directories ────────────────────────
+<FilesMatch "\.(log|sh|sql|bak|old|swp)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# ── Prevent directory listing ─────────────────────────────────────────────────
+Options -Indexes
+
+# ── Default charset ───────────────────────────────────────────────────────────
+AddDefaultCharset UTF-8
+
+# ── PHP session security ──────────────────────────────────────────────────────
+php_value session.cookie_httponly 1
+php_value session.use_strict_mode 1
+php_flag session.cookie_secure Off
+
+# ── URL rewriting ─────────────────────────────────────────────────────────────
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # Redirect /login to index.php
+    RewriteRule ^login/?$   index.php   [L,NC]
+    RewriteRule ^register/?$ register.php [L,NC]
+    RewriteRule ^dashboard/?$ dashboard.php [L,NC]
+    RewriteRule ^logout/?$  logout.php  [L,NC]
+    RewriteRule ^profile/?$ profile.php [L,NC]
+    RewriteRule ^admin/?$   admin_dashboard.php [L,NC]
+
+    # Block access to dot-files except .htaccess itself
+    RewriteRule (^|/)\.(?!htaccess) - [F]
+</IfModule>
+
+# ── Gzip compression ──────────────────────────────────────────────────────────
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css text/javascript application/javascript
+</IfModule>
+
+# ── Cache static assets ───────────────────────────────────────────────────────
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 1 week"
+    ExpiresByType application/javascript "access plus 1 week"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/jpeg "access plus 1 month"
+</IfModule>

@@ -2,7 +2,6 @@
 error_reporting(0);
 ini_set('display_errors', 0);
 
-// config.php already calls session_start() — do NOT call it again
 include "config.php";
 header('Content-Type: application/json');
 
@@ -11,7 +10,9 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
-define('_FS_TIMEOUT', 300);
+// Use a unique constant name to avoid conflicts with session_check.php
+if (!defined('_FS_TIMEOUT')) define('_FS_TIMEOUT', 300);
+
 if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity']) > _FS_TIMEOUT) {
     session_unset(); session_destroy();
     echo json_encode(['error' => 'session_expired']);
@@ -58,7 +59,7 @@ $res = mysqli_query($conn, "
 ");
 
 if (!$res || mysqli_num_rows($res) === 0) {
-    echo json_encode(['summary' => "No approved reviews with ratings were found for $month_str $year."]);
+    echo json_encode(['summary' => "No approved reviews with ratings were found for $month_str $year. There is no data available to generate a performance summary for this period."]);
     exit();
 }
 

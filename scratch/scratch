@@ -1,2 +1,4 @@
 git pull origin main
 -use to pull from the repo
+git push origin main
+-use to push changes to repo

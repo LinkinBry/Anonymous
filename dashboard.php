@@ -955,7 +955,7 @@ body {
         <img src="<?php echo htmlspecialchars($avatar); ?>" class="sidebar-avatar" alt="Avatar" style="transition:opacity 0.2s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
     </a>
     <div class="sidebar-name"><?php echo htmlspecialchars($user['fullname']); ?></div>
-    <div class="sidebar-role">Student</div>
+    <div class="sidebar-role">@<?php echo htmlspecialchars($user['username']); ?></div>
     <nav>
         <div class="nav-label">Menu</div>
         <a href="dashboard.php" class="active">

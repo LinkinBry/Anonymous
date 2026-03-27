@@ -147,7 +147,7 @@ $total_users     = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FRO
 $total_admins    = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM users WHERE role='admin'"))['c'];
 $total_faculties = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM faculties"))['c'];
 $total_reviews   = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM reviews"))['c'];
-$pending_count   = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM reviews WHERE status='pending'"))['c'];
+$pending_count   = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM reviews r JOIN users u ON r.user_id=u.id JOIN faculties f ON r.faculty_id=f.id WHERE r.status='pending'"))['c'];
 $approved_count  = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM reviews WHERE status='approved'"))['c'];
 $rejected_count  = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM reviews WHERE status='rejected'"))['c'];
 
@@ -1023,26 +1023,27 @@ function renderFacultyReviews(data) {
         data.reviews.forEach(rev => {
             const sc = rev.sentiment==='positive'?'badge-positive':(rev.sentiment==='negative'?'badge-negative':'badge-neutral');
             const sl = rev.sentiment ? rev.sentiment.charAt(0).toUpperCase()+rev.sentiment.slice(1) : 'Neutral';
-            // Mini rating bars
+            // Mini star ratings per review
             const cats2 = [
-                ['Teaching', rev.rating_teaching],
-                ['Comm.',    rev.rating_communication],
-                ['Punctuality', rev.rating_punctuality],
-                ['Fairness', rev.rating_fairness],
-                ['Overall',  rev.rating_overall],
+                ['Teaching',     rev.rating_teaching],
+                ['Comm.',        rev.rating_communication],
+                ['Punctuality',  rev.rating_punctuality],
+                ['Fairness',     rev.rating_fairness],
+                ['Overall',      rev.rating_overall],
             ];
             const hasRatings = cats2.some(c => c[1] > 0);
             let ratingMini = '';
             if (hasRatings) {
-                ratingMini = '<div style="margin:8px 0;display:grid;gap:3px;">';
+                ratingMini = '<div style="display:flex;flex-wrap:wrap;gap:8px 16px;margin:8px 0;">';
                 cats2.forEach(([label, val]) => {
-                    const pct = ((parseFloat(val)||0)/5)*100;
-                    ratingMini += `<div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--gray-600);">
-                        <span style="min-width:72px;flex-shrink:0;">${label}</span>
-                        <div style="flex:1;height:5px;background:var(--gray-200);border-radius:3px;overflow:hidden;">
-                            <div style="height:5px;background:#f59e0b;border-radius:3px;width:${pct}%;"></div>
-                        </div>
-                        <span style="min-width:24px;font-weight:600;text-align:right;">${val||'—'}</span>
+                    const num  = parseInt(val) || 0;
+                    let stars  = '';
+                    for (let i = 1; i <= 5; i++) {
+                        stars += `<span style="color:${i <= num ? '#f59e0b' : '#d1d5db'};font-size:12px;">★</span>`;
+                    }
+                    ratingMini += `<div style="display:flex;align-items:center;gap:3px;font-size:11px;color:var(--gray-500);">
+                        <span style="min-width:68px;color:var(--gray-400);">${label}</span>${stars}
+                        <span style="font-weight:600;color:var(--gray-600);margin-left:2px;">${num || '—'}</span>
                     </div>`;
                 });
                 ratingMini += '</div>';

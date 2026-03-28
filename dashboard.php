@@ -30,6 +30,7 @@ $faculties = [];
 if (isset($_GET['search']) && !empty($_GET['search'])) {
     $search = mysqli_real_escape_string($conn, $_GET['search']);
     $faculty_query = "SELECT f.id, f.name, f.department,
+        COALESCE(f.photo,'') AS photo,
         ROUND((AVG(r.rating_teaching)+AVG(r.rating_communication)+AVG(r.rating_punctuality)+AVG(r.rating_fairness)+AVG(r.rating_overall))/5,1) AS avg_stars,
         COUNT(r.id) AS review_count
         FROM faculties f LEFT JOIN reviews r ON r.faculty_id=f.id AND r.status='approved'
@@ -37,6 +38,7 @@ if (isset($_GET['search']) && !empty($_GET['search'])) {
         GROUP BY f.id ORDER BY f.name ASC";
 } else {
     $faculty_query = "SELECT f.id, f.name, f.department,
+        COALESCE(f.photo,'') AS photo,
         ROUND((AVG(r.rating_teaching)+AVG(r.rating_communication)+AVG(r.rating_punctuality)+AVG(r.rating_fairness)+AVG(r.rating_overall))/5,1) AS avg_stars,
         COUNT(r.id) AS review_count
         FROM faculties f LEFT JOIN reviews r ON r.faculty_id=f.id AND r.status='approved'
@@ -123,6 +125,55 @@ Review: "' . addslashes($normalized) . '"';
     $r_overall       = intval($_POST['rating_overall']       ?? 0);
     mysqli_query($conn, "INSERT INTO reviews (user_id, faculty_id, review_text, status, sentiment, is_toxic, summary, rating_teaching, rating_communication, rating_punctuality, rating_fairness, rating_overall)
                          VALUES ('$user_id','$faculty_id','$review_text_safe','pending','$sentiment','$is_toxic','$summary','$r_teaching','$r_communication','$r_punctuality','$r_fairness','$r_overall')");
+    $new_review_id = mysqli_insert_id($conn);
+
+    // Handle review photo upload with AI safety check
+    if (!empty($_FILES['review_photo']['name']) && $_FILES['review_photo']['error'] === UPLOAD_ERR_OK) {
+        $allowed_types = ['image/jpeg','image/png','image/webp','image/gif'];
+        $ftype = mime_content_type($_FILES['review_photo']['tmp_name']);
+        if (in_array($ftype, $allowed_types) && $_FILES['review_photo']['size'] <= 5*1024*1024) {
+            // AI image safety check via Groq vision
+            $img_data  = base64_encode(file_get_contents($_FILES['review_photo']['tmp_name']));
+            $img_safe  = true;
+            $groq_key  = $env['GROQ_API_KEY'] ?? '';
+            if ($groq_key) {
+                $vision_payload = json_encode([
+                    'model'      => 'meta-llama/llama-4-scout-17b-16e-instruct',
+                    'max_tokens' => 80,
+                    'messages'   => [[
+                        'role'    => 'user',
+                        'content' => [
+                            ['type' => 'image_url', 'image_url' => ['url' => 'data:'.$ftype.';base64,'.$img_data]],
+                            ['type' => 'text',      'text'      => 'Does this image contain any of: explicit nudity, graphic violence, hate symbols, weapons used for harm, or illegal content? Reply ONLY with valid JSON: {"safe": true} or {"safe": false}']
+                        ]
+                    ]]
+                ]);
+                $ch2 = curl_init('https://api.groq.com/openai/v1/chat/completions');
+                curl_setopt_array($ch2, [CURLOPT_RETURNTRANSFER=>true, CURLOPT_POST=>true,
+                    CURLOPT_POSTFIELDS=>$vision_payload, CURLOPT_TIMEOUT=>20, CURLOPT_SSL_VERIFYPEER=>false,
+                    CURLOPT_HTTPHEADER=>['Content-Type: application/json', 'Authorization: Bearer '.$groq_key]]);
+                $vresp = curl_exec($ch2); curl_close($ch2);
+                $vdata = json_decode($vresp, true);
+                $vraw  = preg_replace('/```json|```/', '', $vdata['choices'][0]['message']['content'] ?? '{"safe":true}');
+                $vres  = json_decode(trim($vraw), true);
+                if (isset($vres['safe']) && $vres['safe'] === false) {
+                    $img_safe = false;
+                }
+            }
+            if ($img_safe) {
+                $ext      = pathinfo($_FILES['review_photo']['name'], PATHINFO_EXTENSION);
+                $filename = 'uploads/review_' . $new_review_id . '_' . time() . '.' . $ext;
+                if (!is_dir('uploads')) mkdir('uploads', 0755, true);
+                if (move_uploaded_file($_FILES['review_photo']['tmp_name'], $filename)) {
+                    $rphoto = mysqli_real_escape_string($conn, $filename);
+                    @mysqli_query($conn, "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS photo VARCHAR(255) DEFAULT NULL");
+                    mysqli_query($conn, "UPDATE reviews SET photo='$rphoto' WHERE id='$new_review_id'");
+                }
+            } else {
+                header("Location: dashboard.php?submitted=1&photo_rejected=1"); exit();
+            }
+        }
+    }
     header("Location: dashboard.php?submitted=1"); exit();
 }
 if (isset($_POST['edit_review'])) {
@@ -1113,25 +1164,32 @@ body {
             $review_status = $has_reviewed ? $user_review['status'] : null;
         ?>
         <div class="faculty-card" data-index="<?php echo $i; ?>" data-dept="<?php echo htmlspecialchars($faculty['department'] ?? ''); ?>">
-            <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($faculty['name']); ?>&background=8B0000&color=fff&size=80" alt="Faculty">
+            <img src="<?php echo (!empty($faculty['photo']) && file_exists($faculty['photo'])) ? htmlspecialchars($faculty['photo']) : 'https://ui-avatars.com/api/?name='.urlencode($faculty['name']).'&background=8B0000&color=fff&size=80'; ?>" alt="Faculty">
             <h3><?php echo htmlspecialchars($faculty['name']); ?></h3>
             <p><?php echo htmlspecialchars($faculty['department'] ?? ''); ?></p>
             <?php
             $avg = floatval($faculty['avg_stars'] ?? 0);
             if ($avg > 0):
-                $full = floor($avg); $half = ($avg - $full) >= 0.25 && ($avg - $full) < 0.75;
+                // SVG clipPath stars — pixel-perfect
+                $pct  = min(100, ($avg / 5) * 100);
+                $sz   = 16; $gap = 3;
+                $w    = $sz * 5 + $gap * 4;
+                $uid  = 'ds' . substr(md5($faculty['id'] . $avg), 0, 7);
+                $cw   = round($pct / 100 * $w, 2);
+                $empty = $filled = '';
+                for ($i = 0; $i < 5; $i++) {
+                    $x = $i * ($sz + $gap);
+                    $empty  .= '<text x="'.$x.'" y="'.$sz.'" font-size="'.$sz.'" fill="#d1d5db">★</text>';
+                    $filled .= '<text x="'.$x.'" y="'.$sz.'" font-size="'.$sz.'" fill="#f59e0b">★</text>';
+                }
             ?>
-            <div style="margin-bottom:10px;">
-                <?php
-                // Full stars
-                echo str_repeat('<span style="color:#f59e0b;font-size:16px;">★</span>', intval($full));
-                // Half star using CSS clip
-                if ($half) echo '<span style="color:#f59e0b;font-size:15px;position:relative;display:inline-block;width:0.6em;overflow:hidden;">★</span><span style="color:#d1d5db;font-size:16px;margin-left:-0.05em;">★</span>';
-                // Empty stars
-                $empty = 5 - $full - ($half ? 1 : 0);
-                echo str_repeat('<span style="color:#d1d5db;font-size:16px;">★</span>', max(0,$empty));
-                ?>
-                <span style="font-size:12px;color:var(--gray-400);margin-left:4px;"><?php echo number_format($avg,1); ?> (<?php echo $faculty['review_count']; ?>)</span>
+            <div style="margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap;">
+                <svg width="<?php echo $w; ?>" height="<?php echo $sz; ?>" viewBox="0 0 <?php echo $w; ?> <?php echo $sz; ?>" xmlns="http://www.w3.org/2000/svg" style="display:block;vertical-align:middle;">
+                    <defs><clipPath id="<?php echo $uid; ?>"><rect x="0" y="0" width="<?php echo $cw; ?>" height="<?php echo $sz; ?>"/></clipPath></defs>
+                    <?php echo $empty; ?>
+                    <g clip-path="url(#<?php echo $uid; ?>)"><?php echo $filled; ?></g>
+                </svg>
+                <span style="font-size:12px;color:var(--gray-400);"><?php echo number_format($avg,1); ?> (<?php echo $faculty['review_count']; ?>)</span>
             </div>
             <?php endif; ?>
             <?php if ($has_reviewed): ?>
@@ -1205,7 +1263,9 @@ body {
         </div>
 
         <?php if (isset($_GET['submitted'])): ?>
-            <div class="success-banner"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Your review has been submitted and is pending admin approval.</div>
+            <div class="success-banner"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Your review has been submitted and is pending admin approval.
+            <?php if (isset($_GET['photo_rejected'])): ?> <span style="color:#92400e;background:#fef3c7;padding:2px 8px;border-radius:6px;font-size:11px;margin-left:6px;">Note: your photo was flagged by AI safety check and was not attached.</span><?php endif; ?>
+            </div>
         <?php endif; ?>
         <?php if (isset($_GET['edited'])): ?>
             <div class="success-banner"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Your review has been updated and is pending re-approval.</div>
@@ -1390,7 +1450,7 @@ body {
             </h3>
             <button class="modal-close" onclick="closeReviewModal()">&times;</button>
         </div>
-        <form method="POST" id="reviewForm">
+        <form method="POST" id="reviewForm" enctype="multipart/form-data">
             <div class="modal-body">
 
                 <!-- Step 1: Choose Faculty -->
@@ -1454,6 +1514,27 @@ body {
 
                     <div class="rating-section-title" style="margin-top:18px;">Write Your Review</div>
                     <textarea class="modal-textarea" name="review_text" id="reviewText" placeholder="Write your anonymous review here... Be honest, constructive, and respectful." required></textarea>
+
+                    <!-- Photo upload for documentation -->
+                    <div style="margin-top:14px;padding:12px;background:var(--gray-100);border-radius:var(--radius-sm);border:1px dashed var(--gray-200);">
+                        <div style="font-size:12px;font-weight:600;color:var(--gray-600);margin-bottom:8px;display:flex;align-items:center;gap:6px;">
+                            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                            Attach Photo <span style="font-weight:400;color:var(--gray-400);">(optional — for documentation)</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                            <input type="file" name="review_photo" id="reviewPhotoInput" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="previewReviewPhoto(this)">
+                            <button type="button" class="btn btn-outline" style="font-size:12px;" onclick="document.getElementById('reviewPhotoInput').click()">
+                                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                                Upload Image
+                            </button>
+                            <div id="reviewPhotoPreviewWrap" style="display:none;align-items:center;gap:8px;">
+                                <img id="reviewPhotoPreview" src="" style="width:48px;height:48px;border-radius:6px;object-fit:cover;border:1px solid var(--gray-200);">
+                                <button type="button" onclick="clearReviewPhoto()" style="background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:18px;line-height:1;">&times;</button>
+                            </div>
+                        </div>
+                        <div style="font-size:11px;color:var(--gray-400);margin-top:6px;">JPG, PNG, WEBP · Max 5MB · Checked for inappropriate content by AI</div>
+                    </div>
+
                     <input type="hidden" name="faculty_id" id="facultyIdInput">
                     <p style="font-size:12px;color:var(--gray-400);margin-top:8px;">🔒 Your identity remains anonymous. Reviews are reviewed by admin before publishing.</p>
                 </div>
@@ -1863,8 +1944,34 @@ function addBubble(text, from, id) {
     box.scrollTop = box.scrollHeight;
     return d;
 }
-// ── Prevent scroll-to-top after page actions ─────────────────────────────
-if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+// Review photo preview
+function previewReviewPhoto(input) {
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        if (file.size > 5 * 1024 * 1024) {
+            alert('Image must be under 5MB.');
+            input.value = '';
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = e => {
+            document.getElementById('reviewPhotoPreview').src = e.target.result;
+            document.getElementById('reviewPhotoPreviewWrap').style.display = 'flex';
+        };
+        reader.readAsDataURL(file);
+    }
+}
+function clearReviewPhoto() {
+    document.getElementById('reviewPhotoInput').value = '';
+    document.getElementById('reviewPhotoPreview').src = '';
+    document.getElementById('reviewPhotoPreviewWrap').style.display = 'none';
+}
+// Reset photo when review modal closes
+const _origCloseReviewModal = closeReviewModal;
+closeReviewModal = function() {
+    _origCloseReviewModal();
+    clearReviewPhoto();
+};
 document.addEventListener('DOMContentLoaded', () => {
     const hash = window.location.hash;
     if (hash) {

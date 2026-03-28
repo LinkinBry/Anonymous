@@ -572,7 +572,6 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--maroon);cursor:po
                 </div></td>
             </tr>
             <?php endwhile; ?>
-            <?php if(!$has_pending): ?><tr class="empty-row"><td colspan="5"><svg width="36" height="36" fill="none" stroke="#9ca3af" stroke-width="1.5" viewBox="0 0 24 24" style="margin-bottom:8px;display:block;margin-left:auto;margin-right:auto;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>No pending reviews</td></tr><?php endif; ?>
             </tbody>
         </table>
         <div class="bulk-bar" id="review_bulk_bar">
@@ -750,12 +749,16 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--maroon);cursor:po
             <img id="userModalAvatar" src="" alt="" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid var(--maroon-pale);margin-bottom:14px;">
             <div id="userModalName" style="font-size:17px;font-weight:700;color:var(--gray-800);margin-bottom:4px;"></div>
             <div id="userModalUsername" style="font-size:13px;color:var(--gray-400);margin-bottom:16px;"></div>
-            <div style="background:var(--gray-100);border-radius:var(--radius-sm);padding:14px;text-align:left;">
-                <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--gray-600);">
+            <div style="background:var(--gray-100);border-radius:var(--radius-sm);padding:14px;text-align:center;">
+                <div style="display:flex;align-items:center;justify-content:center;gap:10px;font-size:13px;color:var(--gray-600);">
                     <svg width="15" height="15" fill="none" stroke="var(--maroon)" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
                     <span id="userModalEmail"></span>
                 </div>
             </div>
+        </div>
+        <div id="userReviewsSection" style="padding:20px;">
+            <div style="font-size:13px;font-weight:600;color:var(--gray-600);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">Reviews Made</div>
+            <div id="userReviewsList" style="font-size:13px;color:var(--gray-400);">Loading...</div>
         </div>
     </div>
 </div>
@@ -821,17 +824,34 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--maroon);cursor:po
             <button class="modal-close" onclick="closeModal()">&times;</button>
         </div>
         <div style="padding:16px 24px 0;border-bottom:1px solid var(--gray-100);" id="modalRatings"></div>
-        <div class="modal-body" id="modalBody"></div>
+        <div style="padding:16px 24px 0;display:none;" id="modalPhotoContainer">
+            <img id="modalPhotoPreview" src="" style="max-width:100%;max-height:180px;border-radius:8px;object-fit:cover;border:1px solid var(--gray-200);margin-bottom:16px;">
+        </div>
+        <div style="padding:16px 24px 24px;">
+            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray-400);margin-bottom:8px;">Review</div>
+            <div class="modal-body" id="modalBody" style="padding:0;"></div>
+        </div>
     </div>
 </div>
 
 <script>
+var _userReviewsData = { page: 1, userId: 0, totalPages: 0 };
+var _currentUserName = '';
+var _currentUserId = 0;
+
 function openUserModal(id, fullname, username, email, avatar) {
     document.getElementById('userModalAvatar').src   = avatar;
     document.getElementById('userModalName').textContent     = fullname;
     document.getElementById('userModalUsername').textContent = '@' + username;
     document.getElementById('userModalEmail').textContent    = email;
     document.getElementById('userModal').classList.add('open');
+    
+    // Store current user info for detail modal
+    _currentUserName = username;
+    _currentUserId = id;
+    
+    // Load user reviews
+    loadUserReviews(id);
 }
 function confirmDeleteUser(id, fullname) {
     document.getElementById('deleteUserIdInput').value      = id;
@@ -841,13 +861,158 @@ function confirmDeleteUser(id, fullname) {
 document.getElementById('userModal').addEventListener('click', e => { if (e.target === document.getElementById('userModal')) document.getElementById('userModal').classList.remove('open'); });
 document.getElementById('deleteUserModal').addEventListener('click', e => { if (e.target === document.getElementById('deleteUserModal')) document.getElementById('deleteUserModal').classList.remove('open'); });
 
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+let _starUid = 0;
+function starsHtml(val, size) {
+    size = size || 15;
+    if (!val || parseFloat(val) <= 0) return '<span style="color:var(--gray-400);font-size:12px;">—</span>';
+    const pct = Math.min(100, Math.max(0, (parseFloat(val) / 5) * 100));
+    const gap = 3, w = size * 5 + gap * 4;
+    const uid = 'sr' + (++_starUid);
+    const clipW = (pct / 100 * w).toFixed(2);
+    let empty = '', filled = '';
+    for (let i = 0; i < 5; i++) {
+        const x = i * (size + gap);
+        empty  += `<text x="${x}" y="${size}" font-size="${size}" fill="#d1d5db">★</text>`;
+        filled += `<text x="${x}" y="${size}" font-size="${size}" fill="#f59e0b">★</text>`;
+    }
+    return `<span style="display:inline-flex;align-items:center;vertical-align:middle;line-height:1;">
+        <svg width="${w}" height="${size}" viewBox="0 0 ${w} ${size}" xmlns="http://www.w3.org/2000/svg" style="display:block;overflow:visible;">
+          <defs><clipPath id="${uid}"><rect x="0" y="0" width="${clipW}" height="${size}"/></clipPath></defs>
+          ${empty}<g clip-path="url(#${uid})">${filled}</g>
+        </svg></span>`;
+}
+
+function loadUserReviews(userId, page = 1, evt = null) {
+    if (evt) evt.preventDefault();
+    const reviewsList = document.getElementById('userReviewsList');
+    reviewsList.innerHTML = '<div style="color:var(--gray-400);font-size:12px;">Loading reviews...</div>';
+    
+    _userReviewsData.userId = userId;
+    _userReviewsData.page = page;
+    
+    fetch('get_user_reviews.php?user_id=' + userId + '&page=' + page, {headers:{'X-Requested-With':'XMLHttpRequest'}})
+    .then(r => {
+        if (!r.ok) throw new Error('Failed to load reviews');
+        return r.json();
+    })
+    .then(data => {
+        if (!data.reviews || data.reviews.length === 0) {
+            reviewsList.innerHTML = '<div style="color:var(--gray-400);font-size:13px;">No reviews made yet.</div>';
+            return;
+        }
+        
+        _userReviewsData.totalPages = data.total_pages;
+        let html = '';
+        data.reviews.forEach(review => {
+            const sentiment = review.sentiment ? review.sentiment.charAt(0).toUpperCase() + review.sentiment.slice(1) : 'Neutral';
+            const sentimentClass = review.sentiment === 'positive' ? 'badge-positive' : (review.sentiment === 'negative' ? 'badge-negative' : 'badge-neutral');
+            const stars = starsHtml(review.rating_overall);
+            
+            html += `
+            <div style="padding:10px 0;border-bottom:1px solid var(--gray-100);">
+                <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:4px;">
+                    <div style="font-weight:500;color:var(--gray-700);">${esc(review.faculty_name)}</div>
+                    <span class="badge ${sentimentClass}" style="font-size:10px;">${sentiment}</span>
+                </div>
+                <div style="font-size:12px;color:var(--maroon);margin-bottom:4px;">${stars}</div>
+                <div style="font-size:12px;color:var(--gray-600);line-height:1.5;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;cursor:pointer;" onclick="openUserReviewDetail(${review.id}, '${esc(review.faculty_name)}', ${userId}, '${esc(review.review_text)}', ${review.rating_overall}, ${review.rating_teaching}, ${review.rating_communication}, ${review.rating_punctuality}, ${review.rating_fairness}, '${(review.photo || '').replace(/'/g, "\\'")}')"> ${esc(review.review_text)}</div>
+                <div style="font-size:11px;color:var(--gray-400);margin-top:4px;">${review.created_at}</div>
+            </div>`;
+        });
+        
+        // Add pagination if needed
+        if (data.total_pages > 1) {
+            html += `<div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;padding:12px 20px;border-top:1px solid var(--gray-100);flex-wrap:wrap;">`;
+            
+            const infoText = `${(page - 1) * 5 + 1}–${Math.min(page * 5, data.total)} of ${data.total}`;
+            html += `<span style="font-size:12px;color:var(--gray-400);margin-right:6px;flex:1;">${infoText}</span>`;
+            
+            if (page > 1) {
+                html += `<button type="button" onclick="loadUserReviews(${userId}, ${page - 1})" class="btn btn-outline" style="padding:4px 10px;">←</button>`;
+            }
+            
+            for (let i = 1; i <= data.total_pages; i++) {
+                const isActive = i === page;
+                html += `<button type="button" onclick="loadUserReviews(${userId}, ${i})" class="btn ${isActive ? 'btn-maroon' : 'btn-outline'}" style="padding:4px 10px;">${i}</button>`;
+            }
+            
+            if (page < data.total_pages) {
+                html += `<button type="button" onclick="loadUserReviews(${userId}, ${page + 1})" class="btn btn-outline" style="padding:4px 10px;">→</button>`;
+            }
+            
+            html += `</div>`;
+        }
+        
+        reviewsList.innerHTML = html;
+    })
+    .catch(err => {
+        reviewsList.innerHTML = '<div style="color:#ef4444;font-size:12px;">Failed to load reviews.</div>';
+    });
+}
+
+function openUserReviewDetail(reviewId, facultyName, userId, reviewText, rating, rtch, rcom, rpun, rfair, photo) {
+    // Reuse the existing review modal for details
+    document.getElementById('modalFaculty').textContent = facultyName;
+    document.getElementById('modalUser').textContent = '@' + (_currentUserName || 'User');
+    document.getElementById('modalBody').textContent = reviewText;
+    
+    // Show ratings
+    const cats = [
+        ['Teaching Effectiveness', rtch],
+        ['Communication Skills', rcom],
+        ['Punctuality & Availability', rpun],
+        ['Fairness in Grading', rfair],
+        ['Overall Satisfaction', rating]
+    ];
+    
+    const hasRatings = cats.some(c => c[1] > 0);
+    const ratingsEl = document.getElementById('modalRatings');
+    if (hasRatings) {
+        ratingsEl.style.display = '';
+        ratingsEl.innerHTML = cats.map(([label, val]) =>
+            `<div style="display:flex;align-items:center;padding:5px 0;font-size:13px;gap:10px;">
+                <span style="min-width:160px;flex-shrink:0;color:var(--gray-600);">${label}</span>
+                ${starsHtml(val, 14)}
+                <span style="font-size:11px;color:var(--gray-400);">${val}/5</span>
+            </div>`
+        ).join('') + '<div style="height:10px;"></div>';
+    } else {
+        ratingsEl.style.display = 'none';
+    }
+    
+    // Display photo if available
+    const photoEl = document.getElementById('modalPhotoPreview');
+    const photoContainer = document.getElementById('modalPhotoContainer');
+    if (photo && photo.trim() && photo !== 'null') {
+        photoEl.src = photo;
+        photoContainer.style.display = 'block';
+    } else {
+        photoContainer.style.display = 'none';
+    }
+    
+    document.getElementById('reviewModal').classList.add('open');
+}
+
 function stars(n) {
     return '<span style="color:#f59e0b">' + '★'.repeat(n) + '</span><span style="color:#d1d5db">' + '★'.repeat(5-n) + '</span>';
 }
-function openModal(text, faculty, user, rt, rc, rp, rf, ro) {
+function openModal(text, faculty, user, rt, rc, rp, rf, ro, photo) {
     document.getElementById('modalBody').textContent = text;
     document.getElementById('modalFaculty').textContent = faculty;
     document.getElementById('modalUser').textContent = user;
+    
+    // Display photo if available
+    const photoEl = document.getElementById('modalPhotoPreview');
+    const photoContainer = document.getElementById('modalPhotoContainer');
+    if (photo && photo.trim()) {
+        photoEl.src = photo;
+        photoContainer.style.display = 'block';
+    } else {
+        photoContainer.style.display = 'none';
+    }
+    
     const cats = [['Teaching Effectiveness', rt], ['Communication', rc], ['Punctuality', rp], ['Fairness in Grading', rf], ['Overall Satisfaction', ro]];
     const hasRatings = cats.some(c => c[1] > 0);
     const ratingsEl = document.getElementById('modalRatings');
@@ -865,22 +1030,6 @@ function openModal(text, faculty, user, rt, rc, rp, rf, ro) {
 }
 function closeModal(){document.getElementById('reviewModal').classList.remove('open');}
 document.getElementById('reviewModal').addEventListener('click',e=>{if(e.target===document.getElementById('reviewModal'))closeModal();});
-
-// Faculty reviews modal
-function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-
-function starsHtml(val, max) {
-    if (!val) return '<span style="color:var(--gray-400);font-size:12px;">N/A</span>';
-    const num  = parseFloat(val);
-    const full = Math.floor(num);
-    const half = (num - full) >= 0.25 && (num - full) < 0.75;
-    let s = '';
-    for (let i = 0; i < full; i++) s += '<span style="color:#f59e0b;font-size:14px;">★</span>';
-    if (half) s += '<span style="color:#f59e0b;font-size:13px;position:relative;display:inline-block;width:0.6em;overflow:hidden;">★</span><span style="color:#d1d5db;font-size:14px;margin-left:-0.05em;">★</span>';
-    const empty = max - full - (half ? 1 : 0);
-    for (let i = 0; i < Math.max(0, empty); i++) s += '<span style="color:#d1d5db;font-size:14px;">★</span>';
-    return s;
-}
 
 let _currentFacultyId = null;
 

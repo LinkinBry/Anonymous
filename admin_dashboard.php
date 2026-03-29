@@ -705,7 +705,10 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--maroon);cursor:po
         <div id="modalPhotoWrap" style="padding:12px 24px 0;display:none;">
             <img id="modalPhotoImg" src="" alt="Review photo" style="max-width:100%;max-height:200px;border-radius:10px;object-fit:cover;border:1px solid var(--gray-200);">
         </div>
-        <div style="padding:16px 24px 24px;font-size:14px;line-height:1.7;color:var(--gray-700);white-space:pre-wrap;" id="modalBody"></div>
+        <div style="padding:16px 24px 0;">
+            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray-400);margin-bottom:6px;">Review</div>
+        </div>
+        <div style="padding:0 24px 24px;font-size:14px;line-height:1.7;color:var(--gray-700);white-space:pre-wrap;" id="modalBody"></div>
     </div>
 </div>
 
@@ -763,15 +766,24 @@ function loadUserReviews(userId, page=1) {
         data.reviews.forEach(rev=>{
             const sc=rev.sentiment==='positive'?'badge-positive':(rev.sentiment==='negative'?'badge-negative':'badge-neutral');
             const sl=rev.sentiment?rev.sentiment.charAt(0).toUpperCase()+rev.sentiment.slice(1):'Neutral';
+            const stBg=rev.status==='approved'?'#d1fae5':rev.status==='rejected'?'#fee2e2':'#fef3c7';
+            const stC=rev.status==='approved'?'#065f46':rev.status==='rejected'?'#991b1b':'#92400e';
             const rd=JSON.stringify({text:rev.review_text,sentiment:rev.sentiment,date:rev.created_at,rt:rev.rating_teaching,rc:rev.rating_communication,rp:rev.rating_punctuality,rf:rev.rating_fairness,ro:rev.rating_overall,photo:rev.photo||''});
-            html+=`<div class="user-rev-item" onclick='openRevDetail(${rd})' style="padding:10px 8px;border-bottom:1px solid var(--gray-100);cursor:pointer;border-radius:6px;transition:background 0.15s;" onmouseover="this.style.background='var(--maroon-pale)'" onmouseout="this.style.background=''">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
-                    <div style="font-weight:600;color:var(--gray-700);font-size:13px;">${esc(rev.faculty_name)}</div>
-                    <span class="badge ${sc}" style="font-size:10px;">${sl}</span>
+            html+=`<div style="padding:8px 0 10px;border-bottom:1px solid var(--gray-100);">
+                <div style="display:flex;gap:8px;align-items:flex-start;">
+                    <div class="fac-rev-card" style="flex:1;" onclick='openRevDetail(${rd})'>
+                        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap;">
+                            <span style="font-size:12px;font-weight:600;color:var(--gray-700);">${esc(rev.faculty_name)}</span>
+                            <span class="badge ${sc}" style="font-size:10px;">${sl}</span>
+                            <span style="font-size:10px;padding:1px 7px;border-radius:20px;font-weight:600;background:${stBg};color:${stC};">${rev.status.charAt(0).toUpperCase()+rev.status.slice(1)}</span>
+                            ${rev.photo?'<svg width="11" height="11" fill="none" stroke="#9ca3af" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>':''}
+                            <span style="font-size:10px;color:var(--gray-400);margin-left:auto;">${rev.created_at}</span>
+                        </div>
+                        ${rev.rating_overall?`<div style="margin-bottom:4px;">${starsHtml(rev.rating_overall,12)}</div>`:''}
+                        <div style="font-size:12px;color:var(--gray-600);line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${esc(rev.review_text)}</div>
+                    </div>
+                    <button onclick="deleteUserReview(${rev.id},${userId},${page})" style="flex-shrink:0;background:none;border:1px solid var(--gray-200);border-radius:6px;padding:5px 8px;cursor:pointer;color:var(--gray-400);font-size:11px;display:flex;align-items:center;gap:3px;transition:all 0.18s;" onmouseover="this.style.borderColor='#ef4444';this.style.color='#ef4444';" onmouseout="this.style.borderColor='var(--gray-200)';this.style.color='var(--gray-400)';"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg> Delete</button>
                 </div>
-                <div style="margin-bottom:3px;">${starsHtml(rev.rating_overall,12)}</div>
-                <div style="font-size:12px;color:var(--gray-600);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.4;">${esc(rev.review_text)}</div>
-                <div style="font-size:10px;color:var(--gray-400);margin-top:3px;">${rev.created_at}</div>
             </div>`;
         });
         if(data.total_pages>1){
@@ -785,6 +797,16 @@ function loadUserReviews(userId, page=1) {
         list.innerHTML=html;
     })
     .catch(()=>{list.innerHTML='<div style="color:#ef4444;font-size:12px;">Failed to load.</div>';});
+}
+
+function deleteUserReview(reviewId, userId, page) {
+    if (!confirm('Delete this review permanently?')) return;
+    fetch('get_faculty_reviews.php?faculty_id=0&action=delete_any&review_id='+reviewId, {headers:{'X-Requested-With':'XMLHttpRequest'}})
+    .then(r=>r.json())
+    .then(d=>{
+        if (d.success) { loadUserReviews(userId, page); }
+        else alert('Failed to delete review.');
+    }).catch(()=>alert('Network error.'));
 }
 
 // ── Detail pop-up modal (faculty reviews + user reviews) ─────────────────
@@ -1001,8 +1023,8 @@ function renderPage(tbodyId){
     visible.slice(start,end).forEach(r=>r.style.display='');
     ['select_all_reviews','select_all_approved','select_all_users'].forEach(id=>{const el=document.getElementById(id);if(el)el.checked=false;});
     let noRes=tbody.querySelector('.no-results-row');
-    //if(total===0){if(!noRes){noRes=document.createElement('tr');noRes.className='no-results-row';const cols=tbody.closest('table').querySelector('thead tr').children.length;noRes.innerHTML=`<td colspan="${cols}" style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px;">No results found.</td>`;tbody.appendChild(noRes);}noRes.style.display='';}
-    //else{if(noRes)noRes.style.display='none';}
+    if(total===0){if(!noRes){noRes=document.createElement('tr');noRes.className='no-results-row';const cols=tbody.closest('table').querySelector('thead tr').children.length;noRes.innerHTML=`<td colspan="${cols}" style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px;">No results found.</td>`;tbody.appendChild(noRes);}noRes.style.display='';}
+    else{if(noRes)noRes.style.display='none';}
     const pagId=tbodyId.replace('-tbody','-pag');let pag=document.getElementById(pagId);
     if(!pag){pag=document.createElement('div');pag.id=pagId;pag.style.cssText='display:flex;align-items:center;justify-content:flex-end;gap:6px;padding:12px 20px;border-top:1px solid var(--gray-100);flex-wrap:wrap;';tbody.closest('table').after(pag);}
     pag.innerHTML='';

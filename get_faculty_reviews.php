@@ -47,6 +47,20 @@ if ($action === 'delete') {
     echo json_encode(['success'=>true]); exit();
 }
 
+// ── DELETE any review (used from user profile modal) ──────────────────────
+if ($action === 'delete_any') {
+    $rid = intval($_GET['review_id'] ?? 0);
+    if ($rid<=0) { echo json_encode(['error'=>'invalid_review']); exit(); }
+
+    $rev = mysqli_fetch_assoc(mysqli_query($conn,"SELECT r.user_id,r.status,f.name AS fname FROM reviews r JOIN faculties f ON r.faculty_id=f.id WHERE r.id='$rid' LIMIT 1"));
+    if ($rev) {
+        $msg = mysqli_real_escape_string($conn,"Your review for {$rev['fname']} has been removed by the admin.");
+        mysqli_query($conn,"INSERT INTO notifications (user_id,message,status,created_at) VALUES ('{$rev['user_id']}','$msg','unread',NOW())");
+    }
+    mysqli_query($conn,"DELETE FROM reviews WHERE id='$rid'");
+    echo json_encode(['success'=>true]); exit();
+}
+
 // ── AI individual faculty summary ─────────────────────────────────────────
 if ($action === 'summary') {
     // Fetch all approved reviews for this faculty

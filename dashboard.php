@@ -232,6 +232,36 @@ Review: "' . addslashes($normalized) . '"';
         rating_teaching='$r_teaching', rating_communication='$r_communication',
         rating_punctuality='$r_punctuality', rating_fairness='$r_fairness', rating_overall='$r_overall'
         WHERE id='$review_id' AND user_id='$user_id'");
+    // Handle photo upload on edit
+    if (!empty($_FILES['edit_review_photo']['name']) && $_FILES['edit_review_photo']['error'] === UPLOAD_ERR_OK) {
+        $allowed_types = ['image/jpeg','image/png','image/webp','image/gif'];
+        $ftype = mime_content_type($_FILES['edit_review_photo']['tmp_name']);
+        if (in_array($ftype, $allowed_types) && $_FILES['edit_review_photo']['size'] <= 5*1024*1024) {
+            $env2     = parse_ini_file(__DIR__ . '/.env');
+            $groq_key = $env2['GROQ_API_KEY'] ?? '';
+            $img_data = base64_encode(file_get_contents($_FILES['edit_review_photo']['tmp_name']));
+            $img_safe = true;
+            if ($groq_key) {
+                $vp = json_encode(['model'=>'meta-llama/llama-4-scout-17b-16e-instruct','max_tokens'=>80,'messages'=>[['role'=>'user','content'=>[['type'=>'image_url','image_url'=>['url'=>'data:'.$ftype.';base64,'.$img_data]],['type'=>'text','text'=>'Does this image contain explicit nudity, graphic violence, hate symbols, or illegal content? Reply ONLY: {"safe": true} or {"safe": false}.']]]]]);
+                $ch3 = curl_init('https://api.groq.com/openai/v1/chat/completions');
+                curl_setopt_array($ch3,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_POST=>true,CURLOPT_POSTFIELDS=>$vp,CURLOPT_TIMEOUT=>20,CURLOPT_SSL_VERIFYPEER=>false,CURLOPT_HTTPHEADER=>['Content-Type: application/json','Authorization: Bearer '.$groq_key]]);
+                $vr=curl_exec($ch3);curl_close($ch3);
+                $vd=json_decode($vr,true);
+                $vraw=preg_replace('/```json|```/','',($vd['choices'][0]['message']['content']??'{"safe":true}'));
+                $vres=json_decode(trim($vraw),true);
+                if(isset($vres['safe'])&&$vres['safe']===false) $img_safe=false;
+            }
+            if ($img_safe) {
+                $ext = pathinfo($_FILES['edit_review_photo']['name'], PATHINFO_EXTENSION);
+                $filename = 'uploads/review_' . $review_id . '_' . time() . '.' . $ext;
+                if (!is_dir('uploads')) mkdir('uploads', 0755, true);
+                if (move_uploaded_file($_FILES['edit_review_photo']['tmp_name'], $filename)) {
+                    $rp = mysqli_real_escape_string($conn, $filename);
+                    mysqli_query($conn, "UPDATE reviews SET photo='$rp' WHERE id='$review_id' AND user_id='$user_id'");
+                }
+            }
+        }
+    }
     header("Location: dashboard.php?edited=1"); exit();
 }
 
@@ -1343,7 +1373,7 @@ body {
             <h3>Edit Review</h3>
             <button class="modal-close" onclick="closeEditModal()">&times;</button>
         </div>
-        <form method="POST" id="editForm">
+        <form method="POST" id="editForm" enctype="multipart/form-data">
             <div class="modal-body">
                 <div class="selected-preview show" id="editPreview">
                     <img id="editPreviewImg" src="" alt="">
@@ -1376,6 +1406,27 @@ body {
                 <?php endforeach; ?>
                 <div class="rating-section-title" style="margin-top:16px;">Update Review Text</div>
                 <textarea class="modal-textarea" name="review_text" id="editReviewText" placeholder="Update your review..." required></textarea>
+                <!-- Photo upload for edit -->
+                <div style="margin-top:12px;">
+                    <div style="font-size:12px;font-weight:600;color:var(--gray-600);margin-bottom:7px;display:flex;align-items:center;gap:5px;">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                        Update Photo <span style="font-weight:400;color:var(--gray-400);">(optional — leave blank to keep existing)</span>
+                    </div>
+                    <input type="file" name="edit_review_photo" id="editReviewPhotoInput" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="previewEditReviewPhoto(this)">
+                    <div id="editPhotoDropzone" onclick="document.getElementById('editReviewPhotoInput').click()"
+                        style="border:2px dashed var(--gray-200);border-radius:var(--radius-sm);padding:14px;text-align:center;cursor:pointer;transition:border-color 0.2s,background 0.2s;background:var(--gray-100);"
+                        onmouseover="this.style.borderColor='var(--maroon)';this.style.background='var(--maroon-pale)';"
+                        onmouseout="this.style.borderColor='var(--gray-200)';this.style.background='var(--gray-100)';">
+                        <svg width="22" height="22" fill="none" stroke="var(--gray-400)" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 5px;display:block;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                        <div style="font-size:12px;color:var(--gray-500);">Click to upload new photo</div>
+                        <div style="font-size:10px;color:var(--gray-400);margin-top:2px;">JPG, PNG, WEBP · Max 5MB</div>
+                    </div>
+                    <div id="editReviewPhotoPreviewWrap" style="display:none;margin-top:7px;position:relative;border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--gray-200);">
+                        <img id="editReviewPhotoPreview" src="" style="width:100%;max-height:130px;object-fit:cover;display:block;">
+                        <button type="button" onclick="clearEditReviewPhoto()" title="Remove"
+                            style="position:absolute;top:5px;right:5px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,0.55);border:none;cursor:pointer;color:white;font-size:13px;display:flex;align-items:center;justify-content:center;">×</button>
+                    </div>
+                </div>
                 <input type="hidden" name="review_id" id="editReviewId">
                 <p style="font-size:12px;color:var(--gray-400);margin-top:8px;">⚠️ Editing will reset your review to pending status for re-approval.</p>
             </div>
@@ -1515,23 +1566,28 @@ body {
                     <textarea class="modal-textarea" name="review_text" id="reviewText" placeholder="Write your anonymous review here... Be honest, constructive, and respectful." required></textarea>
 
                     <!-- Photo upload for documentation -->
-                    <div style="margin-top:14px;padding:12px;background:var(--gray-100);border-radius:var(--radius-sm);border:1px dashed var(--gray-200);">
-                        <div style="font-size:12px;font-weight:600;color:var(--gray-600);margin-bottom:8px;display:flex;align-items:center;gap:6px;">
+                    <div style="margin-top:14px;">
+                        <div style="font-size:12px;font-weight:600;color:var(--gray-600);margin-bottom:8px;display:flex;align-items:center;gap:5px;">
                             <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                            Attach Photo <span style="font-weight:400;color:var(--gray-400);">(optional — for documentation)</span>
+                            Attach Photo <span style="font-weight:400;color:var(--gray-400);">(optional)</span>
                         </div>
-                        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-                            <input type="file" name="review_photo" id="reviewPhotoInput" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="previewReviewPhoto(this)">
-                            <button type="button" class="btn btn-outline" style="font-size:12px;" onclick="document.getElementById('reviewPhotoInput').click()">
-                                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
-                                Upload Image
-                            </button>
-                            <div id="reviewPhotoPreviewWrap" style="display:none;align-items:center;gap:8px;">
-                                <img id="reviewPhotoPreview" src="" style="width:48px;height:48px;border-radius:6px;object-fit:cover;border:1px solid var(--gray-200);">
-                                <button type="button" onclick="clearReviewPhoto()" style="background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:18px;line-height:1;">&times;</button>
-                            </div>
+                        <input type="file" name="review_photo" id="reviewPhotoInput" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="previewReviewPhoto(this)">
+                        <!-- Drop zone / preview area -->
+                        <div id="reviewPhotoDropzone" onclick="document.getElementById('reviewPhotoInput').click()"
+                            style="border:2px dashed var(--gray-200);border-radius:var(--radius-sm);padding:18px 14px;text-align:center;cursor:pointer;transition:border-color 0.2s,background 0.2s;background:var(--gray-100);"
+                            onmouseover="this.style.borderColor='var(--maroon)';this.style.background='var(--maroon-pale)';"
+                            onmouseout="this.style.borderColor='var(--gray-200)';this.style.background='var(--gray-100)';">
+                            <svg width="28" height="28" fill="none" stroke="var(--gray-400)" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 8px;display:block;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                            <div style="font-size:13px;font-weight:500;color:var(--gray-600);margin-bottom:2px;">Click to upload photo</div>
+                            <div style="font-size:11px;color:var(--gray-400);">JPG, PNG, WEBP · Max 5MB · AI safety checked</div>
                         </div>
-                        <div style="font-size:11px;color:var(--gray-400);margin-top:6px;">JPG, PNG, WEBP · Max 5MB · Checked for inappropriate content by AI</div>
+                        <!-- Preview once selected -->
+                        <div id="reviewPhotoPreviewWrap" style="display:none;margin-top:8px;position:relative;border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--gray-200);">
+                            <img id="reviewPhotoPreview" src="" style="width:100%;max-height:160px;object-fit:cover;display:block;">
+                            <button type="button" onclick="clearReviewPhoto()" title="Remove photo"
+                                style="position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,0.55);border:none;cursor:pointer;color:white;font-size:14px;display:flex;align-items:center;justify-content:center;line-height:1;">×</button>
+                            <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.35);padding:5px 10px;font-size:11px;color:rgba(255,255,255,0.9);" id="reviewPhotoName"></div>
+                        </div>
                     </div>
 
                     <input type="hidden" name="faculty_id" id="facultyIdInput">
@@ -1943,7 +1999,7 @@ function addBubble(text, from, id) {
     box.scrollTop = box.scrollHeight;
     return d;
 }
-// Review photo preview
+// Review photo preview (new review)
 function previewReviewPhoto(input) {
     if (input.files && input.files[0]) {
         const file = input.files[0];
@@ -1955,7 +2011,10 @@ function previewReviewPhoto(input) {
         const reader = new FileReader();
         reader.onload = e => {
             document.getElementById('reviewPhotoPreview').src = e.target.result;
-            document.getElementById('reviewPhotoPreviewWrap').style.display = 'flex';
+            document.getElementById('reviewPhotoPreviewWrap').style.display = '';
+            document.getElementById('reviewPhotoDropzone').style.display = 'none';
+            const nameEl = document.getElementById('reviewPhotoName');
+            if (nameEl) nameEl.textContent = file.name;
         };
         reader.readAsDataURL(file);
     }
@@ -1964,12 +2023,39 @@ function clearReviewPhoto() {
     document.getElementById('reviewPhotoInput').value = '';
     document.getElementById('reviewPhotoPreview').src = '';
     document.getElementById('reviewPhotoPreviewWrap').style.display = 'none';
+    document.getElementById('reviewPhotoDropzone').style.display = '';
+}
+// Edit review photo preview
+function previewEditReviewPhoto(input) {
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        if (file.size > 5 * 1024 * 1024) { alert('Image must be under 5MB.'); input.value = ''; return; }
+        const reader = new FileReader();
+        reader.onload = e => {
+            document.getElementById('editReviewPhotoPreview').src = e.target.result;
+            document.getElementById('editReviewPhotoPreviewWrap').style.display = '';
+            document.getElementById('editPhotoDropzone').style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+    }
+}
+function clearEditReviewPhoto() {
+    document.getElementById('editReviewPhotoInput').value = '';
+    document.getElementById('editReviewPhotoPreview').src = '';
+    document.getElementById('editReviewPhotoPreviewWrap').style.display = 'none';
+    document.getElementById('editPhotoDropzone').style.display = '';
 }
 // Reset photo when review modal closes
 const _origCloseReviewModal = closeReviewModal;
 closeReviewModal = function() {
     _origCloseReviewModal();
     clearReviewPhoto();
+};
+// Reset edit photo when edit modal closes
+const _origCloseEditModal = closeEditModal;
+closeEditModal = function() {
+    _origCloseEditModal();
+    clearEditReviewPhoto();
 };
 document.addEventListener('DOMContentLoaded', () => {
     const hash = window.location.hash;

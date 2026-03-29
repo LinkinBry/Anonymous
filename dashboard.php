@@ -166,7 +166,6 @@ Review: "' . addslashes($normalized) . '"';
                 if (!is_dir('uploads')) mkdir('uploads', 0755, true);
                 if (move_uploaded_file($_FILES['review_photo']['tmp_name'], $filename)) {
                     $rphoto = mysqli_real_escape_string($conn, $filename);
-                    @mysqli_query($conn, "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS photo VARCHAR(255) DEFAULT NULL");
                     mysqli_query($conn, "UPDATE reviews SET photo='$rphoto' WHERE id='$new_review_id'");
                 }
             } else {

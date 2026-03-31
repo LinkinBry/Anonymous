@@ -80,7 +80,6 @@ if (isset($_POST['bulk_delete_approved']) && !empty($_POST['selected_approved'])
 
 // Ensure faculties.photo column exists (migration-safe — runs before any INSERT/UPDATE)
 
-
 // Add Faculty (modal form)
 if (isset($_POST['add_faculty_modal'])) {
     $fname = trim(mysqli_real_escape_string($conn, $_POST['faculty_name'] ?? ''));
@@ -768,7 +767,7 @@ function loadUserReviews(userId, page=1) {
             const sl=rev.sentiment?rev.sentiment.charAt(0).toUpperCase()+rev.sentiment.slice(1):'Neutral';
             const stBg=rev.status==='approved'?'#d1fae5':rev.status==='rejected'?'#fee2e2':'#fef3c7';
             const stC=rev.status==='approved'?'#065f46':rev.status==='rejected'?'#991b1b':'#92400e';
-            const rd=JSON.stringify({text:rev.review_text,sentiment:rev.sentiment,date:rev.created_at,rt:rev.rating_teaching,rc:rev.rating_communication,rp:rev.rating_punctuality,rf:rev.rating_fairness,ro:rev.rating_overall,photo:rev.photo||''});
+            const rd=JSON.stringify({text:rev.review_text,sentiment:rev.sentiment,date:rev.created_at,rt:rev.rating_teaching,rc:rev.rating_communication,rp:rev.rating_punctuality,rf:rev.rating_fairness,ro:rev.rating_overall,photos:rev.photos||[]});
             html+=`<div style="padding:8px 0 10px;border-bottom:1px solid var(--gray-100);">
                 <div style="display:flex;gap:8px;align-items:flex-start;">
                     <div class="fac-rev-card" style="flex:1;" onclick='openRevDetail(${rd})'>
@@ -776,7 +775,7 @@ function loadUserReviews(userId, page=1) {
                             <span style="font-size:12px;font-weight:600;color:var(--gray-700);">${esc(rev.faculty_name)}</span>
                             <span class="badge ${sc}" style="font-size:10px;">${sl}</span>
                             <span style="font-size:10px;padding:1px 7px;border-radius:20px;font-weight:600;background:${stBg};color:${stC};">${rev.status.charAt(0).toUpperCase()+rev.status.slice(1)}</span>
-                            ${rev.photo?'<svg width="11" height="11" fill="none" stroke="#9ca3af" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>':''}
+                            ${rev.photos&&rev.photos.length?'<svg width="11" height="11" fill="none" stroke="#9ca3af" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>'+(rev.photos.length>1?`<span style="font-size:10px;color:#9ca3af;">${rev.photos.length}</span>`:''):''}
                             <span style="font-size:10px;color:var(--gray-400);margin-left:auto;">${rev.created_at}</span>
                         </div>
                         ${rev.rating_overall?`<div style="margin-bottom:4px;">${starsHtml(rev.rating_overall,12)}</div>`:''}
@@ -836,9 +835,23 @@ function openRevDetail(revData) {
         body+=`<div style="display:flex;align-items:center;padding:4px 0;font-size:13px;gap:10px;"><span style="min-width:170px;flex-shrink:0;color:var(--gray-600);">${label}</span>${starsHtml(val,14)}<span style="font-size:11px;color:var(--gray-400);margin-left:4px;">${val||'—'}/5</span></div>`;
     });
     body+='</div>';
-    // Photo if present
-    if (revData.photo && revData.photo.trim() && revData.photo !== 'null') {
-        body+=`<div style="margin-bottom:14px;"><img src="${esc(revData.photo)}" alt="Review photo" style="max-width:100%;max-height:220px;border-radius:10px;object-fit:cover;border:1px solid var(--gray-200);"></div>`;
+    // Photos grid — support multiple photos (photos array) or legacy single photo string
+    const photos = Array.isArray(revData.photos) ? revData.photos.filter(p=>p&&p.trim()&&p!=='null') :
+                   (revData.photo && revData.photo.trim() && revData.photo !== 'null' ? [revData.photo] : []);
+    if (photos.length > 0) {
+        body += `<div style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--gray-100);">
+            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray-400);margin-bottom:8px;">Photos (${photos.length})</div>`;
+        if (photos.length === 1) {
+            body += `<img src="${esc(photos[0])}" alt="Review photo" style="width:100%;max-height:240px;border-radius:10px;object-fit:cover;border:1px solid var(--gray-200);">`;
+        } else {
+            body += `<div style="display:grid;grid-template-columns:repeat(${Math.min(photos.length,3)},1fr);gap:6px;">`;
+            photos.forEach(p => {
+                body += `<div style="border-radius:8px;overflow:hidden;aspect-ratio:1;border:1px solid var(--gray-200);cursor:pointer;" onclick="window.open('${esc(p)}','_blank')">
+                    <img src="${esc(p)}" alt="Review photo" style="width:100%;height:100%;object-fit:cover;display:block;"></div>`;
+            });
+            body += `</div><div style="font-size:10px;color:var(--gray-400);margin-top:4px;">Click any photo to view full size</div>`;
+        }
+        body += `</div>`;
     }
     body+=`<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray-400);margin-bottom:8px;">Review</div><div style="font-size:13px;color:var(--gray-700);line-height:1.7;white-space:pre-wrap;">${esc(revData.text)}</div>`;
     document.getElementById('frd-body').innerHTML=body;
@@ -938,14 +951,14 @@ function renderFacultyReviews(data) {
         data.reviews.forEach(rev=>{
             const sc=rev.sentiment==='positive'?'badge-positive':(rev.sentiment==='negative'?'badge-negative':'badge-neutral');
             const sl=rev.sentiment?rev.sentiment.charAt(0).toUpperCase()+rev.sentiment.slice(1):'Neutral';
-            const rd=JSON.stringify({text:rev.review_text,sentiment:rev.sentiment,date:rev.created_at,rt:rev.rating_teaching,rc:rev.rating_communication,rp:rev.rating_punctuality,rf:rev.rating_fairness,ro:rev.rating_overall,photo:rev.photo||''});
+            const rd=JSON.stringify({text:rev.review_text,sentiment:rev.sentiment,date:rev.created_at,rt:rev.rating_teaching,rc:rev.rating_communication,rp:rev.rating_punctuality,rf:rev.rating_fairness,ro:rev.rating_overall,photos:rev.photos||[]});
             h+=`<div id="fac-rev-${rev.id}" style="padding:8px 0 10px;border-bottom:1px solid var(--gray-100);">
                 <div style="display:flex;gap:8px;align-items:flex-start;">
                     <div class="fac-rev-card" style="flex:1;" onclick='openRevDetail(${rd})'>
                         <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap;">
                             <span style="font-size:12px;font-weight:600;color:var(--gray-700);">Anonymous Reviewer</span>
                             <span class="badge ${sc}" style="font-size:10px;">${sl}</span>
-                            ${rev.photo?'<svg width="11" height="11" fill="none" stroke="#9ca3af" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>':''}
+                            ${rev.photos&&rev.photos.length?'<svg width="11" height="11" fill="none" stroke="#9ca3af" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>'+(rev.photos.length>1?`<span style="font-size:10px;color:#9ca3af;">${rev.photos.length}</span>`:''):''}
                             <span style="font-size:10px;color:var(--gray-400);margin-left:auto;">${esc(rev.created_at)}</span>
                         </div>
                         ${rev.rating_overall?`<div style="margin-bottom:4px;">${starsHtml(rev.rating_overall,13)}</div>`:''}
@@ -1106,11 +1119,36 @@ document.addEventListener('DOMContentLoaded',()=>{
                 </div>
                 <div class="af-group">
                     <label>Department <span>*</span></label>
-                    <div class="af-field"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg><input type="text" name="faculty_dept" id="afDept" class="af-input" placeholder="Type or select..." list="afDeptList" required autocomplete="off"></div>
-                    <datalist id="afDeptList"><?php $af_d=mysqli_query($conn,"SELECT DISTINCT department FROM faculties WHERE department IS NOT NULL AND department!='' ORDER BY department ASC");$af_arr=[];while($ad=mysqli_fetch_assoc($af_d)){$af_arr[]=$ad['department'];echo '<option value="'.htmlspecialchars($ad['department']).'">';}?></datalist>
-                    <?php if(!empty($af_arr)): ?><div style="font-size:11px;color:var(--gray-400);margin-top:5px;margin-bottom:5px;">Quick select:</div>
-                    <div class="af-chips"><?php foreach($af_arr as $afd): ?><button type="button" class="af-chip" onclick="document.getElementById('afDept').value='<?php echo htmlspecialchars(addslashes($afd)); ?>'"><?php echo htmlspecialchars($afd); ?></button><?php endforeach; ?><button type="button" class="af-chip af-chip-new" onclick="document.getElementById('afDept').value='';document.getElementById('afDept').focus();">+ New dept</button></div>
-                    <?php else: ?><div style="font-size:11px;color:var(--gray-400);margin-top:4px;">No departments yet — type a new one.</div><?php endif; ?>
+                    <?php $af_d=mysqli_query($conn,"SELECT DISTINCT department FROM faculties WHERE department IS NOT NULL AND department!='' ORDER BY department ASC");$af_arr=[];while($ad=mysqli_fetch_assoc($af_d)){$af_arr[]=$ad['department'];} ?>
+                    <div style="display:flex;flex-direction:column;gap:6px;">
+                        <!-- Hidden actual input sent to PHP -->
+                        <input type="hidden" name="faculty_dept" id="afDept">
+                        <?php if(!empty($af_arr)): ?>
+                        <div class="af-field" style="position:relative;">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="position:absolute;left:11px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--gray-400);z-index:1;"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="position:absolute;right:11px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--gray-400);"><polyline points="6 9 12 15 18 9"/></svg>
+                            <select id="afDeptSelect" onchange="afDeptChange(this)"
+                                style="width:100%;padding:10px 32px 10px 36px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--gray-800);outline:none;transition:border-color 0.2s;background:white;appearance:none;-webkit-appearance:none;cursor:pointer;">
+                                <option value="">— Select a department —</option>
+                                <?php foreach($af_arr as $afd): ?>
+                                <option value="<?php echo htmlspecialchars($afd); ?>"><?php echo htmlspecialchars($afd); ?></option>
+                                <?php endforeach; ?>
+                                <option value="__new__">+ Add new department…</option>
+                            </select>
+                        </div>
+                        <?php endif; ?>
+                        <!-- New dept input — shown when "Add new" is selected, or when no depts exist -->
+                        <div id="afNewDeptWrap" style="<?php echo empty($af_arr)?'':'display:none;'; ?>">
+                            <div class="af-field">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
+                                <input type="text" id="afNewDeptInput" class="af-input" placeholder="Type new department name…" oninput="document.getElementById('afDept').value=this.value.trim()">
+                            </div>
+                            <?php if(!empty($af_arr)): ?>
+                            <button type="button" onclick="afCancelNewDept()" style="margin-top:5px;font-size:11px;color:var(--gray-400);background:none;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;padding:0;">← Back to existing departments</button>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    <?php if(empty($af_arr)): ?><div style="font-size:11px;color:var(--gray-400);margin-top:4px;">No departments yet — type a new one above.</div><?php endif; ?>
                 </div>
             </div>
             <div style="display:flex;justify-content:flex-end;gap:10px;padding:14px 24px;border-top:1px solid var(--gray-100);background:var(--gray-100);">
@@ -1176,17 +1214,59 @@ function previewFacultyPhoto(input, previewId) {
         reader.readAsDataURL(input.files[0]);
     }
 }
+function afDeptChange(sel) {
+    const hidden = document.getElementById('afDept');
+    const newWrap = document.getElementById('afNewDeptWrap');
+    const newInput = document.getElementById('afNewDeptInput');
+    if (sel.value === '__new__') {
+        newWrap.style.display = '';
+        newInput.value = '';
+        hidden.value = '';
+        newInput.focus();
+        sel.value = ''; // reset select display
+    } else {
+        newWrap.style.display = 'none';
+        hidden.value = sel.value;
+        if(newInput) newInput.value = '';
+    }
+}
+function afCancelNewDept() {
+    document.getElementById('afNewDeptWrap').style.display = 'none';
+    document.getElementById('afNewDeptInput').value = '';
+    document.getElementById('afDept').value = '';
+    const sel = document.getElementById('afDeptSelect');
+    if (sel) sel.value = '';
+}
 function closeAddFacultyModal() {
     document.getElementById('addFacultyModal').classList.remove('open');
-    document.getElementById('afName').value='';document.getElementById('afDept').value='';
+    document.getElementById('afName').value='';
+    document.getElementById('afDept').value='';
+    const sel = document.getElementById('afDeptSelect');
+    if (sel) sel.value = '';
+    const ni = document.getElementById('afNewDeptInput');
+    if (ni) ni.value = '';
+    const nw = document.getElementById('afNewDeptWrap');
+    if (nw) nw.style.display = 'none';
     document.getElementById('afPhoto').value='';
     document.getElementById('afPhotoPreview').src='https://ui-avatars.com/api/?name=Faculty&background=8B0000&color=fff&size=64';
     document.getElementById('afAlert').style.display='none';
 }
 function validateAddFaculty() {
-    const name=document.getElementById('afName').value.trim(),dept=document.getElementById('afDept').value.trim();
-    if(!name||!dept){document.getElementById('afAlertText').textContent=!name?'Faculty name is required.':'Department is required.';document.getElementById('afAlert').style.display='flex';return false;}
-    document.getElementById('afAlert').style.display='none';return true;
+    const name = document.getElementById('afName').value.trim();
+    // dept comes from hidden field — could be from select or free-text input
+    const newWrap = document.getElementById('afNewDeptWrap');
+    const newInput = document.getElementById('afNewDeptInput');
+    if (newWrap && newWrap.style.display !== 'none' && newInput && newInput.value.trim()) {
+        document.getElementById('afDept').value = newInput.value.trim();
+    }
+    const dept = document.getElementById('afDept').value.trim();
+    if (!name || !dept) {
+        document.getElementById('afAlertText').textContent = !name ? 'Faculty name is required.' : 'Department is required.';
+        document.getElementById('afAlert').style.display = 'flex';
+        return false;
+    }
+    document.getElementById('afAlert').style.display = 'none';
+    return true;
 }
 function openEditFacultyModal(id, name, dept, photo) {
     document.getElementById('efFacultyId').value=id;

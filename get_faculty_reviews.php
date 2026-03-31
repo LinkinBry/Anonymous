@@ -156,13 +156,25 @@ $reviews = [];
 $rev_res = mysqli_query($conn,"
     SELECT r.id, r.review_text, r.sentiment, r.created_at,
         r.rating_teaching, r.rating_communication,
-        r.rating_punctuality, r.rating_fairness, r.rating_overall
+        r.rating_punctuality, r.rating_fairness, r.rating_overall,
+        COALESCE(r.photo,'') AS photo
     FROM reviews r
     WHERE r.faculty_id='$faculty_id' AND r.status='approved'
     ORDER BY r.created_at DESC LIMIT 50
 ");
 if ($rev_res) {
     while ($row=mysqli_fetch_assoc($rev_res)) {
+        // Parse photos — stored as JSON array or legacy single path
+        $raw_photo = $row['photo'];
+        $photos = [];
+        if (!empty($raw_photo)) {
+            $decoded = json_decode($raw_photo, true);
+            if (is_array($decoded)) {
+                $photos = $decoded;
+            } else {
+                $photos = [$raw_photo]; // legacy single path
+            }
+        }
         $reviews[] = [
             'id'                  => $row['id'],
             'review_text'         => $row['review_text'],
@@ -173,6 +185,7 @@ if ($rev_res) {
             'rating_fairness'     => $row['rating_fairness'],
             'rating_overall'      => $row['rating_overall'],
             'created_at'          => date("M j, Y",strtotime($row['created_at'])),
+            'photos'              => $photos,
         ];
     }
 }

@@ -127,51 +127,44 @@ Review: "' . addslashes($normalized) . '"';
                          VALUES ('$user_id','$faculty_id','$review_text_safe','pending','$sentiment','$is_toxic','$summary','$r_teaching','$r_communication','$r_punctuality','$r_fairness','$r_overall')");
     $new_review_id = mysqli_insert_id($conn);
 
-    // Handle review photo upload with AI safety check
-    if (!empty($_FILES['review_photo']['name']) && $_FILES['review_photo']['error'] === UPLOAD_ERR_OK) {
+    // Handle multiple review photo uploads with AI safety check
+    $uploaded_photos = [];
+    if (!empty($_FILES['review_photos']['name'][0])) {
         $allowed_types = ['image/jpeg','image/png','image/webp','image/gif'];
-        $ftype = mime_content_type($_FILES['review_photo']['tmp_name']);
-        if (in_array($ftype, $allowed_types) && $_FILES['review_photo']['size'] <= 5*1024*1024) {
-            // AI image safety check via Groq vision
-            $img_data  = base64_encode(file_get_contents($_FILES['review_photo']['tmp_name']));
-            $img_safe  = true;
-            $groq_key  = $env['GROQ_API_KEY'] ?? '';
+        $env_loaded = $env ?? parse_ini_file(__DIR__ . '/.env');
+        $groq_key = $env_loaded['GROQ_API_KEY'] ?? '';
+        $count = count($_FILES['review_photos']['name']);
+        for ($pi = 0; $pi < $count; $pi++) {
+            if ($_FILES['review_photos']['error'][$pi] !== UPLOAD_ERR_OK) continue;
+            $ftype = mime_content_type($_FILES['review_photos']['tmp_name'][$pi]);
+            if (!in_array($ftype, $allowed_types) || $_FILES['review_photos']['size'][$pi] > 5*1024*1024) continue;
+            $img_data = base64_encode(file_get_contents($_FILES['review_photos']['tmp_name'][$pi]));
+            $img_safe = true;
             if ($groq_key) {
-                $vision_payload = json_encode([
-                    'model'      => 'meta-llama/llama-4-scout-17b-16e-instruct',
-                    'max_tokens' => 80,
-                    'messages'   => [[
-                        'role'    => 'user',
-                        'content' => [
-                            ['type' => 'image_url', 'image_url' => ['url' => 'data:'.$ftype.';base64,'.$img_data]],
-                            ['type' => 'text',      'text'      => 'Does this image contain any of: explicit nudity, graphic violence, hate symbols, weapons used for harm, or illegal content? Reply ONLY with valid JSON: {"safe": true} or {"safe": false}']
-                        ]
-                    ]]
-                ]);
+                $vp = json_encode(['model'=>'meta-llama/llama-4-scout-17b-16e-instruct','max_tokens'=>80,'messages'=>[['role'=>'user','content'=>[['type'=>'image_url','image_url'=>['url'=>'data:'.$ftype.';base64,'.$img_data]],['type'=>'text','text'=>'Does this image contain explicit nudity, graphic violence, hate symbols, or illegal content? Reply ONLY: {"safe": true} or {"safe": false}.']]]]]); 
                 $ch2 = curl_init('https://api.groq.com/openai/v1/chat/completions');
-                curl_setopt_array($ch2, [CURLOPT_RETURNTRANSFER=>true, CURLOPT_POST=>true,
-                    CURLOPT_POSTFIELDS=>$vision_payload, CURLOPT_TIMEOUT=>20, CURLOPT_SSL_VERIFYPEER=>false,
-                    CURLOPT_HTTPHEADER=>['Content-Type: application/json', 'Authorization: Bearer '.$groq_key]]);
-                $vresp = curl_exec($ch2); curl_close($ch2);
-                $vdata = json_decode($vresp, true);
-                $vraw  = preg_replace('/```json|```/', '', $vdata['choices'][0]['message']['content'] ?? '{"safe":true}');
-                $vres  = json_decode(trim($vraw), true);
-                if (isset($vres['safe']) && $vres['safe'] === false) {
-                    $img_safe = false;
-                }
+                curl_setopt_array($ch2,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_POST=>true,CURLOPT_POSTFIELDS=>$vp,CURLOPT_TIMEOUT=>20,CURLOPT_SSL_VERIFYPEER=>false,CURLOPT_HTTPHEADER=>['Content-Type: application/json','Authorization: Bearer '.$groq_key]]);
+                $vr=curl_exec($ch2);curl_close($ch2);
+                $vd=json_decode($vr,true);
+                $vraw=preg_replace('/```json|```/','',($vd['choices'][0]['message']['content']??'{"safe":true}'));
+                $vres=json_decode(trim($vraw),true);
+                if(isset($vres['safe'])&&$vres['safe']===false) $img_safe=false;
             }
             if ($img_safe) {
-                $ext      = pathinfo($_FILES['review_photo']['name'], PATHINFO_EXTENSION);
-                $filename = 'uploads/review_' . $new_review_id . '_' . time() . '.' . $ext;
+                $ext = pathinfo($_FILES['review_photos']['name'][$pi], PATHINFO_EXTENSION);
+                $filename = 'uploads/review_' . $new_review_id . '_' . time() . '_' . $pi . '.' . $ext;
                 if (!is_dir('uploads')) mkdir('uploads', 0755, true);
-                if (move_uploaded_file($_FILES['review_photo']['tmp_name'], $filename)) {
-                    $rphoto = mysqli_real_escape_string($conn, $filename);
-                    mysqli_query($conn, "UPDATE reviews SET photo='$rphoto' WHERE id='$new_review_id'");
+                if (move_uploaded_file($_FILES['review_photos']['tmp_name'][$pi], $filename)) {
+                    $uploaded_photos[] = $filename;
                 }
-            } else {
-                header("Location: dashboard.php?submitted=1&photo_rejected=1"); exit();
             }
         }
+    }
+    if (!empty($uploaded_photos)) {
+        @mysqli_query($conn, "ALTER TABLE reviews MODIFY COLUMN photo TEXT DEFAULT NULL");
+        $photos_json = mysqli_real_escape_string($conn, json_encode($uploaded_photos));
+        mysqli_query($conn, "UPDATE reviews SET photo='$photos_json' WHERE id='$new_review_id'");
+        header("Location: dashboard.php?submitted=1"); exit();
     }
     header("Location: dashboard.php?submitted=1"); exit();
 }
@@ -232,17 +225,21 @@ Review: "' . addslashes($normalized) . '"';
         rating_teaching='$r_teaching', rating_communication='$r_communication',
         rating_punctuality='$r_punctuality', rating_fairness='$r_fairness', rating_overall='$r_overall'
         WHERE id='$review_id' AND user_id='$user_id'");
-    // Handle photo upload on edit
-    if (!empty($_FILES['edit_review_photo']['name']) && $_FILES['edit_review_photo']['error'] === UPLOAD_ERR_OK) {
+    // Handle multiple photos on edit
+    if (!empty($_FILES['edit_review_photos']['name'][0])) {
         $allowed_types = ['image/jpeg','image/png','image/webp','image/gif'];
-        $ftype = mime_content_type($_FILES['edit_review_photo']['tmp_name']);
-        if (in_array($ftype, $allowed_types) && $_FILES['edit_review_photo']['size'] <= 5*1024*1024) {
-            $env2     = parse_ini_file(__DIR__ . '/.env');
-            $groq_key = $env2['GROQ_API_KEY'] ?? '';
-            $img_data = base64_encode(file_get_contents($_FILES['edit_review_photo']['tmp_name']));
+        $env2     = parse_ini_file(__DIR__ . '/.env');
+        $groq_key = $env2['GROQ_API_KEY'] ?? '';
+        $uploaded_edit_photos = [];
+        $count = count($_FILES['edit_review_photos']['name']);
+        for ($pi = 0; $pi < $count; $pi++) {
+            if ($_FILES['edit_review_photos']['error'][$pi] !== UPLOAD_ERR_OK) continue;
+            $ftype = mime_content_type($_FILES['edit_review_photos']['tmp_name'][$pi]);
+            if (!in_array($ftype, $allowed_types) || $_FILES['edit_review_photos']['size'][$pi] > 5*1024*1024) continue;
+            $img_data = base64_encode(file_get_contents($_FILES['edit_review_photos']['tmp_name'][$pi]));
             $img_safe = true;
             if ($groq_key) {
-                $vp = json_encode(['model'=>'meta-llama/llama-4-scout-17b-16e-instruct','max_tokens'=>80,'messages'=>[['role'=>'user','content'=>[['type'=>'image_url','image_url'=>['url'=>'data:'.$ftype.';base64,'.$img_data]],['type'=>'text','text'=>'Does this image contain explicit nudity, graphic violence, hate symbols, or illegal content? Reply ONLY: {"safe": true} or {"safe": false}.']]]]]);
+                $vp = json_encode(['model'=>'meta-llama/llama-4-scout-17b-16e-instruct','max_tokens'=>80,'messages'=>[['role'=>'user','content'=>[['type'=>'image_url','image_url'=>['url'=>'data:'.$ftype.';base64,'.$img_data]],['type'=>'text','text'=>'Does this image contain explicit nudity, graphic violence, hate symbols, or illegal content? Reply ONLY: {"safe": true} or {"safe": false}.']]]]]);                
                 $ch3 = curl_init('https://api.groq.com/openai/v1/chat/completions');
                 curl_setopt_array($ch3,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_POST=>true,CURLOPT_POSTFIELDS=>$vp,CURLOPT_TIMEOUT=>20,CURLOPT_SSL_VERIFYPEER=>false,CURLOPT_HTTPHEADER=>['Content-Type: application/json','Authorization: Bearer '.$groq_key]]);
                 $vr=curl_exec($ch3);curl_close($ch3);
@@ -252,14 +249,18 @@ Review: "' . addslashes($normalized) . '"';
                 if(isset($vres['safe'])&&$vres['safe']===false) $img_safe=false;
             }
             if ($img_safe) {
-                $ext = pathinfo($_FILES['edit_review_photo']['name'], PATHINFO_EXTENSION);
-                $filename = 'uploads/review_' . $review_id . '_' . time() . '.' . $ext;
+                $ext = pathinfo($_FILES['edit_review_photos']['name'][$pi], PATHINFO_EXTENSION);
+                $filename = 'uploads/review_' . $review_id . '_' . time() . '_' . $pi . '.' . $ext;
                 if (!is_dir('uploads')) mkdir('uploads', 0755, true);
-                if (move_uploaded_file($_FILES['edit_review_photo']['tmp_name'], $filename)) {
-                    $rp = mysqli_real_escape_string($conn, $filename);
-                    mysqli_query($conn, "UPDATE reviews SET photo='$rp' WHERE id='$review_id' AND user_id='$user_id'");
+                if (move_uploaded_file($_FILES['edit_review_photos']['tmp_name'][$pi], $filename)) {
+                    $uploaded_edit_photos[] = $filename;
                 }
             }
+        }
+        if (!empty($uploaded_edit_photos)) {
+            @mysqli_query($conn, "ALTER TABLE reviews MODIFY COLUMN photo TEXT DEFAULT NULL");
+            $ep = mysqli_real_escape_string($conn, json_encode($uploaded_edit_photos));
+            mysqli_query($conn, "UPDATE reviews SET photo='$ep' WHERE id='$review_id' AND user_id='$user_id'");
         }
     }
     header("Location: dashboard.php?edited=1"); exit();
@@ -325,7 +326,7 @@ if (isset($_POST['delete_review'])) {
 
 // Fetch faculties grouped by department for the modal
 $departments = [];
-$dept_res = mysqli_query($conn, "SELECT id, name, department FROM faculties ORDER BY department ASC, name ASC");
+$dept_res = mysqli_query($conn, "SELECT id, name, department, COALESCE(photo,'') AS photo FROM faculties ORDER BY department ASC, name ASC");
 if ($dept_res && mysqli_num_rows($dept_res) > 0) {
     while ($row = mysqli_fetch_assoc($dept_res)) {
         $dept = $row['department'] ?: 'General';
@@ -1248,7 +1249,7 @@ body {
                     </button>
                 <?php endif; ?>
             <?php else: ?>
-                <button class="btn-evaluate" onclick="openModalForFaculty(<?php echo $faculty['id']; ?>, '<?php echo htmlspecialchars(addslashes($faculty['name'])); ?>', '<?php echo htmlspecialchars(addslashes($faculty['department'] ?? '')); ?>')">
+                <button class="btn-evaluate" onclick="openModalForFaculty(<?php echo $faculty['id']; ?>, '<?php echo htmlspecialchars(addslashes($faculty['name'])); ?>', '<?php echo htmlspecialchars(addslashes($faculty['department'] ?? '')); ?>', '<?php echo (!empty($faculty['photo'])&&file_exists($faculty['photo']))?htmlspecialchars(addslashes($faculty['photo'])):'https://ui-avatars.com/api/?name='.urlencode($faculty['name']).'&background=8B0000&color=fff&size=42'; ?>')">
                     Evaluate
                 </button>
             <?php endif; ?>
@@ -1410,21 +1411,21 @@ body {
                 <div style="margin-top:12px;">
                     <div style="font-size:12px;font-weight:600;color:var(--gray-600);margin-bottom:7px;display:flex;align-items:center;gap:5px;">
                         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                        Update Photo <span style="font-weight:400;color:var(--gray-400);">(optional — leave blank to keep existing)</span>
+                        Update Photos <span style="font-weight:400;color:var(--gray-400);">(optional — replaces existing, up to 5)</span>
                     </div>
-                    <input type="file" name="edit_review_photo" id="editReviewPhotoInput" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="previewEditReviewPhoto(this)">
-                    <div id="editPhotoDropzone" onclick="document.getElementById('editReviewPhotoInput').click()"
+                    <input type="file" name="edit_review_photos[]" id="editReviewPhotosInput" accept="image/jpeg,image/png,image/webp" multiple style="display:none;" onchange="previewEditReviewPhotos(this)">
+                    <div id="editPhotoDropzone" onclick="document.getElementById('editReviewPhotosInput').click()"
                         style="border:2px dashed var(--gray-200);border-radius:var(--radius-sm);padding:14px;text-align:center;cursor:pointer;transition:border-color 0.2s,background 0.2s;background:var(--gray-100);"
                         onmouseover="this.style.borderColor='var(--maroon)';this.style.background='var(--maroon-pale)';"
                         onmouseout="this.style.borderColor='var(--gray-200)';this.style.background='var(--gray-100)';">
                         <svg width="22" height="22" fill="none" stroke="var(--gray-400)" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 5px;display:block;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
-                        <div style="font-size:12px;color:var(--gray-500);">Click to upload new photo</div>
-                        <div style="font-size:10px;color:var(--gray-400);margin-top:2px;">JPG, PNG, WEBP · Max 5MB</div>
+                        <div style="font-size:12px;color:var(--gray-500);">Click to upload new photos</div>
+                        <div style="font-size:10px;color:var(--gray-400);margin-top:2px;">JPG, PNG, WEBP · Max 5MB each · Up to 5</div>
                     </div>
-                    <div id="editReviewPhotoPreviewWrap" style="display:none;margin-top:7px;position:relative;border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--gray-200);">
-                        <img id="editReviewPhotoPreview" src="" style="width:100%;max-height:130px;object-fit:cover;display:block;">
-                        <button type="button" onclick="clearEditReviewPhoto()" title="Remove"
-                            style="position:absolute;top:5px;right:5px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,0.55);border:none;cursor:pointer;color:white;font-size:13px;display:flex;align-items:center;justify-content:center;">×</button>
+                    <div id="editReviewPhotosPreviewGrid" style="display:none;margin-top:8px;display:none;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:6px;"></div>
+                    <div id="editPhotosAddMore" style="display:none;margin-top:6px;">
+                        <button type="button" onclick="document.getElementById('editReviewPhotosInput').click()" style="font-size:11px;color:var(--maroon);background:var(--maroon-pale);border:1px solid rgba(139,0,0,0.15);border-radius:20px;padding:3px 10px;cursor:pointer;font-family:'DM Sans',sans-serif;" onmouseover="this.style.background='var(--maroon)';this.style.color='white';" onmouseout="this.style.background='var(--maroon-pale)';this.style.color='var(--maroon)';">+ Add more</button>
+                        <span id="editPhotosCount" style="font-size:11px;color:var(--gray-400);margin-left:8px;"></span>
                     </div>
                 </div>
                 <input type="hidden" name="review_id" id="editReviewId">
@@ -1506,22 +1507,38 @@ body {
                 <!-- Step 1: Choose Faculty -->
                 <div class="step active" id="step1">
                     <div class="step-label">Step 1 of 2 · Choose Faculty</div>
-                    <?php foreach ($departments as $dept => $dept_faculties): ?>
+                    <?php
+                    $has_any_option = false;
+                    foreach ($departments as $dept => $dept_faculties):
+                        // Filter out already-reviewed faculties
+                        $available = array_filter($dept_faculties, fn($f) => !isset($user_reviews_map[$f['id']]));
+                        if (empty($available)) continue;
+                        $has_any_option = true;
+                    ?>
                     <div class="dept-group">
                         <div class="dept-header" onclick="toggleDept(this)">
-                            <span><?php echo htmlspecialchars($dept); ?> <span style="font-weight:400;color:var(--gray-400);font-size:12px;">(<?php echo count($dept_faculties); ?>)</span></span>
+                            <span><?php echo htmlspecialchars($dept); ?> <span style="font-weight:400;color:var(--gray-400);font-size:12px;">(<?php echo count($available); ?>)</span></span>
                             <span class="chevron">▼</span>
                         </div>
                         <div class="dept-body">
-                            <?php foreach ($dept_faculties as $f): ?>
-                            <div class="faculty-option" onclick="selectFaculty(<?php echo $f['id']; ?>, '<?php echo htmlspecialchars(addslashes($f['name'])); ?>', '<?php echo htmlspecialchars(addslashes($dept)); ?>')">
-                                <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($f['name']); ?>&background=8B0000&color=fff&size=40" alt="">
+                            <?php foreach ($available as $f):
+                                $f_avatar = (!empty($f['photo']) && file_exists($f['photo'])) ? htmlspecialchars($f['photo']) : 'https://ui-avatars.com/api/?name='.urlencode($f['name']).'&background=8B0000&color=fff&size=40';
+                            ?>
+                            <div class="faculty-option" onclick="selectFaculty(<?php echo $f['id']; ?>, '<?php echo htmlspecialchars(addslashes($f['name'])); ?>', '<?php echo htmlspecialchars(addslashes($dept)); ?>', '<?php echo $f_avatar; ?>')">
+                                <img src="<?php echo $f_avatar; ?>" alt="">
                                 <?php echo htmlspecialchars($f['name']); ?>
                             </div>
                             <?php endforeach; ?>
                         </div>
                     </div>
                     <?php endforeach; ?>
+                    <?php if (!$has_any_option): ?>
+                    <div style="text-align:center;padding:30px 20px;color:var(--gray-400);">
+                        <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 10px;display:block;opacity:0.4;"><polyline points="20 6 9 17 4 12"/></svg>
+                        <div style="font-size:14px;font-weight:600;margin-bottom:4px;">All faculties reviewed!</div>
+                        <div style="font-size:12px;">You've already submitted a review for every faculty member.</div>
+                    </div>
+                    <?php endif; ?>
                 </div>
 
                 <!-- Step 2: Write Review -->
@@ -1569,24 +1586,23 @@ body {
                     <div style="margin-top:14px;">
                         <div style="font-size:12px;font-weight:600;color:var(--gray-600);margin-bottom:8px;display:flex;align-items:center;gap:5px;">
                             <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                            Attach Photo <span style="font-weight:400;color:var(--gray-400);">(optional)</span>
+                            Attach Photos <span style="font-weight:400;color:var(--gray-400);">(optional — up to 5)</span>
                         </div>
-                        <input type="file" name="review_photo" id="reviewPhotoInput" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="previewReviewPhoto(this)">
-                        <!-- Drop zone / preview area -->
-                        <div id="reviewPhotoDropzone" onclick="document.getElementById('reviewPhotoInput').click()"
+                        <input type="file" name="review_photos[]" id="reviewPhotosInput" accept="image/jpeg,image/png,image/webp" multiple style="display:none;" onchange="previewReviewPhotos(this)">
+                        <!-- Drop zone -->
+                        <div id="reviewPhotoDropzone" onclick="document.getElementById('reviewPhotosInput').click()"
                             style="border:2px dashed var(--gray-200);border-radius:var(--radius-sm);padding:18px 14px;text-align:center;cursor:pointer;transition:border-color 0.2s,background 0.2s;background:var(--gray-100);"
                             onmouseover="this.style.borderColor='var(--maroon)';this.style.background='var(--maroon-pale)';"
                             onmouseout="this.style.borderColor='var(--gray-200)';this.style.background='var(--gray-100)';">
                             <svg width="28" height="28" fill="none" stroke="var(--gray-400)" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 8px;display:block;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
-                            <div style="font-size:13px;font-weight:500;color:var(--gray-600);margin-bottom:2px;">Click to upload photo</div>
-                            <div style="font-size:11px;color:var(--gray-400);">JPG, PNG, WEBP · Max 5MB · AI safety checked</div>
+                            <div style="font-size:13px;font-weight:500;color:var(--gray-600);margin-bottom:2px;">Click to upload photos</div>
+                            <div style="font-size:11px;color:var(--gray-400);">JPG, PNG, WEBP · Max 5MB each · Up to 5 photos · AI safety checked</div>
                         </div>
-                        <!-- Preview once selected -->
-                        <div id="reviewPhotoPreviewWrap" style="display:none;margin-top:8px;position:relative;border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--gray-200);">
-                            <img id="reviewPhotoPreview" src="" style="width:100%;max-height:160px;object-fit:cover;display:block;">
-                            <button type="button" onclick="clearReviewPhoto()" title="Remove photo"
-                                style="position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,0.55);border:none;cursor:pointer;color:white;font-size:14px;display:flex;align-items:center;justify-content:center;line-height:1;">×</button>
-                            <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.35);padding:5px 10px;font-size:11px;color:rgba(255,255,255,0.9);" id="reviewPhotoName"></div>
+                        <!-- Thumbnail grid preview -->
+                        <div id="reviewPhotosPreviewGrid" style="display:none;margin-top:10px;display:none;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:8px;"></div>
+                        <div id="reviewPhotosAddMore" style="display:none;margin-top:6px;">
+                            <button type="button" onclick="document.getElementById('reviewPhotosInput').click()" style="font-size:11px;color:var(--maroon);background:var(--maroon-pale);border:1px solid rgba(139,0,0,0.15);border-radius:20px;padding:3px 10px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.18s;" onmouseover="this.style.background='var(--maroon)';this.style.color='white';" onmouseout="this.style.background='var(--maroon-pale)';this.style.color='var(--maroon)';">+ Add more photos</button>
+                            <span id="reviewPhotosCount" style="font-size:11px;color:var(--gray-400);margin-left:8px;"></span>
                         </div>
                     </div>
 
@@ -1649,9 +1665,24 @@ function closeResubmitModal() { document.getElementById('resubmitModal').classLi
 document.getElementById('resubmitModal').addEventListener('click', function(e) { if (e.target === this) closeResubmitModal(); });
 
 // Open modal pre-selected for a specific faculty (from card)
-function openModalForFaculty(id, name, dept) {
+function openModalForFaculty(id, name, dept, avatar) {
     openReviewModal();
-    selectFaculty(id, name, dept);
+    // Find and click the matching faculty-option to trigger selection
+    const opts = document.querySelectorAll('.faculty-option');
+    for (const opt of opts) {
+        if (opt.getAttribute('onclick') && opt.getAttribute('onclick').includes('selectFaculty('+id+',')) {
+            // Manually trigger selection without relying on event
+            selectedFacultyId = id;
+            document.getElementById('facultyIdInput').value = id;
+            document.getElementById('previewName').textContent = name;
+            document.getElementById('previewDept').textContent = dept;
+            document.getElementById('previewImg').src = avatar || ('https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&background=8B0000&color=fff&size=42');
+            document.querySelectorAll('.faculty-option').forEach(o => o.classList.remove('selected'));
+            opt.classList.add('selected');
+            document.getElementById('nextBtn').disabled = false;
+            break;
+        }
+    }
     setTimeout(() => goStep(2), 100);
 }
 
@@ -1778,12 +1809,12 @@ function goStep(n) {
     document.getElementById('nextBtn').style.display = n === 1 ? 'inline-flex' : 'none';
     document.getElementById('submitBtn').style.display = n === 2 ? 'inline-flex' : 'none';
 }
-function selectFaculty(id, name, dept) {
+function selectFaculty(id, name, dept, avatar) {
     selectedFacultyId = id;
     document.getElementById('facultyIdInput').value = id;
     document.getElementById('previewName').textContent = name;
     document.getElementById('previewDept').textContent = dept;
-    document.getElementById('previewImg').src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&background=8B0000&color=fff&size=42';
+    document.getElementById('previewImg').src = avatar || ('https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&background=8B0000&color=fff&size=42');
     document.querySelectorAll('.faculty-option').forEach(o => o.classList.remove('selected'));
     event.currentTarget.classList.add('selected');
     document.getElementById('nextBtn').disabled = false;
@@ -1999,63 +2030,99 @@ function addBubble(text, from, id) {
     box.scrollTop = box.scrollHeight;
     return d;
 }
-// Review photo preview (new review)
-function previewReviewPhoto(input) {
-    if (input.files && input.files[0]) {
-        const file = input.files[0];
-        if (file.size > 5 * 1024 * 1024) {
-            alert('Image must be under 5MB.');
-            input.value = '';
-            return;
-        }
+// ── Multi-photo preview helpers ──────────────────────────────────────────
+let _reviewPhotoFiles = [];   // DataTransfer trick to track files for new review
+let _editPhotoFiles   = [];   // same for edit review
+
+function buildPhotoGrid(files, gridId, dropzoneId, addMoreId, countId, clearFn) {
+    const grid = document.getElementById(gridId);
+    const dz   = document.getElementById(dropzoneId);
+    const more  = document.getElementById(addMoreId);
+    const cnt   = document.getElementById(countId);
+    if (!files.length) { grid.style.display='none'; dz.style.display=''; more.style.display='none'; return; }
+    grid.style.display = 'grid';
+    dz.style.display = 'none';
+    more.style.display = '';
+    if (cnt) cnt.textContent = files.length + ' photo' + (files.length!==1?'s':'') + ' selected';
+    grid.innerHTML = '';
+    files.forEach((file, idx) => {
         const reader = new FileReader();
         reader.onload = e => {
-            document.getElementById('reviewPhotoPreview').src = e.target.result;
-            document.getElementById('reviewPhotoPreviewWrap').style.display = '';
-            document.getElementById('reviewPhotoDropzone').style.display = 'none';
-            const nameEl = document.getElementById('reviewPhotoName');
-            if (nameEl) nameEl.textContent = file.name;
+            const wrap = document.createElement('div');
+            wrap.style.cssText = 'position:relative;border-radius:8px;overflow:hidden;aspect-ratio:1;border:1px solid var(--gray-200);';
+            wrap.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;display:block;">
+                <button type="button" onclick="${clearFn}(${idx})" style="position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,0.6);border:none;cursor:pointer;color:white;font-size:12px;display:flex;align-items:center;justify-content:center;line-height:1;">×</button>`;
+            grid.appendChild(wrap);
         };
         reader.readAsDataURL(file);
+    });
+}
+
+function previewReviewPhotos(input) {
+    const MAX = 5;
+    const newFiles = Array.from(input.files);
+    if (!newFiles.length) return;
+    // Merge, cap at MAX
+    _reviewPhotoFiles = [..._reviewPhotoFiles, ...newFiles].slice(0, MAX);
+    if (newFiles.length + _reviewPhotoFiles.length > MAX) {
+        alert('Maximum 5 photos allowed. Only the first 5 will be used.');
     }
+    // Rebuild the file input with our tracked files
+    rebuildFileInput('reviewPhotosInput', _reviewPhotoFiles);
+    buildPhotoGrid(_reviewPhotoFiles, 'reviewPhotosPreviewGrid', 'reviewPhotoDropzone', 'reviewPhotosAddMore', 'reviewPhotosCount', 'removeReviewPhoto');
 }
-function clearReviewPhoto() {
-    document.getElementById('reviewPhotoInput').value = '';
-    document.getElementById('reviewPhotoPreview').src = '';
-    document.getElementById('reviewPhotoPreviewWrap').style.display = 'none';
-    document.getElementById('reviewPhotoDropzone').style.display = '';
+function removeReviewPhoto(idx) {
+    _reviewPhotoFiles.splice(idx, 1);
+    rebuildFileInput('reviewPhotosInput', _reviewPhotoFiles);
+    buildPhotoGrid(_reviewPhotoFiles, 'reviewPhotosPreviewGrid', 'reviewPhotoDropzone', 'reviewPhotosAddMore', 'reviewPhotosCount', 'removeReviewPhoto');
 }
-// Edit review photo preview
-function previewEditReviewPhoto(input) {
-    if (input.files && input.files[0]) {
-        const file = input.files[0];
-        if (file.size > 5 * 1024 * 1024) { alert('Image must be under 5MB.'); input.value = ''; return; }
-        const reader = new FileReader();
-        reader.onload = e => {
-            document.getElementById('editReviewPhotoPreview').src = e.target.result;
-            document.getElementById('editReviewPhotoPreviewWrap').style.display = '';
-            document.getElementById('editPhotoDropzone').style.display = 'none';
-        };
-        reader.readAsDataURL(file);
-    }
+function clearReviewPhotos() {
+    _reviewPhotoFiles = [];
+    const inp = document.getElementById('reviewPhotosInput');
+    if (inp) inp.value = '';
+    buildPhotoGrid([], 'reviewPhotosPreviewGrid', 'reviewPhotoDropzone', 'reviewPhotosAddMore', 'reviewPhotosCount', 'removeReviewPhoto');
 }
-function clearEditReviewPhoto() {
-    document.getElementById('editReviewPhotoInput').value = '';
-    document.getElementById('editReviewPhotoPreview').src = '';
-    document.getElementById('editReviewPhotoPreviewWrap').style.display = 'none';
-    document.getElementById('editPhotoDropzone').style.display = '';
+
+function previewEditReviewPhotos(input) {
+    const MAX = 5;
+    const newFiles = Array.from(input.files);
+    if (!newFiles.length) return;
+    _editPhotoFiles = [..._editPhotoFiles, ...newFiles].slice(0, MAX);
+    rebuildFileInput('editReviewPhotosInput', _editPhotoFiles);
+    buildPhotoGrid(_editPhotoFiles, 'editReviewPhotosPreviewGrid', 'editPhotoDropzone', 'editPhotosAddMore', 'editPhotosCount', 'removeEditPhoto');
 }
-// Reset photo when review modal closes
+function removeEditPhoto(idx) {
+    _editPhotoFiles.splice(idx, 1);
+    rebuildFileInput('editReviewPhotosInput', _editPhotoFiles);
+    buildPhotoGrid(_editPhotoFiles, 'editReviewPhotosPreviewGrid', 'editPhotoDropzone', 'editPhotosAddMore', 'editPhotosCount', 'removeEditPhoto');
+}
+function clearEditReviewPhotos() {
+    _editPhotoFiles = [];
+    const inp = document.getElementById('editReviewPhotosInput');
+    if (inp) inp.value = '';
+    buildPhotoGrid([], 'editReviewPhotosPreviewGrid', 'editPhotoDropzone', 'editPhotosAddMore', 'editPhotosCount', 'removeEditPhoto');
+}
+
+// Rebuild the actual file input's FileList using DataTransfer
+function rebuildFileInput(inputId, filesArr) {
+    try {
+        const dt = new DataTransfer();
+        filesArr.forEach(f => dt.items.add(f));
+        const inp = document.getElementById(inputId);
+        if (inp) inp.files = dt.files;
+    } catch(e) { /* DataTransfer not supported in all envs */ }
+}
+// Reset photos when review modal closes
 const _origCloseReviewModal = closeReviewModal;
 closeReviewModal = function() {
     _origCloseReviewModal();
-    clearReviewPhoto();
+    clearReviewPhotos();
 };
-// Reset edit photo when edit modal closes
+// Reset edit photos when edit modal closes
 const _origCloseEditModal = closeEditModal;
 closeEditModal = function() {
     _origCloseEditModal();
-    clearEditReviewPhoto();
+    clearEditReviewPhotos();
 };
 document.addEventListener('DOMContentLoaded', () => {
     const hash = window.location.hash;

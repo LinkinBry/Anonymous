@@ -240,359 +240,482 @@ while ($efd = mysqli_fetch_assoc($ef_d)) $ef_arr[] = $efd['department'];
 
 <!-- ══ Sidebar ══════════════════════════════════════════════════════════ -->
 <div class="sidebar">
-    <div class="sidebar-brand">AnonymousReview<br><span style="font-size:11px;font-family:'DM Sans',sans-serif;font-weight:400;opacity:0.6;">Admin Panel</span></div>
-    <img src="<?php echo htmlspecialchars($admin_avatar); ?>" class="sidebar-avatar" alt="Admin">
-    <div class="sidebar-name"><?php echo htmlspecialchars($current_user['fullname']); ?></div>
-    <div class="sidebar-role">Administrator</div>
-    <nav>
-        <div class="nav-label">Manage</div>
-        <a href="#overview"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Overview</a>
-        <a href="#users"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>Users</a>
-        <a href="#faculties"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>Faculties</a>
-        <a href="#pending"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Pending Reviews
-            <?php if ($pending_count > 0): ?><span style="background:white;color:var(--maroon);font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px;margin-left:auto;" id="pendingNavBadge"><?php echo $pending_count; ?></span><?php endif; ?>
-        </a>
-        <a href="#approved"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Approved Reviews</a>
-        <a href="#reports"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Reports</a>
-    </nav>
-    <div class="sidebar-footer">
-        <a href="logout.php"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>Logout</a>
+  <div class="sidebar-top">
+    <div class="sidebar-brand-row">
+      <div class="sidebar-logo-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      </div>
+      <div>
+        <div class="sidebar-brand-name">AnonymousReview</div>
+        <div class="sidebar-brand-sub">Admin Panel</div>
+      </div>
     </div>
+    <div class="sidebar-user">
+      <div class="sidebar-user-av">
+        <img src="<?php echo htmlspecialchars($admin_avatar); ?>" alt="Admin">
+      </div>
+      <div>
+        <div class="sidebar-user-name"><?php echo htmlspecialchars($current_user['fullname']); ?></div>
+        <div class="sidebar-user-role">Administrator</div>
+      </div>
+    </div>
+  </div>
+  <nav>
+    <div class="nav-label">Manage</div>
+    <a href="#overview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Overview</a>
+    <a href="#users"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>Users<span class="sidebar-nav-badge"><?php echo $total_users; ?></span></a>
+    <a href="#faculties"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>Faculty<span class="sidebar-nav-badge"><?php echo $total_faculties; ?></span></a>
+    <a href="#pending"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Pending
+      <?php if ($pending_count > 0): ?><span class="sidebar-nav-badge" style="background:#E24B4A;" id="pendingNavBadge"><?php echo $pending_count; ?></span><?php endif; ?>
+    </a>
+    <a href="#approved"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Approved</a>
+    <a href="#reports"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Reports</a>
+  </nav>
+  <div class="sidebar-footer">
+    <a href="logout.php"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>Logout</a>
+  </div>
 </div>
 
 <!-- ══ Main ═════════════════════════════════════════════════════════════ -->
 <div class="main">
-    <div class="topbar">
-        <div class="topbar-left"><h1>Admin Dashboard</h1><p>Manage users, faculties, and reviews across the system.</p></div>
-        <div class="today-date">📅 <?php echo date("F j, Y"); ?></div>
+  <div class="topbar">
+    <div class="topbar-left">
+      <h1>Admin dashboard</h1>
+      <p>Manage users, faculties, and reviews across the system.</p>
     </div>
+    <div class="topbar-right">
+      <div class="today-date">📅 <?php echo date("F j, Y"); ?></div>
+    </div>
+  </div>
+
+  <div class="content">
 
     <!-- Toast notifications -->
     <?php if (isset($_GET['added'])): ?>
-    <div id="toast1" style="position:fixed;top:24px;right:24px;z-index:9999;background:#d1fae5;color:#065f46;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,0.12);display:flex;align-items:center;gap:8px;animation:slideUp 0.3s ease;">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Faculty added successfully!
+    <div id="toast1" style="position:fixed;top:20px;right:20px;z-index:9999;background:#d1fae5;color:#065f46;padding:10px 16px;border-radius:9px;font-size:12px;font-weight:500;box-shadow:0 4px 14px rgba(0,0,0,0.1);display:flex;align-items:center;gap:7px;animation:slideUp 0.3s ease;">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Faculty added successfully!
     </div>
     <script>setTimeout(()=>{const t=document.getElementById('toast1');if(t){t.style.transition='opacity 0.5s';t.style.opacity='0';setTimeout(()=>t.remove(),500);}},3500);</script>
     <?php endif; ?>
     <?php if (isset($_GET['edited_faculty'])): ?>
-    <div id="toast2" style="position:fixed;top:24px;right:24px;z-index:9999;background:#dbeafe;color:#1e40af;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,0.12);display:flex;align-items:center;gap:8px;animation:slideUp 0.3s ease;">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Faculty updated successfully!
+    <div id="toast2" style="position:fixed;top:20px;right:20px;z-index:9999;background:#dbeafe;color:#1e40af;padding:10px 16px;border-radius:9px;font-size:12px;font-weight:500;box-shadow:0 4px 14px rgba(0,0,0,0.1);display:flex;align-items:center;gap:7px;animation:slideUp 0.3s ease;">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Faculty updated successfully!
     </div>
     <script>setTimeout(()=>{const t=document.getElementById('toast2');if(t){t.style.transition='opacity 0.5s';t.style.opacity='0';setTimeout(()=>t.remove(),500);}},3500);</script>
     <?php endif; ?>
     <?php if (isset($_GET['deleted_faculty'])): ?>
-    <div id="toast3" style="position:fixed;top:24px;right:24px;z-index:9999;background:#fee2e2;color:#991b1b;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,0.12);display:flex;align-items:center;gap:8px;animation:slideUp 0.3s ease;">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>Faculty deleted.
+    <div id="toast3" style="position:fixed;top:20px;right:20px;z-index:9999;background:#fee2e2;color:#991b1b;padding:10px 16px;border-radius:9px;font-size:12px;font-weight:500;box-shadow:0 4px 14px rgba(0,0,0,0.1);display:flex;align-items:center;gap:7px;animation:slideUp 0.3s ease;">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>Faculty deleted.
     </div>
     <script>setTimeout(()=>{const t=document.getElementById('toast3');if(t){t.style.transition='opacity 0.5s';t.style.opacity='0';setTimeout(()=>t.remove(),500);}},3500);</script>
     <?php endif; ?>
 
-    <!-- Stats Row 1 -->
+    <!-- ── Stats Row 1 ──────────────────────────────────────────────────── -->
     <div id="overview" class="stats-grid stats-row-4">
-        <div class="stat-card s-users"><div class="stat-label">Total Users</div><div class="stat-value"><?php echo $total_users; ?></div><div class="stat-icon"><div style="width:44px;height:44px;border-radius:50%;background:rgba(99,102,241,0.1);display:flex;align-items:center;justify-content:center;"><svg width="20" height="20" fill="none" stroke="#6366f1" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div></div></div>
-        <div class="stat-card s-faculty"><div class="stat-label">Total Faculties</div><div class="stat-value"><?php echo $total_faculties; ?></div><div class="stat-icon"><div style="width:44px;height:44px;border-radius:50%;background:rgba(245,158,11,0.1);display:flex;align-items:center;justify-content:center;"><svg width="20" height="20" fill="none" stroke="#f59e0b" stroke-width="1.8" viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg></div></div></div>
-        <div class="stat-card s-pending"><div class="stat-label">Pending Reviews</div><div class="stat-value"><?php echo $pending_count; ?></div><div class="stat-icon"><div style="width:44px;height:44px;border-radius:50%;background:rgba(249,115,22,0.1);display:flex;align-items:center;justify-content:center;"><svg width="20" height="20" fill="none" stroke="#f97316" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div></div></div>
-        <div class="stat-card s-approved"><div class="stat-label">Approved</div><div class="stat-value"><?php echo $approved_count; ?></div><div class="stat-icon"><div style="width:44px;height:44px;border-radius:50%;background:rgba(16,185,129,0.1);display:flex;align-items:center;justify-content:center;"><svg width="20" height="20" fill="none" stroke="#10b981" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div></div></div>
+      <div class="stat-card s-users">
+        <div class="stat-label">Total Users</div>
+        <div class="stat-value"><?php echo $total_users; ?></div>
+        <div class="stat-sub">+<?php echo $week_users; ?> this week</div>
+        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#4338CA" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+      </div>
+      <div class="stat-card s-faculty">
+        <div class="stat-label">Total Faculty</div>
+        <div class="stat-value"><?php echo $total_faculties; ?></div>
+        <div class="stat-sub">Across departments</div>
+        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#B45309" stroke-width="1.8"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg></div>
+      </div>
+      <div class="stat-card s-pending">
+        <div class="stat-label">Pending Reviews</div>
+        <div class="stat-value"><?php echo $pending_count; ?></div>
+        <div class="stat-sub">Needs your action</div>
+        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#C2410C" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+      </div>
+      <div class="stat-card s-approved">
+        <div class="stat-label">Approved Reviews</div>
+        <div class="stat-value"><?php echo $approved_count; ?></div>
+        <div class="stat-sub">Total published</div>
+        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#065F46" stroke-width="1.8"><polyline points="20 6 9 17 4 12"/></svg></div>
+      </div>
     </div>
 
     <!-- Stats Row 2 -->
     <div class="stats-grid stats-row-3">
-        <div class="stat-card s-rejected"><div class="stat-label">Rejected</div><div class="stat-value"><?php echo $rejected_count; ?></div><div class="stat-icon"><div style="width:44px;height:44px;border-radius:50%;background:rgba(239,68,68,0.1);display:flex;align-items:center;justify-content:center;"><svg width="20" height="20" fill="none" stroke="#ef4444" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div></div></div>
-        <div class="stat-card s-total"><div class="stat-label">Total Reviews</div><div class="stat-value"><?php echo $total_reviews; ?></div><div class="stat-icon"><div style="width:44px;height:44px;border-radius:50%;background:rgba(107,114,128,0.1);display:flex;align-items:center;justify-content:center;"><svg width="20" height="20" fill="none" stroke="#6b7280" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div></div></div>
-        <div class="stat-card s-admins"><div class="stat-label">Total Admins</div><div class="stat-value"><?php echo $total_admins; ?></div><div class="stat-icon"><div style="width:44px;height:44px;border-radius:50%;background:rgba(139,0,0,0.1);display:flex;align-items:center;justify-content:center;"><svg width="20" height="20" fill="none" stroke="#8B0000" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div></div></div>
-    </div>
-
-    <!-- ══ Users ══════════════════════════════════════════════════════════ -->
-    <div class="section" id="users">
-        <div class="section-header">
-            <div class="section-title"><svg width="17" height="17" fill="none" stroke="var(--maroon)" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>User List <span class="section-badge"><?php echo $total_users; ?></span></div>
-            <button id="edit_users_btn" class="btn btn-outline"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit</button>
-        </div>
-        <div class="section-toolbar">
-            <div class="search-box"><svg width="14" height="14" fill="none" stroke="var(--gray-400)" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" id="users-search" placeholder="Search by name, username or email..." oninput="filterTable('users-tbody','users-search',null)"></div>
-        </div>
-        <form method="POST">
-        <table class="admin-table">
-            <thead><tr>
-                <th style="display:none;width:40px;" id="select_all_th"><input type="checkbox" id="select_all_users"></th>
-                <th>User</th><th>Username</th><th>Email</th><th style="width:150px;">Action</th>
-            </tr></thead>
-            <tbody id="users-tbody">
-            <?php while ($u = mysqli_fetch_assoc($users)): ?>
-            <tr>
-                <td style="display:none;" class="checkbox_td"><input type="checkbox" name="selected_users[]" value="<?php echo $u['id']; ?>" class="user_checkbox"></td>
-                <td><div class="user-info"><img class="user-avatar" src="<?php echo (!empty($u['profile_pic']) && file_exists($u['profile_pic'])) ? htmlspecialchars($u['profile_pic']) : 'https://ui-avatars.com/api/?name='.urlencode($u['fullname']).'&background=8B0000&color=fff&size=32'; ?>" alt=""><div class="user-info-text"><strong><?php echo htmlspecialchars($u['fullname']); ?></strong><span>#<?php echo $u['id']; ?></span></div></div></td>
-                <td>@<?php echo htmlspecialchars($u['username']); ?></td>
-                <td><?php echo htmlspecialchars($u['email']); ?></td>
-                <td><div style="display:flex;gap:6px;">
-                    <button type="button" class="btn btn-outline" onclick="openUserModal(<?php echo $u['id']; ?>,'<?php echo htmlspecialchars(addslashes($u['fullname'])); ?>','<?php echo htmlspecialchars(addslashes($u['username'])); ?>','<?php echo htmlspecialchars(addslashes($u['email'])); ?>','<?php echo (!empty($u['profile_pic']) && file_exists($u['profile_pic'])) ? htmlspecialchars(addslashes($u['profile_pic'])) : 'https://ui-avatars.com/api/?name='.urlencode($u['fullname']).'&background=8B0000&color=fff&size=80'; ?>')"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View</button>
-                    <button type="button" class="btn btn-red" onclick="confirmDeleteUser(<?php echo $u['id']; ?>,'<?php echo htmlspecialchars(addslashes($u['fullname'])); ?>')"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>Delete</button>
-                </div></td>
-            </tr>
-            <?php endwhile; ?>
-            </tbody>
-        </table>
-        <div class="bulk-bar" id="bulk_actions"><span id="selected_count">0 users selected</span><button type="submit" name="bulk_delete_users" class="btn btn-red" onclick="return confirm('Delete selected users?')"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>Delete Selected</button></div>
-        </form>
-    </div>
-
-    <!-- ══ Faculties ══════════════════════════════════════════════════════ -->
-    <div class="section" id="faculties">
-        <div class="section-header">
-            <div class="section-title"><svg width="17" height="17" fill="none" stroke="var(--maroon)" stroke-width="2" viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>Faculty List <span class="section-badge"><?php echo $total_faculties; ?></span></div>
-            <div style="display:flex;gap:8px;align-items:center;">
-                <a href="?sort_star=<?php echo $sort_star === 'desc' ? 'asc' : 'desc'; ?>#faculties" class="btn btn-outline">★ <?php echo $sort_star === 'desc' ? 'Highest First' : 'Lowest First'; ?></a>
-                <button type="button" class="btn btn-outline" onclick="document.getElementById('addFacultyModal').classList.add('open')"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add Faculty</button>
-            </div>
-        </div>
-        <div class="section-toolbar">
-            <div class="search-box"><svg width="14" height="14" fill="none" stroke="var(--gray-400)" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" id="faculties-search" placeholder="Search by name..." oninput="filterTable('faculties-tbody','faculties-search','faculties-dept-filter')"></div>
-            <select id="faculties-dept-filter" class="filter-sel" onchange="filterTable('faculties-tbody','faculties-search','faculties-dept-filter')">
-                <option value="">All Departments</option>
-                <?php
-                $depts_res = mysqli_query($conn, "SELECT DISTINCT department FROM faculties WHERE department IS NOT NULL AND department != '' ORDER BY department ASC");
-                while ($d = mysqli_fetch_assoc($depts_res)): ?>
-                <option value="<?php echo htmlspecialchars($d['department']); ?>"><?php echo htmlspecialchars($d['department']); ?></option>
-                <?php endwhile; ?>
-            </select>
-        </div>
-        <table class="admin-table">
-            <thead><tr><th>Name</th><th>Department</th><th>Avg Rating</th><th style="width:170px;">Action</th></tr></thead>
-            <tbody id="faculties-tbody">
-            <?php while ($f = mysqli_fetch_assoc($faculties)):
-                $avg    = floatval($f['avg_all'] ?? 0);
-                $fphoto = (!empty($f['photo']) && file_exists($f['photo'])) ? htmlspecialchars($f['photo']) : 'https://ui-avatars.com/api/?name='.urlencode($f['name']).'&background=8B0000&color=fff&size=36';
-            ?>
-            <tr>
-                <td><div class="user-info"><img class="fac-avatar" src="<?php echo $fphoto; ?>" alt=""><div class="user-info-text"><strong><?php echo htmlspecialchars($f['name']); ?></strong></div></div></td>
-                <td><span style="font-size:12px;background:var(--gray-100);padding:3px 10px;border-radius:20px;color:var(--gray-600);"><?php echo htmlspecialchars($f['department'] ?? '—'); ?></span></td>
-                <td>
-                    <?php if ($avg > 0):
-                        $sz   = 15; $gap = 2; $sw = $sz * 5 + $gap * 4;
-                        $base = round($sz * 0.85);
-                        $pct  = min(100, ($avg / 5) * 100);
-                        $cw   = round($pct / 100 * $sw, 2);
-                        $uid  = 'fs' . substr(md5($f['id'] . $avg), 0, 7);
-                        $emp  = $fil = '';
-                        for ($si = 0; $si < 5; $si++) {
-                            $x = $si * ($sz + $gap);
-                            $emp .= '<text x="'.$x.'" y="'.$base.'" font-size="'.$sz.'" fill="#d1d5db">★</text>';
-                            $fil .= '<text x="'.$x.'" y="'.$base.'" font-size="'.$sz.'" fill="#f59e0b">★</text>';
-                        }
-                    ?>
-                    <span style="display:inline-flex;align-items:center;vertical-align:middle;line-height:1;overflow:hidden;">
-                        <svg width="<?php echo $sw; ?>" height="<?php echo $sz; ?>" viewBox="0 0 <?php echo $sw; ?> <?php echo $sz; ?>" xmlns="http://www.w3.org/2000/svg" style="display:block;overflow:hidden;">
-                            <defs><clipPath id="<?php echo $uid; ?>"><rect x="0" y="0" width="<?php echo $cw; ?>" height="<?php echo $sz; ?>"/></clipPath></defs>
-                            <?php echo $emp; ?><g clip-path="url(#<?php echo $uid; ?>)"><?php echo $fil; ?></g>
-                        </svg>
-                    </span>
-                    <span class="avg-num"><?php echo number_format($avg, 1); ?></span>
-                    <span style="font-size:11px;color:var(--gray-400);margin-left:4px;">(<?php echo $f['review_count']; ?>)</span>
-                    <?php else: ?>
-                    <span style="font-size:12px;color:var(--gray-400);">No ratings yet</span>
-                    <?php endif; ?>
-                </td>
-                <td><div style="display:flex;gap:6px;">
-                    <button type="button" class="btn btn-outline" onclick="openFacultyModal(<?php echo $f['id']; ?>,'<?php echo htmlspecialchars(addslashes($f['name'])); ?>','<?php echo htmlspecialchars(addslashes($f['department'] ?? '')); ?>')"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>Reviews</button>
-                    <button type="button" class="btn btn-outline" onclick="openEditFacultyModal(<?php echo $f['id']; ?>,'<?php echo htmlspecialchars(addslashes($f['name'])); ?>','<?php echo htmlspecialchars(addslashes($f['department'] ?? '')); ?>','<?php echo (!empty($f['photo'])&&file_exists($f['photo']))?htmlspecialchars(addslashes($f['photo'])):''; ?>')"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit</button>
-                    <a href="?delete_faculty=<?php echo $f['id']; ?>#faculties" class="btn btn-red" onclick="return confirm('Delete this faculty?')"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>Delete</a>
-                </div></td>
-            </tr>
-            <?php endwhile; ?>
-            </tbody>
-        </table>
+      <div class="stat-card s-rejected">
+        <div class="stat-label">Rejected</div>
+        <div class="stat-value"><?php echo $rejected_count; ?></div>
+        <div class="stat-sub">Not published</div>
+        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#991B1B" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
+      </div>
+      <div class="stat-card s-total">
+        <div class="stat-label">Total Reviews</div>
+        <div class="stat-value"><?php echo $total_reviews; ?></div>
+        <div class="stat-sub">All time</div>
+        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="1.8"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>
+      </div>
+      <div class="stat-card s-admins">
+        <div class="stat-label">Admins</div>
+        <div class="stat-value"><?php echo $total_admins; ?></div>
+        <div class="stat-sub">System admins</div>
+        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--maroon)" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+      </div>
     </div>
 
     <!-- ══ Pending Reviews ════════════════════════════════════════════════ -->
     <div class="section" id="pending">
-        <div class="section-header">
-            <div class="section-title"><svg width="17" height="17" fill="none" stroke="var(--maroon)" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                Pending Reviews <?php if ($pending_count > 0): ?><span class="section-badge" id="pendingSecBadge"><?php echo $pending_count; ?></span><?php endif; ?>
-            </div>
+      <div class="section-header">
+        <div class="section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--maroon)" stroke-width="2" style="width:15px;height:15px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Pending Reviews
+          <?php if ($pending_count > 0): ?><span class="section-badge" id="pendingSecBadge"><?php echo $pending_count; ?></span><?php endif; ?>
         </div>
-        <div class="section-toolbar">
-            <div class="search-box"><svg width="14" height="14" fill="none" stroke="var(--gray-400)" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" id="pending-search" placeholder="Search by user or faculty..." oninput="filterTable('pending-tbody','pending-search','pending-sentiment-filter')"></div>
-            <select id="pending-sentiment-filter" class="filter-sel" onchange="filterTable('pending-tbody','pending-search','pending-sentiment-filter')">
-                <option value="">All Sentiments</option><option value="positive">Positive</option><option value="neutral">Neutral</option><option value="negative">Negative</option>
-            </select>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <div class="search-box" style="min-width:180px;max-width:220px;">
+            <svg width="12" height="12" fill="none" stroke="var(--gray-400)" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="pending-search" placeholder="Search…" oninput="filterTable('pending-tbody','pending-search','pending-sentiment-filter')">
+          </div>
+          <select id="pending-sentiment-filter" class="filter-sel" onchange="filterTable('pending-tbody','pending-search','pending-sentiment-filter')">
+            <option value="">All Sentiments</option><option value="positive">Positive</option><option value="neutral">Neutral</option><option value="negative">Negative</option>
+          </select>
+        </div>
+      </div>
+      <form method="POST">
+      <!-- Bulk bar inside the section, above rows -->
+      <div class="bulk-bar" id="review_bulk_bar" style="padding:8px 14px;">
+        <span id="review_selected_count">0 reviews selected</span>
+        <button type="submit" name="bulk_approve" class="btn btn-green" onclick="return confirm('Approve selected?')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Bulk Approve</button>
+        <button type="submit" name="bulk_reject"  class="btn btn-gray" onclick="return confirm('Reject selected?')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Bulk Reject</button>
+      </div>
+      <div id="pending-tbody">
+        <?php $has_pending = false; while ($r = mysqli_fetch_assoc($pending_reviews)): $has_pending = true;
+          $s = $r['sentiment'] ?? 'neutral';
+          $cls = $s==='positive' ? 'ai-pos' : ($s==='negative' ? 'ai-neg' : 'ai-neu');
+        ?>
+        <div class="pend-row" data-visible="true">
+          <input type="checkbox" name="selected_reviews[]" value="<?php echo $r['id']; ?>" class="pend-check review_cb" onchange="updateReviewBulk()">
+          <div class="pend-avatar"><?php echo strtoupper(substr($r['user_fullname'],0,2)); ?></div>
+          <div class="pend-body">
+            <div class="pend-meta">
+              <span class="pend-user"><?php echo htmlspecialchars($r['user_fullname']); ?></span>
+              <svg class="pend-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              <span class="pend-fac"><?php echo htmlspecialchars($r['faculty_name']); ?></span>
+              <span class="ai-tag <?php echo $cls; ?>">
+                <?php if ($s==='positive'): ?><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg><?php elseif ($s==='negative'): ?><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg><?php endif; ?>
+                <?php echo ucfirst($s); ?>
+              </span>
+              <?php if ($r['is_toxic']): ?><span class="ai-tag" style="background:#FFF7ED;color:#C2410C;">Toxic</span><?php endif; ?>
+            </div>
+            <div class="pend-text"><?php echo htmlspecialchars($r['review_text']); ?></div>
+            <?php if (!empty($r['summary'])): ?><div class="pend-time" style="font-style:italic;"><?php echo htmlspecialchars($r['summary']); ?></div><?php endif; ?>
+            <div class="pend-time"><?php echo date("M j, Y · g:i A", strtotime($r['created_at'])); ?></div>
+          </div>
+          <div class="pend-actions">
+            <button type="button" class="btn btn-outline" style="padding:3px 8px;font-size:10px;"
+                    onclick="openModal('<?php echo htmlspecialchars(addslashes($r['review_text'])); ?>','<?php echo htmlspecialchars(addslashes($r['faculty_name'])); ?>','<?php echo htmlspecialchars(addslashes($r['user_fullname'])); ?>',<?php echo intval($r['rating_teaching']); ?>,<?php echo intval($r['rating_communication']); ?>,<?php echo intval($r['rating_punctuality']); ?>,<?php echo intval($r['rating_fairness']); ?>,<?php echo intval($r['rating_overall']); ?>,'<?php echo htmlspecialchars(addslashes($r['review_photo'])); ?>')">View</button>
+            <a href="approve_review.php?id=<?php echo $r['id']; ?>" class="btn btn-green" style="padding:3px 8px;font-size:10px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Approve</a>
+            <a href="reject_review.php?id=<?php echo $r['id']; ?>"  class="btn btn-red"   style="padding:3px 8px;font-size:10px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Reject</a>
+          </div>
+        </div>
+        <?php endwhile; ?>
+        <?php if (!$has_pending): ?>
+        <div style="text-align:center;padding:28px;color:var(--gray-400);font-size:12px;">
+          <svg width="40" height="40" fill="none" stroke="#d1d5db" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 10px;display:block;"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1" ry="1"/></svg>
+          No pending reviews — all reviews have been processed.
+        </div>
+        <?php endif; ?>
+      </div>
+      </form>
+    </div>
+
+    <!-- ══ Faculty + Users side by side ══════════════════════════════════ -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+
+      <!-- Faculty Rankings -->
+      <div class="section" id="faculties">
+        <div class="section-header">
+          <div class="section-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--maroon)" stroke-width="2" style="width:15px;height:15px"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
+            Faculty <span class="section-badge"><?php echo $total_faculties; ?></span>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <a href="?sort_star=<?php echo $sort_star==='desc'?'asc':'desc'; ?>#faculties" class="btn btn-outline" style="font-size:10px;padding:3px 8px;">★ <?php echo $sort_star==='desc'?'Highest':'Lowest'; ?></a>
+            <button type="button" class="btn btn-maroon" style="font-size:10px;padding:3px 8px;" onclick="document.getElementById('addFacultyModal').classList.add('open')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add
+            </button>
+          </div>
+        </div>
+        <div class="section-toolbar" style="padding:8px 12px;">
+          <div class="search-box" style="min-width:0;flex:1;">
+            <svg width="12" height="12" fill="none" stroke="var(--gray-400)" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="faculties-search" placeholder="Search faculty…" oninput="filterTable('faculties-tbody','faculties-search','faculties-dept-filter')">
+          </div>
+          <select id="faculties-dept-filter" class="filter-sel" style="font-size:10px;" onchange="filterTable('faculties-tbody','faculties-search','faculties-dept-filter')">
+            <option value="">All Depts</option>
+            <?php $depts_res = mysqli_query($conn, "SELECT DISTINCT department FROM faculties WHERE department IS NOT NULL AND department != '' ORDER BY department ASC"); while ($d = mysqli_fetch_assoc($depts_res)): ?>
+            <option value="<?php echo htmlspecialchars($d['department']); ?>"><?php echo htmlspecialchars($d['department']); ?></option>
+            <?php endwhile; ?>
+          </select>
+        </div>
+        <div id="faculties-tbody">
+          <?php $rank=0; while ($f = mysqli_fetch_assoc($faculties)):
+            $rank++;
+            $avg = floatval($f['avg_all'] ?? 0);
+            $full = floor($avg);
+            $fphoto = (!empty($f['photo']) && file_exists($f['photo'])) ? htmlspecialchars($f['photo']) : null;
+          ?>
+          <div class="fac-row" data-visible="true">
+            <span class="fac-row-rank"><?php echo $rank; ?></span>
+            <div class="fac-row-av">
+              <?php if ($fphoto): ?><img src="<?php echo $fphoto; ?>" alt=""><?php else: ?><?php echo strtoupper(substr($f['name'],0,2)); ?><?php endif; ?>
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div class="fac-row-name"><?php echo htmlspecialchars($f['name']); ?></div>
+              <div class="fac-row-dept"><?php echo htmlspecialchars($f['department'] ?? '—'); ?></div>
+            </div>
+            <div style="text-align:right;flex-shrink:0;">
+              <?php if ($avg > 0): ?>
+              <div class="fac-row-stars">
+                <?php for ($s=1;$s<=5;$s++): ?><span class="<?php echo $s<=$full?'lit':''; ?>">★</span><?php endfor; ?>
+                <span class="fac-row-score"><?php echo number_format($avg,1); ?></span>
+              </div>
+              <div style="font-size:10px;color:var(--gray-400);"><?php echo $f['review_count']; ?> reviews</div>
+              <?php else: ?>
+              <div style="font-size:10px;color:var(--gray-400);">No ratings</div>
+              <?php endif; ?>
+            </div>
+            <div style="margin-left:8px;display:flex;gap:3px;">
+              <button type="button" class="btn btn-outline" style="padding:3px 7px;font-size:10px;" onclick="openFacultyModal(<?php echo $f['id']; ?>,'<?php echo htmlspecialchars(addslashes($f['name'])); ?>','<?php echo htmlspecialchars(addslashes($f['department']??'')); ?>')">View</button>
+              <button type="button" class="btn btn-outline" style="padding:3px 7px;font-size:10px;" onclick="openEditFacultyModal(<?php echo $f['id']; ?>,'<?php echo htmlspecialchars(addslashes($f['name'])); ?>','<?php echo htmlspecialchars(addslashes($f['department']??'')); ?>','<?php echo ($fphoto??''); ?>')">Edit</button>
+              <a href="?delete_faculty=<?php echo $f['id']; ?>#faculties" class="btn btn-red" style="padding:3px 7px;font-size:10px;" onclick="return confirm('Delete this faculty?')">Del</a>
+            </div>
+          </div>
+          <?php endwhile; ?>
+        </div>
+      </div>
+
+      <!-- Users Table -->
+      <div class="section" id="users">
+        <div class="section-header">
+          <div class="section-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--maroon)" stroke-width="2" style="width:15px;height:15px"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            Users <span class="section-badge"><?php echo $total_users; ?></span>
+          </div>
+          <button id="edit_users_btn" class="btn btn-outline" style="font-size:10px;padding:3px 8px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Edit
+          </button>
+        </div>
+        <div class="section-toolbar" style="padding:8px 12px;">
+          <div class="search-box" style="min-width:0;flex:1;">
+            <svg width="12" height="12" fill="none" stroke="var(--gray-400)" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="users-search" placeholder="Search users…" oninput="filterTable('users-tbody','users-search',null)">
+          </div>
         </div>
         <form method="POST">
         <table class="admin-table">
-            <thead><tr>
-                <th style="width:40px;"><input type="checkbox" id="select_all_reviews" onclick="document.querySelectorAll('#pending-tbody tr:not([style*=\'none\']) .review_cb').forEach(c=>c.checked=this.checked);updateReviewBulk();"></th>
-                <th>User</th><th>Faculty</th><th>AI Analysis</th><th style="width:200px;">Action</th>
-            </tr></thead>
-            <tbody id="pending-tbody">
-            <?php $has_pending = false; while ($r = mysqli_fetch_assoc($pending_reviews)): $has_pending = true; ?>
-            <tr>
-                <td><input type="checkbox" name="selected_reviews[]" value="<?php echo $r['id']; ?>" class="review_cb" onchange="updateReviewBulk()"></td>
-                <td><span class="pseudo-name"><?php echo htmlspecialchars($r['user_fullname']); ?></span></td>
-                <td><span style="font-weight:500;"><?php echo htmlspecialchars($r['faculty_name']); ?></span></td>
-                <td>
-                    <?php $s = $r['sentiment'] ?? 'neutral'; $cls = $s === 'positive' ? 'badge-positive' : ($s === 'negative' ? 'badge-negative' : 'badge-neutral'); ?>
-                    <span class="badge <?php echo $cls; ?>"><?php echo ucfirst($s); ?></span>
-                    <?php if ($r['is_toxic']) echo "<span class='badge badge-toxic' style='margin-left:4px;'>Toxic</span>"; ?>
-                    <?php if (!empty($r['summary'])): ?><br><small style="color:var(--gray-400);font-style:italic;font-size:11px;margin-top:3px;display:block;"><?php echo htmlspecialchars($r['summary']); ?></small><?php endif; ?>
-                </td>
-                <td><div style="display:flex;gap:6px;flex-wrap:wrap;">
-                    <button type="button" class="btn btn-outline" onclick="openModal('<?php echo htmlspecialchars(addslashes($r['review_text'])); ?>','<?php echo htmlspecialchars(addslashes($r['faculty_name'])); ?>','<?php echo htmlspecialchars(addslashes($r['user_fullname'])); ?>',<?php echo intval($r['rating_teaching']); ?>,<?php echo intval($r['rating_communication']); ?>,<?php echo intval($r['rating_punctuality']); ?>,<?php echo intval($r['rating_fairness']); ?>,<?php echo intval($r['rating_overall']); ?>,'<?php echo htmlspecialchars(addslashes($r['review_photo'])); ?>')"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View</button>
-                    <a href="approve_review.php?id=<?php echo $r['id']; ?>" class="btn btn-green"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Approve</a>
-                    <a href="reject_review.php?id=<?php echo $r['id']; ?>"  class="btn btn-red"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Reject</a>
-                </div></td>
-            </tr>
-            <?php endwhile; ?>
-            <?php if (!$has_pending): ?>
-            <tr class="empty-state-row"><td colspan="5">
-                <svg width="48" height="48" fill="none" stroke="#d1d5db" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 12px;display:block;"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1" ry="1"/></svg>
-                <div style="font-size:14px;font-weight:600;color:var(--gray-400);margin-bottom:4px;">No pending reviews</div>
-                <div style="font-size:12px;color:var(--gray-400);">All reviews have been processed.</div>
-            </td></tr>
-            <?php endif; ?>
-            </tbody>
+          <thead><tr>
+            <th style="display:none;width:34px;" id="select_all_th"><input type="checkbox" id="select_all_users"></th>
+            <th style="width:36px;"></th>
+            <th>User</th>
+            <th>Email</th>
+            <th style="width:80px;"></th>
+          </tr></thead>
+          <tbody id="users-tbody">
+          <?php while ($u = mysqli_fetch_assoc($users)): ?>
+          <tr>
+            <td style="display:none;" class="checkbox_td"><input type="checkbox" name="selected_users[]" value="<?php echo $u['id']; ?>" class="user_checkbox"></td>
+            <td>
+              <?php if (!empty($u['profile_pic']) && file_exists($u['profile_pic'])): ?>
+              <img class="user-avatar" src="<?php echo htmlspecialchars($u['profile_pic']); ?>" alt="">
+              <?php else: ?>
+              <div class="user-av-circle"><?php echo strtoupper(substr($u['fullname'],0,2)); ?></div>
+              <?php endif; ?>
+            </td>
+            <td>
+              <div style="font-size:11px;font-weight:500;color:var(--gray-800);"><?php echo htmlspecialchars($u['fullname']); ?></div>
+              <div style="font-size:10px;color:var(--gray-400);">@<?php echo htmlspecialchars($u['username']); ?></div>
+            </td>
+            <td style="font-size:10px;color:var(--gray-500);"><?php echo htmlspecialchars($u['email']); ?></td>
+            <td>
+              <div style="display:flex;gap:3px;">
+                <button type="button" class="btn btn-outline" style="padding:3px 6px;font-size:10px;"
+                        onclick="openUserModal(<?php echo $u['id']; ?>,'<?php echo htmlspecialchars(addslashes($u['fullname'])); ?>','<?php echo htmlspecialchars(addslashes($u['username'])); ?>','<?php echo htmlspecialchars(addslashes($u['email'])); ?>','<?php echo (!empty($u['profile_pic'])&&file_exists($u['profile_pic']))?htmlspecialchars(addslashes($u['profile_pic'])):'https://ui-avatars.com/api/?name='.urlencode($u['fullname']).'&background=7C0A02&color=fff&size=80'; ?>')">View</button>
+                <button type="button" class="btn btn-red" style="padding:3px 6px;font-size:10px;"
+                        onclick="confirmDeleteUser(<?php echo $u['id']; ?>,'<?php echo htmlspecialchars(addslashes($u['fullname'])); ?>')">Del</button>
+              </div>
+            </td>
+          </tr>
+          <?php endwhile; ?>
+          </tbody>
         </table>
-        <div class="bulk-bar" id="review_bulk_bar">
-            <span id="review_selected_count">0 reviews selected</span>
-            <button type="submit" name="bulk_approve" class="btn btn-green" onclick="return confirm('Approve selected?')"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Bulk Approve</button>
-            <button type="submit" name="bulk_reject"  class="btn btn-gray" onclick="return confirm('Reject selected?')"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Bulk Reject</button>
+        <div class="bulk-bar" id="bulk_actions" style="padding:7px 12px;">
+          <span id="selected_count">0 users selected</span>
+          <button type="submit" name="bulk_delete_users" class="btn btn-red" style="font-size:10px;" onclick="return confirm('Delete selected users?')">Delete Selected</button>
         </div>
         </form>
-    </div>
+      </div>
+    </div><!-- end faculty+users grid -->
 
     <!-- ══ Approved Reviews ═══════════════════════════════════════════════ -->
     <div class="section" id="approved">
-        <div class="section-header">
-            <div class="section-title"><svg width="17" height="17" fill="none" stroke="var(--maroon)" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Approved Reviews <span class="section-badge"><?php echo $approved_count; ?></span></div>
+      <div class="section-header">
+        <div class="section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--maroon)" stroke-width="2" style="width:15px;height:15px"><polyline points="20 6 9 17 4 12"/></svg>
+          Approved Reviews <span class="section-badge"><?php echo $approved_count; ?></span>
         </div>
-        <div class="section-toolbar">
-            <div class="search-box"><svg width="14" height="14" fill="none" stroke="var(--gray-400)" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" id="approved-search" placeholder="Search by faculty or reviewer..." oninput="filterTable('approved-tbody','approved-search','approved-faculty-filter')"></div>
-            <select id="approved-faculty-filter" class="filter-sel" onchange="filterTable('approved-tbody','approved-search','approved-faculty-filter')">
-                <option value="">All Faculties</option>
-                <?php
-                $fac_res = mysqli_query($conn, "SELECT DISTINCT f.name FROM reviews r JOIN faculties f ON r.faculty_id=f.id WHERE r.status='approved' ORDER BY f.name ASC");
-                while ($frow = mysqli_fetch_assoc($fac_res)): ?>
-                <option value="<?php echo htmlspecialchars($frow['name']); ?>"><?php echo htmlspecialchars($frow['name']); ?></option>
-                <?php endwhile; ?>
-            </select>
+      </div>
+      <div class="section-toolbar" style="padding:8px 12px;">
+        <div class="search-box" style="min-width:180px;">
+          <svg width="12" height="12" fill="none" stroke="var(--gray-400)" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="approved-search" placeholder="Search by faculty or reviewer…" oninput="filterTable('approved-tbody','approved-search','approved-faculty-filter')">
         </div>
-        <form method="POST">
-        <table class="admin-table">
-            <thead><tr>
-                <th style="width:40px;"><input type="checkbox" id="select_all_approved" onclick="document.querySelectorAll('#approved-tbody tr:not([style*=\'none\']) .approved_cb').forEach(c=>c.checked=this.checked);updateApprovedBulk();"></th>
-                <th>Faculty</th><th>Reviewer</th><th>Date</th><th style="width:120px;">Action</th>
-            </tr></thead>
-            <tbody id="approved-tbody">
-            <?php $has_approved = false; while ($r = mysqli_fetch_assoc($approved_reviews)): $has_approved = true; ?>
-            <tr>
-                <td><input type="checkbox" name="selected_approved[]" value="<?php echo $r['id']; ?>" class="approved_cb" onchange="updateApprovedBulk()"></td>
-                <td><strong><?php echo htmlspecialchars($r['faculty_name']); ?></strong></td>
-                <td><span class="pseudo-name"><?php echo htmlspecialchars($r['user_fullname']); ?></span></td>
-                <td><span style="font-size:12px;color:var(--gray-400);"><?php echo date("M j, Y", strtotime($r['created_at'])); ?></span></td>
-                <td><div style="display:flex;gap:6px;">
-                    <button type="button" class="btn btn-outline" onclick="openModal('<?php echo htmlspecialchars(addslashes($r['review_text'])); ?>','<?php echo htmlspecialchars(addslashes($r['faculty_name'])); ?>','<?php echo htmlspecialchars(addslashes($r['user_fullname'])); ?>',<?php echo intval($r['rating_teaching']); ?>,<?php echo intval($r['rating_communication']); ?>,<?php echo intval($r['rating_punctuality']); ?>,<?php echo intval($r['rating_fairness']); ?>,<?php echo intval($r['rating_overall']); ?>,'<?php echo htmlspecialchars(addslashes($r['review_photo'])); ?>')"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View</button>
-                    <a href="reject_review.php?id=<?php echo $r['id']; ?>" class="btn btn-red" onclick="return confirm('Delete this review?')"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>Delete</a>
-                </div></td>
-            </tr>
-            <?php endwhile; ?>
-            <?php if (!$has_approved): ?><tr><td colspan="5" style="text-align:center;padding:28px;color:var(--gray-400);font-size:13px;">No approved reviews yet</td></tr><?php endif; ?>
-            </tbody>
-        </table>
-        <div class="bulk-bar" id="approved_bulk_bar">
-            <span id="approved_selected_count">0 reviews selected</span>
-            <button type="submit" name="bulk_delete_approved" class="btn btn-red" onclick="return confirm('Delete selected reviews?')"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>Delete Selected</button>
-        </div>
-        </form>
+        <select id="approved-faculty-filter" class="filter-sel" style="font-size:10px;" onchange="filterTable('approved-tbody','approved-search','approved-faculty-filter')">
+          <option value="">All Faculties</option>
+          <?php $fac_res = mysqli_query($conn, "SELECT DISTINCT f.name FROM reviews r JOIN faculties f ON r.faculty_id=f.id WHERE r.status='approved' ORDER BY f.name ASC");
+          while ($frow = mysqli_fetch_assoc($fac_res)): ?>
+          <option value="<?php echo htmlspecialchars($frow['name']); ?>"><?php echo htmlspecialchars($frow['name']); ?></option>
+          <?php endwhile; ?>
+        </select>
+      </div>
+      <form method="POST">
+      <table class="admin-table">
+        <thead><tr>
+          <th style="width:34px;"><input type="checkbox" id="select_all_approved" onclick="document.querySelectorAll('#approved-tbody tr:not([style*=\'none\']) .approved_cb').forEach(c=>c.checked=this.checked);updateApprovedBulk();"></th>
+          <th>Faculty</th><th>Reviewer</th><th>Date</th><th style="width:100px;"></th>
+        </tr></thead>
+        <tbody id="approved-tbody">
+        <?php $has_approved=false; while ($r = mysqli_fetch_assoc($approved_reviews)): $has_approved=true; ?>
+        <tr>
+          <td><input type="checkbox" name="selected_approved[]" value="<?php echo $r['id']; ?>" class="approved_cb" onchange="updateApprovedBulk()"></td>
+          <td style="font-weight:500;font-size:11px;"><?php echo htmlspecialchars($r['faculty_name']); ?></td>
+          <td><span class="pseudo-name"><?php echo htmlspecialchars($r['user_fullname']); ?></span></td>
+          <td style="font-size:10px;color:var(--gray-400);"><?php echo date("M j, Y", strtotime($r['created_at'])); ?></td>
+          <td>
+            <div style="display:flex;gap:3px;">
+              <button type="button" class="btn btn-outline" style="padding:3px 7px;font-size:10px;"
+                      onclick="openModal('<?php echo htmlspecialchars(addslashes($r['review_text'])); ?>','<?php echo htmlspecialchars(addslashes($r['faculty_name'])); ?>','<?php echo htmlspecialchars(addslashes($r['user_fullname'])); ?>',<?php echo intval($r['rating_teaching']); ?>,<?php echo intval($r['rating_communication']); ?>,<?php echo intval($r['rating_punctuality']); ?>,<?php echo intval($r['rating_fairness']); ?>,<?php echo intval($r['rating_overall']); ?>,'<?php echo htmlspecialchars(addslashes($r['review_photo'])); ?>')">View</button>
+              <a href="reject_review.php?id=<?php echo $r['id']; ?>" class="btn btn-red" style="padding:3px 7px;font-size:10px;" onclick="return confirm('Delete this review?')">Delete</a>
+            </div>
+          </td>
+        </tr>
+        <?php endwhile; ?>
+        <?php if (!$has_approved): ?><tr><td colspan="5" style="text-align:center;padding:24px;color:var(--gray-400);font-size:12px;">No approved reviews yet</td></tr><?php endif; ?>
+        </tbody>
+      </table>
+      <div class="bulk-bar" id="approved_bulk_bar" style="padding:7px 12px;">
+        <span id="approved_selected_count">0 reviews selected</span>
+        <button type="submit" name="bulk_delete_approved" class="btn btn-red" style="font-size:10px;" onclick="return confirm('Delete selected reviews?')">Delete Selected</button>
+      </div>
+      </form>
     </div>
 
     <!-- ══ Reports ════════════════════════════════════════════════════════ -->
     <div class="section" id="reports">
-        <div class="section-header"><div class="section-title"><svg width="17" height="17" fill="none" stroke="var(--maroon)" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>System Reports</div></div>
-
-        <div style="padding:20px 24px 0;">
-            <div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--gray-400);font-weight:600;margin-bottom:14px;">Overall Statistics</div>
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:28px;">
-                <?php foreach([
-                    ['Total Users',    $total_users,     '#6366f1'],
-                    ['Total Admins',   $total_admins,    '#8B0000'],
-                    ['Faculties',      $total_faculties, '#f59e0b'],
-                    ['Total Reviews',  $total_reviews,   '#6b7280'],
-                    ['Pending',        $pending_count,   '#f97316'],
-                    ['Approved',       $approved_count,  '#10b981'],
-                    ['Rejected',       $rejected_count,  '#ef4444'],
-                ] as $c): ?>
-                <div style="background:var(--gray-100);border-radius:var(--radius-sm);padding:14px;border:1px solid var(--gray-200);">
-                    <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray-400);font-weight:600;margin-bottom:6px;"><?php echo $c[0]; ?></div>
-                    <div style="font-size:24px;font-weight:700;color:<?php echo $c[2]; ?>;"><?php echo $c[1]; ?></div>
-                </div>
-                <?php endforeach; ?>
-            </div>
+      <div class="section-header">
+        <div class="section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--maroon)" stroke-width="2" style="width:15px;height:15px"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          System Reports
         </div>
+      </div>
 
-        <div style="padding:0 24px 20px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
-                <div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--gray-400);font-weight:600;">Weekly Activity (Last 7 Days)</div>
-                <div style="display:flex;gap:6px;">
-                    <button onclick="switchChart('reviews')" id="chartBtnReviews" class="btn btn-maroon" style="font-size:11px;padding:4px 12px;">Reviews</button>
-                    <button onclick="switchChart('users')"   id="chartBtnUsers"   class="btn btn-outline" style="font-size:11px;padding:4px 12px;">Users</button>
-                </div>
-            </div>
-            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
-                <div style="background:#fef3c7;color:#92400e;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;"><?php echo $week_reviews; ?> reviews created</div>
-                <div style="background:#d1fae5;color:#065f46;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;"><?php echo $week_approved; ?> approved</div>
-                <div style="background:#fee2e2;color:#991b1b;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;"><?php echo $week_rejected; ?> rejected</div>
-                <div style="background:#ede9fe;color:#5b21b6;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;"><?php echo $week_users; ?> new users</div>
-            </div>
-            <div style="background:var(--gray-100);border-radius:var(--radius-sm);padding:16px;border:1px solid var(--gray-200);"><canvas id="weeklyChart" height="120"></canvas></div>
+      <div style="padding:16px 16px 0;">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.8px;color:var(--gray-400);font-weight:600;margin-bottom:10px;">Overall Statistics</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:9px;margin-bottom:20px;">
+          <?php foreach([
+            ['Total Users',    $total_users,     '#4338CA'],
+            ['Total Admins',   $total_admins,    '#7C0A02'],
+            ['Faculties',      $total_faculties, '#B45309'],
+            ['Total Reviews',  $total_reviews,   '#6B7280'],
+            ['Pending',        $pending_count,   '#C2410C'],
+            ['Approved',       $approved_count,  '#065F46'],
+            ['Rejected',       $rejected_count,  '#991B1B'],
+          ] as $c): ?>
+          <div style="background:var(--gray-100);border-radius:var(--radius-sm);padding:11px;border:1px solid var(--gray-200);">
+            <div style="font-size:9px;text-transform:uppercase;letter-spacing:0.4px;color:var(--gray-400);font-weight:600;margin-bottom:4px;"><?php echo $c[0]; ?></div>
+            <div style="font-size:20px;font-weight:500;color:<?php echo $c[2]; ?>;"><?php echo $c[1]; ?></div>
+          </div>
+          <?php endforeach; ?>
         </div>
+      </div>
 
-        <div style="padding:0 24px 24px;border-top:1px solid var(--gray-100);padding-top:20px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
-                <div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--gray-400);font-weight:600;">Monthly Faculty Performance Summary <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;margin-left:6px;">Powered by Groq AI</span></div>
-                <div style="display:flex;gap:8px;align-items:center;">
-                    <select id="summaryMonth" class="filter-sel" style="font-size:12px;"><?php for($m=1;$m<=12;$m++){$sel=($m==date('n'))?'selected':'';echo "<option value='$m' $sel>".date('F',mktime(0,0,0,$m,1))."</option>";}?></select>
-                    <select id="summaryYear"  class="filter-sel" style="font-size:12px;"><?php for($y=date('Y');$y>=date('Y')-2;$y--){echo "<option value='$y'>$y</option>";}?></select>
-                    <button onclick="generateFacultySummary()" id="summaryBtn" class="btn btn-maroon" style="font-size:12px;"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Generate</button>
-                </div>
-            </div>
-            <div style="background:var(--gray-100);border-radius:var(--radius-sm);padding:16px;border:1px solid var(--gray-200);">
-                <div id="aiSummaryText" style="font-size:14px;color:var(--gray-700);line-height:1.8;"><span style="color:var(--gray-400);">Select a month and click Generate to create an AI-powered monthly faculty performance summary.</span></div>
-            </div>
+      <div style="padding:0 16px 16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.8px;color:var(--gray-400);font-weight:600;">Weekly Activity (Last 7 Days)</div>
+          <div style="display:flex;gap:5px;">
+            <button onclick="switchChart('reviews')" id="chartBtnReviews" class="btn btn-maroon" style="font-size:10px;padding:3px 10px;">Reviews</button>
+            <button onclick="switchChart('users')"   id="chartBtnUsers"   class="btn btn-outline" style="font-size:10px;padding:3px 10px;">Users</button>
+          </div>
         </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+          <div style="background:#fef3c7;color:#92400e;padding:4px 11px;border-radius:20px;font-size:11px;font-weight:500;"><?php echo $week_reviews; ?> submitted</div>
+          <div style="background:#d1fae5;color:#065f46;padding:4px 11px;border-radius:20px;font-size:11px;font-weight:500;"><?php echo $week_approved; ?> approved</div>
+          <div style="background:#fee2e2;color:#991b1b;padding:4px 11px;border-radius:20px;font-size:11px;font-weight:500;"><?php echo $week_rejected; ?> rejected</div>
+          <div style="background:#ede9fe;color:#5b21b6;padding:4px 11px;border-radius:20px;font-size:11px;font-weight:500;"><?php echo $week_users; ?> new users</div>
+        </div>
+        <div style="background:var(--gray-100);border-radius:var(--radius-sm);padding:12px;border:1px solid var(--gray-200);"><canvas id="weeklyChart" height="110"></canvas></div>
+      </div>
+
+      <div style="padding:0 16px 16px;border-top:1px solid var(--gray-100);padding-top:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.8px;color:var(--gray-400);font-weight:600;">Monthly Faculty Performance Summary
+            <span style="font-weight:400;text-transform:none;letter-spacing:0;margin-left:5px;font-size:10px;">Powered by Groq AI</span>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <select id="summaryMonth" class="filter-sel" style="font-size:10px;"><?php for($m=1;$m<=12;$m++){$sel=($m==date('n'))?'selected':'';echo "<option value='$m' $sel>".date('F',mktime(0,0,0,$m,1))."</option>";}?></select>
+            <select id="summaryYear"  class="filter-sel" style="font-size:10px;"><?php for($y=date('Y');$y>=date('Y')-2;$y--){echo "<option value='$y'>$y</option>";}?></select>
+            <button onclick="generateFacultySummary()" id="summaryBtn" class="btn btn-maroon" style="font-size:10px;padding:4px 10px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+              Generate
+            </button>
+          </div>
+        </div>
+        <div style="background:var(--gray-100);border-radius:var(--radius-sm);padding:14px;border:1px solid var(--gray-200);">
+          <div id="aiSummaryText" style="font-size:13px;color:var(--gray-700);line-height:1.8;">
+            <span style="color:var(--gray-400);">Select a month and click Generate to create an AI-powered monthly faculty performance summary.</span>
+          </div>
+        </div>
+      </div>
     </div>
 
-</div>
+  </div><!-- end .content -->
+</div><!-- end .main -->
 
 <!-- ══ User Profile Modal ════════════════════════════════════════════════ -->
 <div class="modal-overlay" id="userModal">
-    <div class="modal-box" style="max-width:420px;">
+    <div class="modal-box" style="max-width:400px;">
         <div class="modal-head"><h3>User Profile</h3><button class="modal-close" onclick="document.getElementById('userModal').classList.remove('open')">&times;</button></div>
-        <div style="padding:28px;text-align:center;">
-            <img id="userModalAvatar" src="" alt="" style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:3px solid var(--maroon-pale);margin-bottom:14px;">
-            <div id="userModalName"     style="font-size:17px;font-weight:700;color:var(--gray-800);margin-bottom:4px;"></div>
-            <div id="userModalUsername" style="font-size:13px;color:var(--gray-400);margin-bottom:16px;"></div>
-            <div style="background:var(--gray-100);border-radius:var(--radius-sm);padding:12px;text-align:center;">
-                <div style="display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;color:var(--gray-600);"><svg width="14" height="14" fill="none" stroke="var(--maroon)" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg><span id="userModalEmail"></span></div>
+        <div style="padding:24px;text-align:center;">
+            <img id="userModalAvatar" src="" alt="" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid var(--maroon-pale);margin-bottom:12px;">
+            <div id="userModalName"     style="font-size:15px;font-weight:500;color:var(--gray-800);margin-bottom:3px;"></div>
+            <div id="userModalUsername" style="font-size:12px;color:var(--gray-400);margin-bottom:14px;"></div>
+            <div style="background:var(--gray-100);border-radius:var(--radius-sm);padding:10px;text-align:center;">
+                <div style="display:flex;align-items:center;justify-content:center;gap:7px;font-size:12px;color:var(--gray-600);">
+                    <svg width="13" height="13" fill="none" stroke="var(--maroon)" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                    <span id="userModalEmail"></span>
+                </div>
             </div>
         </div>
-        <div id="userReviewsSection" style="padding:0 20px 20px;">
-            <div style="font-size:12px;font-weight:600;color:var(--gray-600);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;padding-bottom:8px;border-top:1px solid var(--gray-100);padding-top:14px;">Reviews Made</div>
-            <div id="userReviewsList" style="font-size:13px;color:var(--gray-400);">Loading...</div>
+        <div id="userReviewsSection" style="padding:0 16px 16px;">
+            <div style="font-size:11px;font-weight:600;color:var(--gray-600);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:8px;padding-bottom:7px;border-top:1px solid var(--gray-100);padding-top:12px;">Reviews Made</div>
+            <div id="userReviewsList" style="font-size:12px;color:var(--gray-400);">Loading...</div>
         </div>
     </div>
 </div>
 
 <!-- ══ Delete User Modal ══════════════════════════════════════════════════ -->
 <div class="modal-overlay" id="deleteUserModal">
-    <div class="modal-box" style="max-width:400px;">
+    <div class="modal-box" style="max-width:380px;">
         <div class="modal-head"><h3>Delete User</h3><button class="modal-close" onclick="document.getElementById('deleteUserModal').classList.remove('open')">&times;</button></div>
         <form method="POST">
-            <div style="padding:28px;text-align:center;">
-                <div style="width:56px;height:56px;border-radius:50%;background:#fee2e2;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;"><svg width="26" height="26" fill="none" stroke="#ef4444" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg></div>
-                <p style="font-size:15px;font-weight:600;color:var(--gray-800);margin-bottom:8px;">Delete this user?</p>
-                <p style="font-size:13px;color:var(--gray-400);">All data for <strong id="deleteUserName"></strong> will be permanently removed.</p>
+            <div style="padding:24px;text-align:center;">
+                <div style="width:48px;height:48px;border-radius:50%;background:#fee2e2;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
+                    <svg width="22" height="22" fill="none" stroke="#ef4444" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                </div>
+                <p style="font-size:13px;font-weight:500;color:var(--gray-800);margin-bottom:5px;">Delete this user?</p>
+                <p style="font-size:11px;color:var(--gray-400);">All data for <strong id="deleteUserName"></strong> will be permanently removed.</p>
                 <input type="hidden" name="delete_user_id" id="deleteUserIdInput">
             </div>
-            <div style="display:flex;justify-content:center;gap:12px;padding:16px 24px;border-top:1px solid var(--gray-100);">
-                <button type="button" class="btn btn-outline" onclick="document.getElementById('deleteUserModal').classList.remove('open')">Cancel</button>
+            <div style="display:flex;justify-content:center;gap:10px;padding:14px 20px;border-top:1px solid var(--gray-100);">
+                <button type="button" class="btn-secondary" onclick="document.getElementById('deleteUserModal').classList.remove('open')">Cancel</button>
                 <button type="submit" name="delete_single_user" class="btn btn-red">Delete User</button>
             </div>
         </form>
@@ -601,18 +724,18 @@ while ($efd = mysqli_fetch_assoc($ef_d)) $ef_arr[] = $efd['department'];
 
 <!-- ══ Faculty Reviews Modal ══════════════════════════════════════════════ -->
 <div class="modal-overlay" id="facultyModal">
-    <div class="modal-box" style="max-width:680px;">
+    <div class="modal-box" style="max-width:660px;">
         <div class="modal-head" style="flex-direction:column;align-items:flex-start;gap:0;padding-bottom:0;">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;width:100%;padding-bottom:12px;">
-                <div><h3 id="facModalName" style="color:var(--maroon);font-size:16px;"></h3><div id="facModalDept" style="font-size:12px;color:var(--gray-400);margin-top:2px;"></div></div>
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;width:100%;padding-bottom:10px;">
+                <div><h3 id="facModalName" style="color:var(--maroon);font-size:14px;"></h3><div id="facModalDept" style="font-size:11px;color:var(--gray-400);margin-top:2px;"></div></div>
                 <button class="modal-close" onclick="document.getElementById('facultyModal').classList.remove('open')">&times;</button>
             </div>
-            <div style="display:flex;gap:6px;border-bottom:2px solid var(--gray-100);width:100%;">
-                <button class="fac-tab-btn" data-tab="reviews" style="padding:7px 16px;font-size:13px;font-weight:500;border:1px solid var(--maroon);border-radius:6px 6px 0 0;cursor:pointer;font-family:'DM Sans',sans-serif;background:var(--maroon);color:white;margin-bottom:-2px;" onclick="setFacTab('reviews');loadFacultyReviews(_currentFacultyId);"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:middle;margin-right:4px;"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>Reviews</button>
-                <button class="fac-tab-btn" data-tab="summary" style="padding:7px 16px;font-size:13px;font-weight:500;border:1px solid var(--gray-200);border-radius:6px 6px 0 0;cursor:pointer;font-family:'DM Sans',sans-serif;background:white;color:var(--gray-600);margin-bottom:-2px;" onclick="setFacTab('summary');loadFacultySummary(_currentFacultyId);"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:middle;margin-right:4px;"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>AI Report</button>
+            <div style="display:flex;gap:5px;border-bottom:2px solid var(--gray-100);width:100%;">
+                <button class="fac-tab-btn" data-tab="reviews" style="padding:6px 14px;font-size:12px;font-weight:500;border:1px solid var(--maroon);border-radius:5px 5px 0 0;cursor:pointer;font-family:'DM Sans',sans-serif;background:var(--maroon);color:white;margin-bottom:-2px;" onclick="setFacTab('reviews');loadFacultyReviews(_currentFacultyId);">Reviews</button>
+                <button class="fac-tab-btn" data-tab="summary" style="padding:6px 14px;font-size:12px;font-weight:500;border:1px solid var(--gray-200);border-radius:5px 5px 0 0;cursor:pointer;font-family:'DM Sans',sans-serif;background:white;color:var(--gray-600);margin-bottom:-2px;" onclick="setFacTab('summary');loadFacultySummary(_currentFacultyId);">AI Report</button>
             </div>
         </div>
-        <div id="facModalContent" style="padding:20px 24px 24px;"><div style="text-align:center;padding:30px;color:var(--gray-400);">Loading...</div></div>
+        <div id="facModalContent" style="padding:16px 20px 20px;"><div style="text-align:center;padding:28px;color:var(--gray-400);">Loading...</div></div>
     </div>
 </div>
 
@@ -620,60 +743,58 @@ while ($efd = mysqli_fetch_assoc($ef_d)) $ef_arr[] = $efd['department'];
 <div class="modal-overlay" id="reviewModal">
     <div class="modal-box">
         <div class="modal-head">
-            <h3><span id="modalFaculty" style="color:var(--maroon);"></span><span style="color:var(--gray-400);font-weight:400;font-size:13px;margin-left:8px;">by <span id="modalUser"></span></span></h3>
+            <h3><span id="modalFaculty" style="color:var(--maroon);"></span><span style="color:var(--gray-400);font-weight:400;font-size:12px;margin-left:7px;">by <span id="modalUser"></span></span></h3>
             <button class="modal-close" onclick="closeModal()">&times;</button>
         </div>
-        <div style="padding:16px 24px 0;" id="modalRatings"></div>
-        <div id="modalPhotoWrap" style="padding:12px 24px 0;display:none;">
-            <img id="modalPhotoImg" src="" alt="Review photo" style="max-width:100%;max-height:200px;border-radius:10px;object-fit:cover;border:1px solid var(--gray-200);">
+        <div style="padding:14px 20px 0;" id="modalRatings"></div>
+        <div id="modalPhotoWrap" style="padding:10px 20px 0;display:none;">
+            <img id="modalPhotoImg" src="" alt="Review photo" style="max-width:100%;max-height:180px;border-radius:9px;object-fit:cover;border:1px solid var(--gray-200);">
         </div>
-        <div style="padding:16px 24px 0;">
-            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray-400);margin-bottom:6px;">Review</div>
-        </div>
-        <div style="padding:0 24px 24px;font-size:14px;line-height:1.7;color:var(--gray-700);white-space:pre-wrap;" id="modalBody"></div>
+        <div style="padding:14px 20px 0;"><div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray-400);margin-bottom:5px;">Review</div></div>
+        <div style="padding:0 20px 20px;font-size:13px;line-height:1.7;color:var(--gray-700);white-space:pre-wrap;" id="modalBody"></div>
     </div>
 </div>
 
 <!-- ══ Add Faculty Modal ══════════════════════════════════════════════════ -->
 <div class="modal-overlay" id="addFacultyModal">
-    <div class="modal-box" style="max-width:500px;">
+    <div class="modal-box" style="max-width:480px;">
         <div class="modal-head">
-            <div style="display:flex;align-items:center;gap:12px;">
-                <div style="width:36px;height:36px;border-radius:50%;background:var(--maroon-pale);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="18" height="18" fill="none" stroke="var(--maroon)" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
-                <div><h3>Add New Faculty</h3><div style="font-size:12px;color:var(--gray-400);">Fill in the details below.</div></div>
+            <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:32px;height:32px;border-radius:50%;background:var(--maroon-pale);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="16" height="16" fill="none" stroke="var(--maroon)" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+                <div><h3>Add New Faculty</h3><div style="font-size:11px;color:var(--gray-400);">Fill in the details below.</div></div>
             </div>
             <button class="modal-close" onclick="closeAddFacultyModal()">&times;</button>
         </div>
         <form method="POST" id="addFacultyForm" enctype="multipart/form-data" onsubmit="return validateAddFaculty()">
-            <div style="padding:22px 24px;">
-                <div id="afAlert" class="af-alert"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span id="afAlertText"></span></div>
+            <div style="padding:18px 20px;">
+                <div id="afAlert" class="af-alert"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span id="afAlertText"></span></div>
 
                 <div class="af-group">
                     <label>Profile Photo <span style="color:var(--gray-400);font-weight:400;">(optional)</span></label>
-                    <div style="display:flex;align-items:center;gap:14px;">
-                        <img id="afPhotoPreview" src="https://ui-avatars.com/api/?name=Faculty&background=8B0000&color=fff&size=64" class="fac-photo-preview" alt="">
+                    <div style="display:flex;align-items:center;gap:12px;">
+                        <img id="afPhotoPreview" src="https://ui-avatars.com/api/?name=Faculty&background=7C0A02&color=fff&size=56" class="fac-photo-preview" alt="" style="width:52px;height:52px;">
                         <div>
                             <input type="file" name="faculty_photo" id="afPhoto" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="previewFacultyPhoto(this,'afPhotoPreview')">
-                            <button type="button" class="btn btn-outline" style="font-size:12px;" onclick="document.getElementById('afPhoto').click()"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>Upload Photo</button>
-                            <div style="font-size:11px;color:var(--gray-400);margin-top:4px;">JPG, PNG, WEBP · Max 3MB</div>
+                            <button type="button" class="btn btn-outline" style="font-size:11px;" onclick="document.getElementById('afPhoto').click()">Upload Photo</button>
+                            <div style="font-size:10px;color:var(--gray-400);margin-top:3px;">JPG, PNG, WEBP · Max 3MB</div>
                         </div>
                     </div>
                 </div>
 
                 <div class="af-group">
                     <label>Full Name <span style="color:#ef4444">*</span></label>
-                    <div class="af-field"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><input type="text" name="faculty_name" id="afName" class="af-input" placeholder="e.g. Dr. Juan dela Cruz" required></div>
+                    <div class="af-field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><input type="text" name="faculty_name" id="afName" class="af-input" placeholder="e.g. Dr. Juan dela Cruz" required></div>
                 </div>
 
                 <div class="af-group">
                     <label>Department <span style="color:#ef4444">*</span></label>
                     <input type="hidden" name="faculty_dept" id="afDept">
-                    <div style="display:flex;flex-direction:column;gap:6px;">
+                    <div style="display:flex;flex-direction:column;gap:5px;">
                         <?php if (!empty($af_arr)): ?>
                         <div class="af-field" style="position:relative;">
-                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="position:absolute;left:11px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--gray-400);z-index:1;"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
-                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="position:absolute;right:11px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--gray-400);"><polyline points="6 9 12 15 18 9"/></svg>
-                            <select id="afDeptSelect" onchange="afDeptChange(this)" style="width:100%;padding:10px 32px 10px 36px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--gray-800);outline:none;background:white;appearance:none;-webkit-appearance:none;cursor:pointer;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--gray-400);z-index:1;width:14px;height:14px;"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--gray-400);width:14px;height:14px;"><polyline points="6 9 12 15 18 9"/></svg>
+                            <select id="afDeptSelect" onchange="afDeptChange(this)" style="width:100%;padding:9px 30px 9px 34px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--gray-800);outline:none;background:white;appearance:none;-webkit-appearance:none;cursor:pointer;">
                                 <option value="">— Select a department —</option>
                                 <?php foreach ($af_arr as $afd): ?>
                                 <option value="<?php echo htmlspecialchars($afd); ?>"><?php echo htmlspecialchars($afd); ?></option>
@@ -682,22 +803,22 @@ while ($efd = mysqli_fetch_assoc($ef_d)) $ef_arr[] = $efd['department'];
                             </select>
                         </div>
                         <?php endif; ?>
-                        <div id="afNewDeptWrap" style="<?php echo empty($af_arr) ? '' : 'display:none;'; ?>">
+                        <div id="afNewDeptWrap" style="<?php echo empty($af_arr)?'':'display:none;'; ?>">
                             <div class="af-field">
-                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
                                 <input type="text" id="afNewDeptInput" class="af-input" placeholder="Type new department name…" oninput="document.getElementById('afDept').value=this.value.trim()">
                             </div>
                             <?php if (!empty($af_arr)): ?>
-                            <button type="button" onclick="afCancelNewDept()" style="margin-top:5px;font-size:11px;color:var(--gray-400);background:none;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;padding:0;">← Back to existing departments</button>
+                            <button type="button" onclick="afCancelNewDept()" style="margin-top:4px;font-size:10px;color:var(--gray-400);background:none;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;padding:0;">← Back to existing departments</button>
                             <?php endif; ?>
                         </div>
                     </div>
-                    <?php if (empty($af_arr)): ?><div style="font-size:11px;color:var(--gray-400);margin-top:4px;">No departments yet — type a new one above.</div><?php endif; ?>
+                    <?php if (empty($af_arr)): ?><div style="font-size:10px;color:var(--gray-400);margin-top:3px;">No departments yet — type a new one above.</div><?php endif; ?>
                 </div>
             </div>
-            <div style="display:flex;justify-content:flex-end;gap:10px;padding:14px 24px;border-top:1px solid var(--gray-100);background:var(--gray-100);">
-                <button type="button" class="btn btn-outline" onclick="closeAddFacultyModal()">Cancel</button>
-                <button type="submit" name="add_faculty_modal" class="btn btn-maroon"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add Faculty</button>
+            <div style="display:flex;justify-content:flex-end;gap:8px;padding:12px 20px;border-top:1px solid var(--gray-100);background:var(--gray-50);">
+                <button type="button" class="btn-secondary" onclick="closeAddFacultyModal()">Cancel</button>
+                <button type="submit" name="add_faculty_modal" class="btn btn-maroon">Add Faculty</button>
             </div>
         </form>
     </div>
@@ -705,46 +826,46 @@ while ($efd = mysqli_fetch_assoc($ef_d)) $ef_arr[] = $efd['department'];
 
 <!-- ══ Edit Faculty Modal ════════════════════════════════════════════════ -->
 <div class="modal-overlay" id="editFacultyModal">
-    <div class="modal-box" style="max-width:500px;">
+    <div class="modal-box" style="max-width:480px;">
         <div class="modal-head">
-            <div style="display:flex;align-items:center;gap:12px;">
-                <div style="width:36px;height:36px;border-radius:50%;background:#dbeafe;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="18" height="18" fill="none" stroke="#1e40af" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
-                <div><h3>Edit Faculty</h3><div style="font-size:12px;color:var(--gray-400);">Update faculty details.</div></div>
+            <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:32px;height:32px;border-radius:50%;background:#dbeafe;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="16" height="16" fill="none" stroke="#1e40af" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
+                <div><h3>Edit Faculty</h3><div style="font-size:11px;color:var(--gray-400);">Update faculty details.</div></div>
             </div>
             <button class="modal-close" onclick="closeEditFacultyModal()">&times;</button>
         </div>
         <form method="POST" id="editFacultyForm" enctype="multipart/form-data" onsubmit="return validateEditFaculty()">
             <input type="hidden" name="ef_faculty_id" id="efFacultyId">
-            <div style="padding:22px 24px;">
-                <div id="efAlert" class="af-alert"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span id="efAlertText"></span></div>
+            <div style="padding:18px 20px;">
+                <div id="efAlert" class="af-alert"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span id="efAlertText"></span></div>
                 <div class="af-group">
                     <label>Profile Photo <span style="color:var(--gray-400);font-weight:400;">(optional — replaces current)</span></label>
-                    <div style="display:flex;align-items:center;gap:14px;">
-                        <img id="efPhotoPreview" src="" class="fac-photo-preview" alt="">
+                    <div style="display:flex;align-items:center;gap:12px;">
+                        <img id="efPhotoPreview" src="" class="fac-photo-preview" alt="" style="width:52px;height:52px;">
                         <div>
                             <input type="file" name="ef_faculty_photo" id="efPhoto" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="previewFacultyPhoto(this,'efPhotoPreview')">
-                            <button type="button" class="btn btn-outline" style="font-size:12px;" onclick="document.getElementById('efPhoto').click()"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>Change Photo</button>
-                            <div style="font-size:11px;color:var(--gray-400);margin-top:4px;">JPG, PNG, WEBP · Max 3MB</div>
+                            <button type="button" class="btn btn-outline" style="font-size:11px;" onclick="document.getElementById('efPhoto').click()">Change Photo</button>
+                            <div style="font-size:10px;color:var(--gray-400);margin-top:3px;">JPG, PNG, WEBP · Max 3MB</div>
                         </div>
                     </div>
                 </div>
                 <div class="af-group">
                     <label>Full Name <span style="color:#ef4444">*</span></label>
-                    <div class="af-field"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><input type="text" name="ef_name" id="efName" class="af-input" placeholder="e.g. Dr. Juan dela Cruz" required></div>
+                    <div class="af-field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><input type="text" name="ef_name" id="efName" class="af-input" placeholder="e.g. Dr. Juan dela Cruz" required></div>
                 </div>
                 <div class="af-group">
                     <label>Department <span style="color:#ef4444">*</span></label>
-                    <div class="af-field"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg><input type="text" name="ef_dept" id="efDept" class="af-input" placeholder="e.g. College of Engineering" list="efDeptList" required autocomplete="off"></div>
+                    <div class="af-field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg><input type="text" name="ef_dept" id="efDept" class="af-input" placeholder="e.g. College of Engineering" list="efDeptList" required autocomplete="off"></div>
                     <datalist id="efDeptList"><?php foreach ($ef_arr as $efd): ?><option value="<?php echo htmlspecialchars($efd); ?>"><?php endforeach; ?></datalist>
                     <?php if (!empty($ef_arr)): ?>
-                    <div style="font-size:11px;color:var(--gray-400);margin-top:5px;margin-bottom:5px;">Quick select:</div>
+                    <div style="font-size:10px;color:var(--gray-400);margin-top:4px;margin-bottom:4px;">Quick select:</div>
                     <div class="af-chips"><?php foreach ($ef_arr as $efd): ?><button type="button" class="af-chip" onclick="document.getElementById('efDept').value='<?php echo htmlspecialchars(addslashes($efd)); ?>'"><?php echo htmlspecialchars($efd); ?></button><?php endforeach; ?><button type="button" class="af-chip af-chip-new" onclick="document.getElementById('efDept').value='';document.getElementById('efDept').focus();">+ New dept</button></div>
                     <?php endif; ?>
                 </div>
             </div>
-            <div style="display:flex;justify-content:flex-end;gap:10px;padding:14px 24px;border-top:1px solid var(--gray-100);background:var(--gray-100);">
-                <button type="button" class="btn btn-outline" onclick="closeEditFacultyModal()">Cancel</button>
-                <button type="submit" name="edit_faculty_modal" class="btn btn-maroon"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Save Changes</button>
+            <div style="display:flex;justify-content:flex-end;gap:8px;padding:12px 20px;border-top:1px solid var(--gray-100);background:var(--gray-50);">
+                <button type="button" class="btn-secondary" onclick="closeEditFacultyModal()">Cancel</button>
+                <button type="submit" name="edit_faculty_modal" class="btn btn-maroon">Save Changes</button>
             </div>
         </form>
     </div>

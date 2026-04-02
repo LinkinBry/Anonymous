@@ -349,330 +349,385 @@ $review_filter = isset($_GET['review_filter']) ? $_GET['review_filter'] : 'all';
 
 <!-- ══ Sidebar ══════════════════════════════════════════════════════════ -->
 <div class="sidebar">
-    <div class="sidebar-brand">AnonymousReview</div>
-    <a href="profile.php" style="display:block;text-align:center;" title="Edit Profile">
-        <img src="<?php echo htmlspecialchars($avatar); ?>" class="sidebar-avatar" alt="Avatar"
-             onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
-    </a>
-    <div class="sidebar-name"><?php echo htmlspecialchars($user['fullname']); ?></div>
-    <div class="sidebar-role">@<?php echo htmlspecialchars($user['username']); ?></div>
-    <nav>
-        <div class="nav-label">Menu</div>
-        <a href="dashboard.php" class="active">
-            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-            Dashboard
-        </a>
-        <a href="#">
-            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-            Evaluation History
-        </a>
-        <a href="profile.php">
-            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-            Profile
-        </a>
-        <a href="#" onclick="toggleChat(); return false;">
-            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-            FAQ Chat
-        </a>
-    </nav>
-    <div class="sidebar-footer">
-        <a href="logout.php">
-            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
-            Logout
-        </a>
+  <div class="sidebar-top">
+    <div class="sidebar-brand-row">
+      <div class="sidebar-logo-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      </div>
+      <div>
+        <div class="sidebar-brand-name">AnonymousReview</div>
+        <div class="sidebar-brand-sub">Faculty Evaluation</div>
+      </div>
     </div>
+    <a href="profile.php" class="sidebar-user" style="text-decoration:none;" title="Edit Profile">
+      <div class="sidebar-user-av">
+        <img src="<?php echo htmlspecialchars($avatar); ?>" alt="Avatar">
+      </div>
+      <div>
+        <div class="sidebar-user-name"><?php echo htmlspecialchars($user['fullname']); ?></div>
+        <div class="sidebar-user-role">Student</div>
+      </div>
+    </a>
+  </div>
+  <nav>
+    <div class="nav-label">Menu</div>
+    <a href="dashboard.php" class="active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </a>
+    <a href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      My Reviews
+      <?php if ($total_reviews > 0): ?><span class="sidebar-nav-badge"><?php echo $total_reviews; ?></span><?php endif; ?>
+    </a>
+    <a href="profile.php">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      Profile
+    </a>
+    <div class="nav-label" style="margin-top:8px">Support</div>
+    <a href="#" onclick="toggleChat(); return false;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      FAQ Chat
+    </a>
+  </nav>
+  <div class="sidebar-footer">
+    <a href="logout.php">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+      Logout
+    </a>
+  </div>
 </div>
 
 <!-- ══ Main ═════════════════════════════════════════════════════════════ -->
 <div class="main">
 
-    <!-- Topbar -->
-    <div class="topbar">
-        <div class="topbar-left">
-            <h1>Welcome back, <?php echo htmlspecialchars($user['username']); ?>!</h1>
-            <p>Here's what's happening with your faculty evaluations.</p>
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <h1>Good <?php echo (date('H') < 12) ? 'morning' : ((date('H') < 18) ? 'afternoon' : 'evening'); ?>, <?php echo htmlspecialchars($user['username']); ?>!</h1>
+      <p><?php echo date("l, F j, Y"); ?></p>
+    </div>
+    <div class="topbar-right">
+      <form class="tb-search" method="GET" action="dashboard.php" style="text-decoration:none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" name="search" placeholder="Search faculty…"
+               value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>">
+      </form>
+      <!-- Notification Bell -->
+      <div class="notif-wrap" id="notifWrap">
+        <div class="notif-btn">
+          <svg width="15" height="15" fill="none" stroke="#4b5563" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
         </div>
-        <div class="topbar-right">
-            <div class="today-date">📅 <?php echo date("F j, Y"); ?></div>
-
-            <!-- Notification Bell -->
-            <div class="notif-wrap" id="notifWrap">
-                <div class="notif-btn">
-                    <svg width="18" height="18" fill="none" stroke="#4b5563" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
-                </div>
-                <?php if ($notif_count > 0): ?>
-                    <div class="notif-badge"><?php echo $notif_count; ?></div>
+        <?php if ($notif_count > 0): ?><div class="notif-badge"><?php echo $notif_count; ?></div><?php endif; ?>
+        <div class="notif-dropdown" id="notifDropdown">
+          <div class="notif-dropdown-header">
+            <span style="display:flex;align-items:center;gap:6px;">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
+              Notifications
+            </span>
+            <?php if (!empty($notifications)): ?>
+            <button onclick="clearNotifications(event)"
+                    style="font-size:10px;color:var(--maroon);background:none;border:1px solid var(--maroon);border-radius:8px;padding:2px 8px;cursor:pointer;font-family:'DM Sans',sans-serif;"
+                    onmouseover="this.style.background='var(--maroon)';this.style.color='white'"
+                    onmouseout="this.style.background='none';this.style.color='var(--maroon)'">Clear all</button>
+            <?php endif; ?>
+          </div>
+          <?php if (!empty($notifications)): ?>
+            <?php foreach ($notifications as $n): ?>
+            <div class="notif-item notif-<?php echo $n['status']; ?>">
+              <span style="display:flex;align-items:flex-start;gap:7px;">
+                <?php if (strpos($n['message'], 'approved') !== false): ?>
+                  <svg width="13" height="13" style="flex-shrink:0;margin-top:1px;color:#10b981;" fill="none" stroke="#10b981" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                <?php else: ?>
+                  <svg width="13" height="13" style="flex-shrink:0;margin-top:1px;" fill="none" stroke="#ef4444" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 <?php endif; ?>
-                <div class="notif-dropdown" id="notifDropdown">
-                    <div class="notif-dropdown-header">
-                        <span style="display:flex;align-items:center;gap:7px;">
-                            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
-                            Notifications
-                        </span>
-                        <?php if (!empty($notifications)): ?>
-                        <button onclick="clearNotifications(event)"
-                                style="font-size:11px;color:var(--maroon);background:none;border:1px solid var(--maroon);border-radius:10px;padding:2px 10px;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500;"
-                                onmouseover="this.style.background='var(--maroon)';this.style.color='white'"
-                                onmouseout="this.style.background='none';this.style.color='var(--maroon)'">
-                            Clear all
-                        </button>
-                        <?php endif; ?>
-                    </div>
-                    <?php if (!empty($notifications)): ?>
-                        <?php foreach ($notifications as $n): ?>
-                            <div class="notif-item notif-<?php echo $n['status']; ?>">
-                                <span style="display:flex;align-items:flex-start;gap:8px;">
-                                    <?php if (strpos($n['message'], 'approved') !== false): ?>
-                                        <svg width="14" height="14" style="flex-shrink:0;margin-top:2px;color:#10b981;" fill="none" stroke="#10b981" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-                                    <?php else: ?>
-                                        <svg width="14" height="14" style="flex-shrink:0;margin-top:2px;" fill="none" stroke="#ef4444" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                                    <?php endif; ?>
-                                    <span><?php echo htmlspecialchars($n['message']); ?></span>
-                                </span>
-                                <small><?php echo date("M j, g:i A", strtotime($n['created_at'])); ?></small>
-                            </div>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <div class="notif-empty">
-                            <svg width="28" height="28" fill="none" stroke="#9ca3af" stroke-width="1.5" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
-                            <p>No notifications yet</p>
-                        </div>
-                    <?php endif; ?>
-                </div>
+                <span><?php echo htmlspecialchars($n['message']); ?></span>
+              </span>
+              <small><?php echo date("M j, g:i A", strtotime($n['created_at'])); ?></small>
             </div>
+            <?php endforeach; ?>
+          <?php else: ?>
+          <div class="notif-empty">
+            <svg width="26" height="26" fill="none" stroke="#9ca3af" stroke-width="1.5" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
+            <p>No notifications yet</p>
+          </div>
+          <?php endif; ?>
         </div>
+      </div>
     </div>
+  </div>
 
-    <!-- Stats -->
+  <!-- Content -->
+  <div class="content">
+
+    <!-- ── Stat Cards ──────────────────────────────────────────────────── -->
     <div class="stats-grid stats-row-4">
-        <div class="stat-card total">
-            <div class="stat-label">Total Reviews</div>
-            <div class="stat-value"><?php echo $total_reviews; ?></div>
-            <div class="stat-icon"><div style="width:48px;height:48px;border-radius:50%;background:rgba(75,85,99,0.1);display:flex;align-items:center;justify-content:center;"><svg width="22" height="22" fill="none" stroke="#4b5563" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div></div>
+      <div class="stat-card total">
+        <div class="stat-label">Total Reviews</div>
+        <div class="stat-value"><?php echo $total_reviews; ?></div>
+        <div class="stat-sub">This semester</div>
+        <div class="stat-icon" style="background:#F3F4F6">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
         </div>
-        <div class="stat-card pending">
-            <div class="stat-label">Pending</div>
-            <div class="stat-value"><?php echo $pending_count; ?></div>
-            <div class="stat-icon"><div style="width:48px;height:48px;border-radius:50%;background:rgba(245,158,11,0.12);display:flex;align-items:center;justify-content:center;"><svg width="22" height="22" fill="none" stroke="#f59e0b" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div></div>
+      </div>
+      <div class="stat-card pending">
+        <div class="stat-label">Pending</div>
+        <div class="stat-value"><?php echo $pending_count; ?></div>
+        <div class="stat-sub">Awaiting approval</div>
+        <div class="stat-icon" style="background:#FEF3C7">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#B45309" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         </div>
-        <div class="stat-card approved">
-            <div class="stat-label">Approved</div>
-            <div class="stat-value"><?php echo $approved_count; ?></div>
-            <div class="stat-icon"><div style="width:48px;height:48px;border-radius:50%;background:rgba(16,185,129,0.12);display:flex;align-items:center;justify-content:center;"><svg width="22" height="22" fill="none" stroke="#10b981" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div></div>
+      </div>
+      <div class="stat-card approved">
+        <div class="stat-label">Approved</div>
+        <div class="stat-value"><?php echo $approved_count; ?></div>
+        <div class="stat-sub">Published</div>
+        <div class="stat-icon" style="background:#D1FAE5">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#065F46" stroke-width="1.8"><polyline points="20 6 9 17 4 12"/></svg>
         </div>
-        <div class="stat-card rejected">
-            <div class="stat-label">Rejected</div>
-            <div class="stat-value"><?php echo $rejected_count; ?></div>
-            <div class="stat-icon"><div style="width:48px;height:48px;border-radius:50%;background:rgba(239,68,68,0.12);display:flex;align-items:center;justify-content:center;"><svg width="22" height="22" fill="none" stroke="#ef4444" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div></div>
+      </div>
+      <div class="stat-card rejected">
+        <div class="stat-label">Rejected</div>
+        <div class="stat-value"><?php echo $rejected_count; ?></div>
+        <div class="stat-sub">Needs resubmission</div>
+        <div class="stat-icon" style="background:#FEE2E2">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#991B1B" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
         </div>
+      </div>
     </div>
 
-    <!-- Faculty Section -->
-    <div class="section-header" style="margin-bottom:18px;">
-        <div class="section-title">Faculty Members</div>
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-            <select id="deptFilter" class="filter-select" onchange="filterFaculty()">
-                <option value="all">All Departments</option>
-                <?php foreach (array_keys($departments) as $dept): ?>
-                <option value="<?php echo htmlspecialchars($dept); ?>"><?php echo htmlspecialchars($dept); ?></option>
-                <?php endforeach; ?>
-            </select>
-            <form class="search-form" method="GET" action="dashboard.php">
-                <?php if ($review_filter !== 'all'): ?>
-                <input type="hidden" name="review_filter" value="<?php echo htmlspecialchars($review_filter); ?>">
-                <?php endif; ?>
-                <svg width="15" height="15" fill="none" stroke="#9ca3af" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input type="text" id="searchInput" name="search" placeholder="Search faculty..."
-                       value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>">
-                <span class="search-clear" id="clearSearch">×</span>
-                <button type="submit">Search</button>
-            </form>
-        </div>
+    <!-- ── Flash messages ──────────────────────────────────────────────── -->
+    <?php if (isset($_GET['submitted'])): ?>
+    <div class="success-banner"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Your review has been submitted and is pending admin approval.</div>
+    <?php endif; ?>
+    <?php if (isset($_GET['edited'])): ?>
+    <div class="success-banner"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Your review has been updated and is pending re-approval.</div>
+    <?php endif; ?>
+    <?php if (isset($_GET['deleted'])): ?>
+    <div class="success-banner" style="background:#fee2e2;color:#991b1b;"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>Your review has been deleted.</div>
+    <?php endif; ?>
+    <?php if (isset($_GET['error'])): ?>
+      <?php if ($_GET['error'] === 'toxic'): ?>
+      <div class="success-banner" style="background:#fee2e2;color:#991b1b;"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Your review was flagged as offensive. Please keep feedback respectful and constructive.</div>
+      <?php elseif ($_GET['error'] === 'duplicate'): ?>
+      <div class="success-banner" style="background:#fef3c7;color:#92400e;"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>You have already submitted a review for this faculty member.</div>
+      <?php elseif ($_GET['error'] === 'empty'): ?>
+      <div class="success-banner" style="background:#fef3c7;color:#92400e;"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Review cannot be empty.</div>
+      <?php endif; ?>
+    <?php endif; ?>
+
+    <!-- ── Faculty Section ─────────────────────────────────────────────── -->
+    <div class="faculty-section-header">
+      <div class="faculty-section-title">
+        Faculty Members
+        <span class="section-badge"><?php echo count($faculties); ?></span>
+      </div>
+      <div class="faculty-controls">
+        <select id="deptFilter" class="filter-select" onchange="filterFaculty()">
+          <option value="all">All Departments</option>
+          <?php foreach (array_keys($departments) as $dept): ?>
+          <option value="<?php echo htmlspecialchars($dept); ?>"><?php echo htmlspecialchars($dept); ?></option>
+          <?php endforeach; ?>
+        </select>
+        <form class="search-form" method="GET" action="dashboard.php">
+          <?php if ($review_filter !== 'all'): ?><input type="hidden" name="review_filter" value="<?php echo htmlspecialchars($review_filter); ?>"><?php endif; ?>
+          <svg width="13" height="13" fill="none" stroke="#9ca3af" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="searchInput" name="search" placeholder="Search faculty…"
+                 value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>">
+          <span class="search-clear" id="clearSearch">×</span>
+          <button type="submit">Search</button>
+        </form>
+      </div>
     </div>
 
     <?php if (!empty($faculties)): ?>
     <div class="faculty-grid" id="facultyGrid">
-        <?php foreach ($faculties as $i => $faculty):
-            $user_review  = $user_reviews_map[$faculty['id']] ?? null;
-            $has_reviewed = $user_review !== null;
-            $review_status= $has_reviewed ? $user_review['status'] : null;
-        ?>
-        <div class="faculty-card" data-index="<?php echo $i; ?>" data-dept="<?php echo htmlspecialchars($faculty['department'] ?? ''); ?>">
-            <img src="<?php echo (!empty($faculty['photo']) && file_exists($faculty['photo']))
-                ? htmlspecialchars($faculty['photo'])
-                : 'https://ui-avatars.com/api/?name='.urlencode($faculty['name']).'&background=8B0000&color=fff&size=80'; ?>"
-                 alt="Faculty">
-            <h3><?php echo htmlspecialchars($faculty['name']); ?></h3>
-            <p><?php echo htmlspecialchars($faculty['department'] ?? ''); ?></p>
+      <?php foreach ($faculties as $i => $faculty):
+        $user_review   = $user_reviews_map[$faculty['id']] ?? null;
+        $has_reviewed  = $user_review !== null;
+        $review_status = $has_reviewed ? $user_review['status'] : null;
+        $fav_src       = (!empty($faculty['photo']) && file_exists($faculty['photo']))
+            ? htmlspecialchars($faculty['photo'])
+            : 'https://ui-avatars.com/api/?name='.urlencode($faculty['name']).'&background=7C0A02&color=fff&size=80';
+        $avg = floatval($faculty['avg_stars'] ?? 0);
+        $full_stars = floor($avg);
+      ?>
+      <div class="faculty-card" data-index="<?php echo $i; ?>" data-dept="<?php echo htmlspecialchars($faculty['department'] ?? ''); ?>">
+        <img src="<?php echo $fav_src; ?>" alt="<?php echo htmlspecialchars($faculty['name']); ?>">
+        <h3><?php echo htmlspecialchars($faculty['name']); ?></h3>
+        <p><?php echo htmlspecialchars($faculty['department'] ?? ''); ?></p>
 
-            <?php
-            $avg = floatval($faculty['avg_stars'] ?? 0);
-            if ($avg > 0):
-                $pct = min(100, ($avg / 5) * 100);
-                $sz  = 16; $gap = 3;
-                $w   = $sz * 5 + $gap * 4;
-                $uid = 'ds' . substr(md5($faculty['id'] . $avg), 0, 7);
-                $cw  = round($pct / 100 * $w, 2);
-                $empty = $filled = '';
-                for ($si = 0; $si < 5; $si++) {
-                    $x = $si * ($sz + $gap);
-                    $empty  .= '<text x="'.$x.'" y="'.$sz.'" font-size="'.$sz.'" fill="#d1d5db">★</text>';
-                    $filled .= '<text x="'.$x.'" y="'.$sz.'" font-size="'.$sz.'" fill="#f59e0b">★</text>';
-                }
-            ?>
-            <div style="margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap;">
-                <svg width="<?php echo $w; ?>" height="<?php echo $sz; ?>" viewBox="0 0 <?php echo $w; ?> <?php echo $sz; ?>" xmlns="http://www.w3.org/2000/svg" style="display:block;vertical-align:middle;">
-                    <defs><clipPath id="<?php echo $uid; ?>"><rect x="0" y="0" width="<?php echo $cw; ?>" height="<?php echo $sz; ?>"/></clipPath></defs>
-                    <?php echo $empty; ?>
-                    <g clip-path="url(#<?php echo $uid; ?>)"><?php echo $filled; ?></g>
-                </svg>
-                <span style="font-size:12px;color:var(--gray-400);"><?php echo number_format($avg,1); ?> (<?php echo $faculty['review_count']; ?>)</span>
-            </div>
-            <?php endif; ?>
-
-            <?php if ($has_reviewed): ?>
-                <span class="status-badge status-<?php echo $review_status; ?>" style="display:inline-flex;align-items:center;gap:4px;margin-bottom:10px;">
-                    <?php if ($review_status === 'pending'): ?>
-                        <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Pending
-                    <?php elseif ($review_status === 'approved'): ?>
-                        <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Approved
-                    <?php else: ?>
-                        <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Rejected
-                    <?php endif; ?>
-                </span><br>
-                <?php if ($review_status === 'approved'): ?>
-                    <button class="btn-evaluate btn-edit"
-                            onclick="openEditModal(<?php echo $user_review['id']; ?>, '<?php echo htmlspecialchars(addslashes($user_review['review_text'])); ?>', '<?php echo htmlspecialchars(addslashes($faculty['name'])); ?>', '<?php echo htmlspecialchars(addslashes($faculty['department'] ?? '')); ?>', <?php echo $faculty['id']; ?>, <?php echo intval($user_review['rating_teaching']); ?>, <?php echo intval($user_review['rating_communication']); ?>, <?php echo intval($user_review['rating_punctuality']); ?>, <?php echo intval($user_review['rating_fairness']); ?>, <?php echo intval($user_review['rating_overall']); ?>)">
-                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                        Edit Review
-                    </button>
-                <?php elseif ($review_status === 'pending'): ?>
-                    <span class="btn-evaluate btn-reviewed">
-                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                        Awaiting Review
-                    </span>
-                <?php else: ?>
-                    <button class="btn-evaluate btn-reviewed btn-rejected-card"
-                            onclick="openDeleteAndResubmitModal(<?php echo $user_review['id']; ?>, '<?php echo htmlspecialchars(addslashes($faculty['name'])); ?>', <?php echo $faculty['id']; ?>, '<?php echo htmlspecialchars(addslashes($faculty['name'])); ?>', '<?php echo htmlspecialchars(addslashes($faculty['department'] ?? '')); ?>')">
-                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-                        Resubmit
-                    </button>
-                <?php endif; ?>
-            <?php else: ?>
-                <button class="btn-evaluate"
-                        onclick="openModalForFaculty(<?php echo $faculty['id']; ?>, '<?php echo htmlspecialchars(addslashes($faculty['name'])); ?>', '<?php echo htmlspecialchars(addslashes($faculty['department'] ?? '')); ?>', '<?php echo (!empty($faculty['photo'])&&file_exists($faculty['photo']))?htmlspecialchars(addslashes($faculty['photo'])):'https://ui-avatars.com/api/?name='.urlencode($faculty['name']).'&background=8B0000&color=fff&size=42'; ?>')">
-                    Evaluate
-                </button>
-            <?php endif; ?>
+        <?php if ($avg > 0): ?>
+        <div class="fac-stars">
+          <?php for ($s = 1; $s <= 5; $s++): ?>
+          <span class="<?php echo $s <= $full_stars ? 'lit' : ''; ?>">★</span>
+          <?php endfor; ?>
         </div>
-        <?php endforeach; ?>
+        <div class="fac-rating-count"><?php echo number_format($avg,1); ?> &middot; <?php echo $faculty['review_count']; ?> reviews</div>
+        <?php endif; ?>
+
+        <?php if ($has_reviewed): ?>
+          <?php if ($review_status === 'approved'): ?>
+          <div style="margin-bottom:6px;">
+            <span class="btn-reviewed">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Reviewed
+            </span>
+          </div>
+          <button class="btn-evaluate" style="opacity:1;"
+                  onclick="openEditModal(<?php echo $user_review['id']; ?>, '<?php echo htmlspecialchars(addslashes($user_review['review_text'])); ?>', '<?php echo htmlspecialchars(addslashes($faculty['name'])); ?>', '<?php echo htmlspecialchars(addslashes($faculty['department'] ?? '')); ?>', <?php echo $faculty['id']; ?>, <?php echo intval($user_review['rating_teaching']); ?>, <?php echo intval($user_review['rating_communication']); ?>, <?php echo intval($user_review['rating_punctuality']); ?>, <?php echo intval($user_review['rating_fairness']); ?>, <?php echo intval($user_review['rating_overall']); ?>)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Edit Review
+          </button>
+          <?php elseif ($review_status === 'pending'): ?>
+          <span class="status-badge status-pending">
+            <svg width="9" height="9" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Pending
+          </span>
+          <?php else: ?>
+          <button class="btn-rejected-card"
+                  onclick="openDeleteAndResubmitModal(<?php echo $user_review['id']; ?>, '<?php echo htmlspecialchars(addslashes($faculty['name'])); ?>', <?php echo $faculty['id']; ?>, '<?php echo htmlspecialchars(addslashes($faculty['name'])); ?>', '<?php echo htmlspecialchars(addslashes($faculty['department'] ?? '')); ?>')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            Resubmit
+          </button>
+          <?php endif; ?>
+        <?php else: ?>
+          <button class="btn-evaluate"
+                  onclick="openModalForFaculty(<?php echo $faculty['id']; ?>, '<?php echo htmlspecialchars(addslashes($faculty['name'])); ?>', '<?php echo htmlspecialchars(addslashes($faculty['department'] ?? '')); ?>', '<?php echo $fav_src; ?>')">
+            Evaluate
+          </button>
+        <?php endif; ?>
+      </div>
+      <?php endforeach; ?>
     </div>
     <div class="pagination" id="pagination"></div>
     <?php else: ?>
     <div class="empty-state">
-        <svg width="64" height="64" fill="none" stroke="#9ca3af" stroke-width="1.5" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-        <p>No faculty found<?php echo isset($_GET['search']) ? ' for your search.' : '.'; ?></p>
+      <svg width="56" height="56" fill="none" stroke="#9ca3af" stroke-width="1.5" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+      <p>No faculty found<?php echo isset($_GET['search']) ? ' for your search.' : '.'; ?></p>
     </div>
     <?php endif; ?>
 
-    <!-- Recent Reviews Card -->
-    <div class="review-card">
-        <div class="review-card-header">
-            <div class="review-card-title">
-                <svg width="18" height="18" fill="none" stroke="var(--maroon)" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                My Reviews
+    <!-- ── Lower: My Reviews Table + Activity Feed ─────────────────────── -->
+    <div class="dash-two-col">
+
+      <!-- My Reviews table -->
+      <div class="dash-card">
+        <div class="dash-card-header">
+          <div class="dash-card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--maroon)" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            My Reviews
+            <span class="section-badge"><?php echo count($recent_reviews); ?></span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <div class="filter-tabs-inline" id="reviewFilterTabs">
+              <button class="filter-tab <?php echo $review_filter==='all'      ? 'active':''; ?>" onclick="setReviewFilter('all',event)">All</button>
+              <button class="filter-tab <?php echo $review_filter==='pending'  ? 'active':''; ?>" onclick="setReviewFilter('pending',event)">Pending</button>
+              <button class="filter-tab <?php echo $review_filter==='approved' ? 'active':''; ?>" onclick="setReviewFilter('approved',event)">Approved</button>
+              <button class="filter-tab <?php echo $review_filter==='rejected' ? 'active':''; ?>" onclick="setReviewFilter('rejected',event)">Rejected</button>
             </div>
             <button class="write-review-btn" onclick="openReviewModal()">
-                <svg width="14" height="14" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                Write a Review
+              <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Write a review
             </button>
+          </div>
         </div>
-
-        <div class="filter-tabs" id="reviewFilterTabs">
-            <a href="#reviews" onclick="setReviewFilter('all',event)"     class="filter-tab <?php echo $review_filter === 'all'      ? 'active' : ''; ?>">All</a>
-            <a href="#reviews" onclick="setReviewFilter('pending',event)" class="filter-tab <?php echo $review_filter === 'pending'  ? 'active' : ''; ?>">
-                <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Pending
-            </a>
-            <a href="#reviews" onclick="setReviewFilter('approved',event)" class="filter-tab <?php echo $review_filter === 'approved' ? 'active' : ''; ?>">
-                <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Approved
-            </a>
-            <a href="#reviews" onclick="setReviewFilter('rejected',event)" class="filter-tab <?php echo $review_filter === 'rejected' ? 'active' : ''; ?>">
-                <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Rejected
-            </a>
-        </div>
-
-        <?php if (isset($_GET['submitted'])): ?>
-            <div class="success-banner"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Your review has been submitted and is pending admin approval.</div>
-        <?php endif; ?>
-        <?php if (isset($_GET['edited'])): ?>
-            <div class="success-banner"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Your review has been updated and is pending re-approval.</div>
-        <?php endif; ?>
-        <?php if (isset($_GET['deleted'])): ?>
-            <div class="success-banner" style="background:#fee2e2;color:#991b1b;"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg> Your review has been deleted.</div>
-        <?php endif; ?>
-        <?php if (isset($_GET['error'])): ?>
-            <?php if ($_GET['error'] === 'toxic'): ?>
-            <div class="success-banner" style="background:#fee2e2;color:#991b1b;">
-                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                Your review was flagged as hateful or offensive and could not be submitted. Please keep feedback respectful and constructive.
-            </div>
-            <?php elseif ($_GET['error'] === 'duplicate'): ?>
-            <div class="success-banner" style="background:#fef3c7;color:#92400e;">
-                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                You have already submitted a review for this faculty member.
-            </div>
-            <?php elseif ($_GET['error'] === 'empty'): ?>
-            <div class="success-banner" style="background:#fef3c7;color:#92400e;">
-                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                Review cannot be empty.
-            </div>
-            <?php endif; ?>
-        <?php endif; ?>
 
         <?php if (empty($recent_reviews)): ?>
         <div class="review-empty" id="reviewEmptyState">
-            <div class="review-empty-icon">
-                <svg width="32" height="32" fill="none" stroke="var(--maroon)" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-            </div>
-            <p>You haven't submitted any reviews yet.<br>Share your feedback on a faculty member!</p>
-            <button class="write-review-btn" onclick="openReviewModal()">
-                <svg width="14" height="14" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                Write Your First Review
-            </button>
+          <div class="review-empty-icon">
+            <svg width="28" height="28" fill="none" stroke="var(--maroon)" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          </div>
+          <p>No reviews yet. Share your feedback!</p>
+          <button class="write-review-btn" onclick="openReviewModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" style="width:11px;height:11px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Write Your First Review
+          </button>
         </div>
         <?php else: ?>
-        <?php foreach ($recent_reviews as $rev): ?>
-        <div class="review-row" data-status="<?php echo $rev['status']; ?>">
-            <div class="review-row-icon">
-                <svg width="18" height="18" fill="none" stroke="var(--maroon)" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-            </div>
-            <div class="review-row-body">
-                <div class="review-row-top">
-                    <div class="review-row-faculty"><?php echo htmlspecialchars($rev['faculty_name']); ?></div>
-                    <div style="display:flex;align-items:center;gap:8px;">
-                        <span class="status-badge status-<?php echo $rev['status']; ?>"><?php echo ucfirst($rev['status']); ?></span>
-                        <?php if ($rev['status'] === 'approved'): ?>
-                        <button class="action-icon-btn" title="Edit"
-                                onclick="openEditModal(<?php echo $rev['id']; ?>, '<?php echo htmlspecialchars(addslashes($rev['review_text'])); ?>', '<?php echo htmlspecialchars(addslashes($rev['faculty_name'])); ?>', '<?php echo htmlspecialchars(addslashes($rev['department'])); ?>', <?php echo $rev['faculty_id']; ?>, <?php echo intval($rev['rating_teaching']); ?>, <?php echo intval($rev['rating_communication']); ?>, <?php echo intval($rev['rating_punctuality']); ?>, <?php echo intval($rev['rating_fairness']); ?>, <?php echo intval($rev['rating_overall']); ?>)">
-                            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                        </button>
-                        <?php endif; ?>
-                        <button class="action-icon-btn action-icon-del" title="Delete"
-                                onclick="openDeleteModal(<?php echo $rev['id']; ?>, '<?php echo htmlspecialchars(addslashes($rev['faculty_name'])); ?>')">
-                            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-                        </button>
-                    </div>
-                </div>
-                <div class="review-row-dept"><?php echo htmlspecialchars($rev['department'] ?? ''); ?></div>
-                <div class="review-row-text"><?php echo htmlspecialchars($rev['review_text']); ?></div>
-                <div class="review-row-date"><?php echo date("F j, Y · g:i A", strtotime($rev['created_at'])); ?></div>
-            </div>
-        </div>
-        <?php endforeach; ?>
+        <table class="rev-table">
+          <thead>
+            <tr>
+              <th style="width:20%">Faculty</th>
+              <th style="width:16%">Dept</th>
+              <th style="width:28%">Review</th>
+              <th style="width:15%">Rating</th>
+              <th style="width:10%">Status</th>
+              <th style="width:11%"></th>
+            </tr>
+          </thead>
+          <tbody>
+          <?php foreach ($recent_reviews as $rev): ?>
+          <tr class="review-row" data-status="<?php echo $rev['status']; ?>">
+            <td style="font-weight:500"><?php echo htmlspecialchars($rev['faculty_name']); ?></td>
+            <td><span class="dept-chip"><?php echo htmlspecialchars($rev['department'] ?? ''); ?></span></td>
+            <td class="rev-td-trunc"><?php echo htmlspecialchars($rev['review_text']); ?></td>
+            <td>
+              <?php $ro = intval($rev['rating_overall']); if ($ro > 0): ?>
+              <div class="fac-stars-row">
+                <?php for ($s=1;$s<=5;$s++): ?><span class="<?php echo $s<=$ro?'lit':''; ?>">★</span><?php endfor; ?>
+                <span class="score"><?php echo $ro; ?>.0</span>
+              </div>
+              <?php else: ?><span style="color:var(--gray-400);font-size:10px;">—</span><?php endif; ?>
+            </td>
+            <td><span class="status-badge status-<?php echo $rev['status']; ?>"><?php echo ucfirst($rev['status']); ?></span></td>
+            <td>
+              <div style="display:flex;gap:4px;">
+                <?php if ($rev['status'] === 'approved'): ?>
+                <button class="action-btn" title="Edit"
+                        onclick="openEditModal(<?php echo $rev['id']; ?>, '<?php echo htmlspecialchars(addslashes($rev['review_text'])); ?>', '<?php echo htmlspecialchars(addslashes($rev['faculty_name'])); ?>', '<?php echo htmlspecialchars(addslashes($rev['department'])); ?>', <?php echo $rev['faculty_id']; ?>, <?php echo intval($rev['rating_teaching']); ?>, <?php echo intval($rev['rating_communication']); ?>, <?php echo intval($rev['rating_punctuality']); ?>, <?php echo intval($rev['rating_fairness']); ?>, <?php echo intval($rev['rating_overall']); ?>)">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg>
+                  Edit
+                </button>
+                <?php elseif ($rev['status'] === 'rejected'): ?>
+                <button class="action-btn" title="Resubmit"
+                        onclick="openDeleteAndResubmitModal(<?php echo $rev['id']; ?>, '<?php echo htmlspecialchars(addslashes($rev['faculty_name'])); ?>', <?php echo $rev['faculty_id']; ?>, '<?php echo htmlspecialchars(addslashes($rev['faculty_name'])); ?>', '<?php echo htmlspecialchars(addslashes($rev['department'])); ?>')"
+                        style="color:#991B1B;border-color:#FCA5A5;">
+                  Resubmit
+                </button>
+                <?php endif; ?>
+                <button class="action-btn danger" title="Delete"
+                        onclick="openDeleteModal(<?php echo $rev['id']; ?>, '<?php echo htmlspecialchars(addslashes($rev['faculty_name'])); ?>')">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <?php endforeach; ?>
+          </tbody>
+        </table>
         <?php endif; ?>
-    </div>
+      </div>
 
-</div>
+      <!-- Activity Feed -->
+      <div class="dash-card">
+        <div class="feed-header">
+          <h3>Recent activity</h3>
+          <?php if (!empty($notifications)): ?>
+          <span class="feed-header-link" onclick="clearNotifications(event)">Mark all read</span>
+          <?php endif; ?>
+        </div>
+        <?php if (!empty($notifications)): ?>
+          <?php foreach ($notifications as $n): ?>
+          <div class="feed-item">
+            <div class="feed-dot" style="background:<?php echo strpos($n['message'],'approved')!==false ? '#10B981' : (strpos($n['message'],'rejected')!==false ? '#E24B4A' : '#F59E0B'); ?>"></div>
+            <div>
+              <div class="feed-text"><?php echo htmlspecialchars($n['message']); ?></div>
+              <div class="feed-time"><?php echo date("M j, g:i A", strtotime($n['created_at'])); ?></div>
+            </div>
+          </div>
+          <?php endforeach; ?>
+        <?php else: ?>
+        <div style="padding:24px 14px;text-align:center;color:var(--gray-400);font-size:12px;">
+          No recent activity.
+        </div>
+        <?php endif; ?>
+      </div>
+
+    </div><!-- end dash-two-col -->
+
+  </div><!-- end .content -->
+</div><!-- end .main -->
 
 <!-- ══ Edit Review Modal ═════════════════════════════════════════════════ -->
 <div class="modal-overlay" id="editModal">
@@ -714,22 +769,22 @@ $review_filter = isset($_GET['review_filter']) ? $_GET['review_filter'] : 'all';
                 <div class="rating-section-title" style="margin-top:16px;">Update Review Text</div>
                 <textarea class="modal-textarea" name="review_text" id="editReviewText" placeholder="Update your review..." required></textarea>
                 <div style="margin-top:12px;">
-                    <div style="font-size:12px;font-weight:600;color:var(--gray-600);margin-bottom:7px;">Update Photos <span style="font-weight:400;color:var(--gray-400);">(optional — replaces existing, up to 5)</span></div>
+                    <div style="font-size:11px;font-weight:600;color:var(--gray-600);margin-bottom:6px;">Update Photos <span style="font-weight:400;color:var(--gray-400);">(optional — replaces existing, up to 5)</span></div>
                     <input type="file" name="edit_review_photos[]" id="editReviewPhotosInput" accept="image/jpeg,image/png,image/webp" multiple style="display:none;" onchange="previewEditReviewPhotos(this)">
                     <div id="editPhotoDropzone" onclick="document.getElementById('editReviewPhotosInput').click()"
-                         style="border:2px dashed var(--gray-200);border-radius:var(--radius-sm);padding:14px;text-align:center;cursor:pointer;background:var(--gray-100);">
-                        <svg width="22" height="22" fill="none" stroke="var(--gray-400)" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 5px;display:block;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
-                        <div style="font-size:12px;color:var(--gray-500);">Click to upload new photos</div>
-                        <div style="font-size:10px;color:var(--gray-400);margin-top:2px;">JPG, PNG, WEBP · Max 5MB each · Up to 5</div>
+                         style="border:2px dashed var(--gray-200);border-radius:var(--radius-sm);padding:12px;text-align:center;cursor:pointer;background:var(--gray-100);">
+                        <svg width="20" height="20" fill="none" stroke="var(--gray-400)" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 4px;display:block;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                        <div style="font-size:11px;color:var(--gray-500);">Click to upload new photos</div>
+                        <div style="font-size:10px;color:var(--gray-400);margin-top:1px;">JPG, PNG, WEBP · Max 5MB · Up to 5</div>
                     </div>
-                    <div id="editReviewPhotosPreviewGrid" style="display:none;margin-top:8px;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:6px;"></div>
-                    <div id="editPhotosAddMore" style="display:none;margin-top:6px;">
-                        <button type="button" onclick="document.getElementById('editReviewPhotosInput').click()" style="font-size:11px;color:var(--maroon);background:var(--maroon-pale);border:1px solid rgba(139,0,0,0.15);border-radius:20px;padding:3px 10px;cursor:pointer;font-family:'DM Sans',sans-serif;">+ Add more</button>
-                        <span id="editPhotosCount" style="font-size:11px;color:var(--gray-400);margin-left:8px;"></span>
+                    <div id="editReviewPhotosPreviewGrid" style="display:none;margin-top:7px;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:6px;"></div>
+                    <div id="editPhotosAddMore" style="display:none;margin-top:5px;">
+                        <button type="button" onclick="document.getElementById('editReviewPhotosInput').click()" style="font-size:10px;color:var(--maroon);background:var(--maroon-pale);border:1px solid rgba(124,10,2,0.12);border-radius:20px;padding:2px 9px;cursor:pointer;font-family:'DM Sans',sans-serif;">+ Add more</button>
+                        <span id="editPhotosCount" style="font-size:10px;color:var(--gray-400);margin-left:6px;"></span>
                     </div>
                 </div>
                 <input type="hidden" name="review_id" id="editReviewId">
-                <p style="font-size:12px;color:var(--gray-400);margin-top:8px;">⚠️ Editing will reset your review to pending status for re-approval.</p>
+                <p style="font-size:11px;color:var(--gray-400);margin-top:8px;">⚠️ Editing will reset your review to pending status for re-approval.</p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn-secondary" onclick="closeEditModal()">Cancel</button>
@@ -741,23 +796,23 @@ $review_filter = isset($_GET['review_filter']) ? $_GET['review_filter'] : 'all';
 
 <!-- ══ Delete Confirm Modal ══════════════════════════════════════════════ -->
 <div class="modal-overlay" id="deleteModal">
-    <div class="modal-box" style="max-width:420px;">
+    <div class="modal-box" style="max-width:400px;">
         <div class="modal-header">
             <h3>Delete Review</h3>
             <button class="modal-close" onclick="closeDeleteModal()">&times;</button>
         </div>
         <form method="POST">
-            <div class="modal-body" style="text-align:center;padding:30px 24px;">
-                <div style="width:56px;height:56px;border-radius:50%;background:#fee2e2;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
-                    <svg width="26" height="26" fill="none" stroke="#ef4444" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+            <div class="modal-body" style="text-align:center;padding:24px 20px;">
+                <div style="width:50px;height:50px;border-radius:50%;background:#fee2e2;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
+                    <svg width="22" height="22" fill="none" stroke="#ef4444" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
                 </div>
-                <p style="font-size:15px;font-weight:600;color:var(--gray-800);margin-bottom:8px;">Delete this review?</p>
-                <p style="font-size:13px;color:var(--gray-400);">Your review for <strong id="deleteFacultyName"></strong> will be permanently removed.</p>
+                <p style="font-size:14px;font-weight:500;color:var(--gray-800);margin-bottom:6px;">Delete this review?</p>
+                <p style="font-size:12px;color:var(--gray-400);">Your review for <strong id="deleteFacultyName"></strong> will be permanently removed.</p>
                 <input type="hidden" name="review_id" id="deleteReviewId">
             </div>
-            <div class="modal-footer" style="justify-content:center;gap:12px;">
+            <div class="modal-footer" style="justify-content:center;gap:10px;">
                 <button type="button" class="btn-secondary" onclick="closeDeleteModal()">Cancel</button>
-                <button type="submit" name="delete_review" style="padding:9px 22px;border-radius:20px;background:#ef4444;color:white;border:none;font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">Delete</button>
+                <button type="submit" name="delete_review" style="padding:8px 20px;border-radius:20px;background:#ef4444;color:white;border:none;font-size:12px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">Delete</button>
             </div>
         </form>
     </div>
@@ -765,7 +820,7 @@ $review_filter = isset($_GET['review_filter']) ? $_GET['review_filter'] : 'all';
 
 <!-- ══ Resubmit Modal ════════════════════════════════════════════════════ -->
 <div class="modal-overlay" id="resubmitModal">
-    <div class="modal-box" style="max-width:460px;">
+    <div class="modal-box" style="max-width:440px;">
         <div class="modal-header">
             <h3>Resubmit Review</h3>
             <button class="modal-close" onclick="closeResubmitModal()">&times;</button>
@@ -776,14 +831,14 @@ $review_filter = isset($_GET['review_filter']) ? $_GET['review_filter'] : 'all';
                     <img id="resubmitPreviewImg" src="" alt="">
                     <div class="selected-preview-info">
                         <strong id="resubmitPreviewName"></strong>
-                        <span style="font-size:12px;color:#991b1b;">Previously rejected</span>
+                        <span style="font-size:11px;color:#991b1b;">Previously rejected</span>
                     </div>
                 </div>
-                <p style="font-size:13px;color:var(--gray-600);margin-bottom:12px;margin-top:8px;line-height:1.6;">Your previous review was rejected. Write a new one below — it will replace the rejected one.</p>
+                <p style="font-size:12px;color:var(--gray-600);margin-bottom:10px;margin-top:6px;line-height:1.5;">Your previous review was rejected. Write a new one below — it will replace the rejected one.</p>
                 <textarea class="modal-textarea" name="review_text" id="resubmitText" placeholder="Write your new review here..." required></textarea>
                 <input type="hidden" name="old_review_id" id="resubmitReviewId">
                 <input type="hidden" name="faculty_id"    id="resubmitFacultyId">
-                <p style="font-size:12px;color:var(--gray-400);margin-top:8px;">🔒 Your identity remains anonymous.</p>
+                <p style="font-size:11px;color:var(--gray-400);margin-top:6px;">🔒 Your identity remains anonymous.</p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn-secondary" onclick="closeResubmitModal()">Cancel</button>
@@ -802,8 +857,6 @@ $review_filter = isset($_GET['review_filter']) ? $_GET['review_filter'] : 'all';
         </div>
         <form method="POST" id="reviewForm" enctype="multipart/form-data">
             <div class="modal-body">
-
-                <!-- Step 1: Choose Faculty -->
                 <div class="step active" id="step1">
                     <div class="step-label">Step 1 of 2 · Choose Faculty</div>
                     <?php
@@ -815,18 +868,18 @@ $review_filter = isset($_GET['review_filter']) ? $_GET['review_filter'] : 'all';
                     ?>
                     <div class="dept-group">
                         <div class="dept-header" onclick="toggleDept(this)">
-                            <span><?php echo htmlspecialchars($dept); ?> <span style="font-weight:400;color:var(--gray-400);font-size:12px;">(<?php echo count($available); ?>)</span></span>
+                            <span><?php echo htmlspecialchars($dept); ?> <span style="font-weight:400;color:var(--gray-400);font-size:11px;">(<?php echo count($available); ?>)</span></span>
                             <span class="chevron">▼</span>
                         </div>
                         <div class="dept-body">
                             <?php foreach ($available as $f):
-                                $f_avatar = (!empty($f['photo']) && file_exists($f['photo']))
+                                $fa = (!empty($f['photo']) && file_exists($f['photo']))
                                     ? htmlspecialchars($f['photo'])
-                                    : 'https://ui-avatars.com/api/?name='.urlencode($f['name']).'&background=8B0000&color=fff&size=40';
+                                    : 'https://ui-avatars.com/api/?name='.urlencode($f['name']).'&background=7C0A02&color=fff&size=40';
                             ?>
                             <div class="faculty-option"
-                                 onclick="selectFaculty(<?php echo $f['id']; ?>, '<?php echo htmlspecialchars(addslashes($f['name'])); ?>', '<?php echo htmlspecialchars(addslashes($dept)); ?>', '<?php echo $f_avatar; ?>')">
-                                <img src="<?php echo $f_avatar; ?>" alt="">
+                                 onclick="selectFaculty(<?php echo $f['id']; ?>, '<?php echo htmlspecialchars(addslashes($f['name'])); ?>', '<?php echo htmlspecialchars(addslashes($dept)); ?>', '<?php echo $fa; ?>')">
+                                <img src="<?php echo $fa; ?>" alt="">
                                 <?php echo htmlspecialchars($f['name']); ?>
                             </div>
                             <?php endforeach; ?>
@@ -834,15 +887,14 @@ $review_filter = isset($_GET['review_filter']) ? $_GET['review_filter'] : 'all';
                     </div>
                     <?php endforeach; ?>
                     <?php if (!$has_any_option): ?>
-                    <div style="text-align:center;padding:30px 20px;color:var(--gray-400);">
-                        <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 10px;display:block;opacity:0.4;"><polyline points="20 6 9 17 4 12"/></svg>
-                        <div style="font-size:14px;font-weight:600;margin-bottom:4px;">All faculties reviewed!</div>
-                        <div style="font-size:12px;">You've already submitted a review for every faculty member.</div>
+                    <div style="text-align:center;padding:28px 20px;color:var(--gray-400);">
+                        <svg width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 8px;display:block;opacity:0.4;"><polyline points="20 6 9 17 4 12"/></svg>
+                        <div style="font-size:13px;font-weight:500;margin-bottom:3px;">All faculties reviewed!</div>
+                        <div style="font-size:11px;">You've already submitted a review for every faculty member.</div>
                     </div>
                     <?php endif; ?>
                 </div>
 
-                <!-- Step 2: Rate & Write -->
                 <div class="step" id="step2">
                     <div class="step-label">Step 2 of 2 · Rate &amp; Write Your Review</div>
                     <div class="selected-preview show" id="selectedPreview">
@@ -853,15 +905,14 @@ $review_filter = isset($_GET['review_filter']) ? $_GET['review_filter'] : 'all';
                         </div>
                         <button type="button" class="change-faculty-btn" onclick="goStep(1)">Change</button>
                     </div>
-
                     <div class="rating-section-title">Rate the Faculty</div>
                     <?php
                     $rating_categories = [
-                        ['teaching',       'Teaching Effectiveness',     'How well does the faculty explain and deliver lessons?'],
-                        ['communication',  'Communication Skills',       'How clear and approachable is the faculty?'],
-                        ['punctuality',    'Punctuality & Availability', 'Does the faculty arrive on time and is available when needed?'],
-                        ['fairness',       'Fairness in Grading',        'Are grades given fairly and consistently?'],
-                        ['overall',        'Overall Satisfaction',       'Your overall experience with this faculty.'],
+                        ['teaching',      'Teaching Effectiveness',     'How well does the faculty explain and deliver lessons?'],
+                        ['communication', 'Communication Skills',       'How clear and approachable is the faculty?'],
+                        ['punctuality',   'Punctuality & Availability', 'Does the faculty arrive on time and is available when needed?'],
+                        ['fairness',      'Fairness in Grading',        'Are grades given fairly and consistently?'],
+                        ['overall',       'Overall Satisfaction',       'Your overall experience with this faculty.'],
                     ];
                     foreach ($rating_categories as $cat):
                     ?>
@@ -873,37 +924,33 @@ $review_filter = isset($_GET['review_filter']) ? $_GET['review_filter'] : 'all';
                         <div class="stars" id="stars_<?php echo $cat[0]; ?>">
                             <?php for ($i = 5; $i >= 1; $i--): ?>
                             <input type="radio" name="rating_<?php echo $cat[0]; ?>" id="star_<?php echo $cat[0].$i; ?>" value="<?php echo $i; ?>" required>
-                            <label for="star_<?php echo $cat[0].$i; ?>" title="<?php echo $i; ?> star<?php echo $i > 1 ? 's' : ''; ?>">★</label>
+                            <label for="star_<?php echo $cat[0].$i; ?>" title="<?php echo $i; ?> star<?php echo $i>1?'s':''; ?>">★</label>
                             <?php endfor; ?>
                         </div>
                     </div>
                     <?php endforeach; ?>
-
-                    <div class="rating-section-title" style="margin-top:18px;">Write Your Review</div>
+                    <div class="rating-section-title" style="margin-top:16px;">Write Your Review</div>
                     <textarea class="modal-textarea" name="review_text" id="reviewText"
                               placeholder="Write your anonymous review here... Be honest, constructive, and respectful."
                               required></textarea>
-
-                    <div style="margin-top:14px;">
-                        <div style="font-size:12px;font-weight:600;color:var(--gray-600);margin-bottom:8px;">Attach Photos <span style="font-weight:400;color:var(--gray-400);">(optional — up to 5)</span></div>
+                    <div style="margin-top:12px;">
+                        <div style="font-size:11px;font-weight:600;color:var(--gray-600);margin-bottom:6px;">Attach Photos <span style="font-weight:400;color:var(--gray-400);">(optional — up to 5)</span></div>
                         <input type="file" name="review_photos[]" id="reviewPhotosInput" accept="image/jpeg,image/png,image/webp" multiple style="display:none;" onchange="previewReviewPhotos(this)">
                         <div id="reviewPhotoDropzone" onclick="document.getElementById('reviewPhotosInput').click()"
-                             style="border:2px dashed var(--gray-200);border-radius:var(--radius-sm);padding:18px 14px;text-align:center;cursor:pointer;background:var(--gray-100);">
-                            <svg width="28" height="28" fill="none" stroke="var(--gray-400)" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 8px;display:block;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
-                            <div style="font-size:13px;font-weight:500;color:var(--gray-600);margin-bottom:2px;">Click to upload photos</div>
-                            <div style="font-size:11px;color:var(--gray-400);">JPG, PNG, WEBP · Max 5MB each · Up to 5 photos · AI safety checked</div>
+                             style="border:2px dashed var(--gray-200);border-radius:var(--radius-sm);padding:16px 12px;text-align:center;cursor:pointer;background:var(--gray-100);">
+                            <svg width="24" height="24" fill="none" stroke="var(--gray-400)" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 6px;display:block;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                            <div style="font-size:12px;font-weight:500;color:var(--gray-600);margin-bottom:2px;">Click to upload photos</div>
+                            <div style="font-size:10px;color:var(--gray-400);">JPG, PNG, WEBP · Max 5MB · Up to 5 · AI safety checked</div>
                         </div>
-                        <div id="reviewPhotosPreviewGrid" style="display:none;margin-top:10px;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:8px;"></div>
-                        <div id="reviewPhotosAddMore" style="display:none;margin-top:6px;">
-                            <button type="button" onclick="document.getElementById('reviewPhotosInput').click()" style="font-size:11px;color:var(--maroon);background:var(--maroon-pale);border:1px solid rgba(139,0,0,0.15);border-radius:20px;padding:3px 10px;cursor:pointer;font-family:'DM Sans',sans-serif;">+ Add more photos</button>
-                            <span id="reviewPhotosCount" style="font-size:11px;color:var(--gray-400);margin-left:8px;"></span>
+                        <div id="reviewPhotosPreviewGrid" style="display:none;margin-top:8px;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:7px;"></div>
+                        <div id="reviewPhotosAddMore" style="display:none;margin-top:5px;">
+                            <button type="button" onclick="document.getElementById('reviewPhotosInput').click()" style="font-size:10px;color:var(--maroon);background:var(--maroon-pale);border:1px solid rgba(124,10,2,0.12);border-radius:20px;padding:2px 9px;cursor:pointer;font-family:'DM Sans',sans-serif;">+ Add more photos</button>
+                            <span id="reviewPhotosCount" style="font-size:10px;color:var(--gray-400);margin-left:6px;"></span>
                         </div>
                     </div>
-
                     <input type="hidden" name="faculty_id" id="facultyIdInput">
-                    <p style="font-size:12px;color:var(--gray-400);margin-top:8px;">🔒 Your identity remains anonymous. Reviews are reviewed by admin before publishing.</p>
+                    <p style="font-size:11px;color:var(--gray-400);margin-top:6px;">🔒 Your identity remains anonymous. Reviews are moderated before publishing.</p>
                 </div>
-
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn-secondary" id="backBtn" style="display:none;" onclick="goStep(1)">← Back</button>
@@ -917,9 +964,8 @@ $review_filter = isset($_GET['review_filter']) ? $_GET['review_filter'] : 'all';
 
 <!-- ══ Chatbot Bubble ════════════════════════════════════════════════════ -->
 <div id="chat-bubble" onclick="toggleChat()">
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
 </div>
-
 <div id="chat-window">
     <div id="chat-header">
         <span>FAQ Assistant</span>

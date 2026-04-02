@@ -373,6 +373,70 @@ function toggleUserBulk() { const c = document.querySelectorAll('.user_checkbox:
 function updateReviewBulk() { const c = document.querySelectorAll('.review_cb:checked'); document.getElementById('review_bulk_bar').classList.toggle('show', c.length > 0); document.getElementById('review_selected_count').textContent = c.length + ' review' + (c.length !== 1 ? 's' : '') + ' selected'; }
 function updateApprovedBulk() { const c = document.querySelectorAll('.approved_cb:checked'); document.getElementById('approved_bulk_bar').classList.toggle('show', c.length > 0); document.getElementById('approved_selected_count').textContent = c.length + ' review' + (c.length !== 1 ? 's' : '') + ' selected'; }
 
+/* ── Div-row filter (pending section uses divs not table rows) */
+const divState = {};
+const DIV_PER_PAGE = 6;
+
+function filterDivRows(containerId, searchId, filterId) {
+    const container = document.getElementById(containerId); if (!container) return;
+    const search = searchId ? document.getElementById(searchId).value.toLowerCase() : '';
+    const filter = filterId ? document.getElementById(filterId).value.toLowerCase() : '';
+    [...container.querySelectorAll('.pend-row')].forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.dataset.visible = ((!search || text.includes(search)) && (!filter || text.includes(filter))) ? 'true' : 'false';
+    });
+    divState[containerId] = 1;
+    renderDivPage(containerId);
+}
+
+function renderDivPage(containerId) {
+    const container = document.getElementById(containerId); if (!container) return;
+    const rows    = [...container.querySelectorAll('.pend-row')];
+    const visible = rows.filter(r => r.dataset.visible !== 'false');
+    const page    = divState[containerId] || 1;
+    const total   = visible.length;
+    const totalPages = Math.ceil(total / DIV_PER_PAGE);
+    const start   = (page - 1) * DIV_PER_PAGE;
+    const end     = start + DIV_PER_PAGE;
+
+    rows.forEach(r => r.style.display = 'none');
+    visible.slice(start, end).forEach(r => r.style.display = '');
+
+    const pagId = containerId + '-pag';
+    let pag = document.getElementById(pagId);
+    if (!pag) {
+        pag = document.createElement('div');
+        pag.id = pagId;
+        pag.style.cssText = 'display:flex;align-items:center;justify-content:flex-end;gap:5px;padding:10px 14px;border-top:1px solid var(--gray-100);flex-wrap:wrap;';
+        container.after(pag);
+    }
+    pag.innerHTML = '';
+    if (totalPages <= 1 && total > 0) return;
+    if (total === 0) {
+        pag.innerHTML = '<span style="font-size:11px;color:var(--gray-400);padding:4px 0;">No results found.</span>';
+        return;
+    }
+    const info = document.createElement('span');
+    info.style.cssText = 'font-size:11px;color:var(--gray-400);flex:1;';
+    info.textContent = `${start+1}–${Math.min(end,total)} of ${total}`;
+    pag.appendChild(info);
+    const prev = document.createElement('button');
+    prev.className = 'btn btn-outline'; prev.style.padding = '3px 8px'; prev.innerHTML = '←';
+    prev.disabled = page === 1; prev.onclick = () => { divState[containerId] = page-1; renderDivPage(containerId); };
+    pag.appendChild(prev);
+    for (let i = 1; i <= totalPages; i++) {
+        const btn = document.createElement('button');
+        btn.className = 'btn ' + (i === page ? 'btn-maroon' : 'btn-outline');
+        btn.style.padding = '3px 8px'; btn.textContent = i;
+        btn.onclick = () => { divState[containerId] = i; renderDivPage(containerId); };
+        pag.appendChild(btn);
+    }
+    const next = document.createElement('button');
+    next.className = 'btn btn-outline'; next.style.padding = '3px 8px'; next.innerHTML = '→';
+    next.disabled = page === totalPages; next.onclick = () => { divState[containerId] = page+1; renderDivPage(containerId); };
+    pag.appendChild(next);
+}
+
 /* ── Table filter + pagination ────────────────────────────── */
 const PER_PAGE = 5;
 const tableState = {};
@@ -381,7 +445,11 @@ function filterTable(tbodyId, searchId, filterId) {
     const tbody  = document.getElementById(tbodyId); if (!tbody) return;
     const search = searchId ? document.getElementById(searchId).value.toLowerCase() : '';
     const filter = filterId ? document.getElementById(filterId).value.toLowerCase() : '';
-    [...tbody.querySelectorAll('tr:not(.empty-state-row):not(.no-results-row)')].forEach(row => {
+    /* support both <tr> rows and <div> rows (e.g. faculties-tbody uses divs) */
+    const selector = tbody.tagName === 'TBODY'
+        ? 'tr:not(.empty-state-row):not(.no-results-row)'
+        : '.fac-row';
+    [...tbody.querySelectorAll(selector)].forEach(row => {
         const text = row.textContent.toLowerCase();
         row.dataset.visible = ((!search || text.includes(search)) && (!filter || text.includes(filter))) ? 'true' : 'false';
     });
@@ -390,36 +458,51 @@ function filterTable(tbodyId, searchId, filterId) {
 }
 
 function renderTablePage(tbodyId) {
-    const tbody    = document.getElementById(tbodyId); if (!tbody) return;
-    const rows     = [...tbody.querySelectorAll('tr:not(.empty-state-row):not(.no-results-row)')];
-    const visible  = rows.filter(r => r.dataset.visible !== 'false');
-    const page     = tableState[tbodyId] || 1;
-    const total    = visible.length;
+    const tbody = document.getElementById(tbodyId); if (!tbody) return;
+    const isDivBased = tbody.tagName !== 'TBODY';
+    const rowSel  = isDivBased ? '.fac-row' : 'tr:not(.empty-state-row):not(.no-results-row)';
+    const rows    = [...tbody.querySelectorAll(rowSel)];
+    const visible = rows.filter(r => r.dataset.visible !== 'false');
+    const page    = tableState[tbodyId] || 1;
+    const total   = visible.length;
     const totalPages = Math.ceil(total / PER_PAGE);
-    const start    = (page - 1) * PER_PAGE;
-    const end      = start + PER_PAGE;
+    const start   = (page - 1) * PER_PAGE;
+    const end     = start + PER_PAGE;
 
     rows.forEach(r => r.style.display = 'none');
     visible.slice(start, end).forEach(r => r.style.display = '');
 
     ['select_all_reviews','select_all_approved','select_all_users'].forEach(id => { const el = document.getElementById(id); if (el) el.checked = false; });
 
-    let noRes = tbody.querySelector('.no-results-row');
-    if (total === 0) {
-        if (!noRes) { noRes = document.createElement('tr'); noRes.className = 'no-results-row'; const cols = tbody.closest('table').querySelector('thead tr').children.length; noRes.innerHTML = `<td colspan="${cols}" style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px;">No results found.</td>`; tbody.appendChild(noRes); }
-        noRes.style.display = '';
-    } else { if (noRes) noRes.style.display = 'none'; }
+    if (!isDivBased) {
+        let noRes = tbody.querySelector('.no-results-row');
+        if (total === 0) {
+            if (!noRes) {
+                noRes = document.createElement('tr'); noRes.className = 'no-results-row';
+                const cols = tbody.closest('table')?.querySelector('thead tr')?.children.length || 4;
+                noRes.innerHTML = `<td colspan="${cols}" style="text-align:center;padding:22px;color:var(--gray-400);font-size:12px;">No results found.</td>`;
+                tbody.appendChild(noRes);
+            }
+            noRes.style.display = '';
+        } else { if (noRes) noRes.style.display = 'none'; }
+    }
 
-    const pagId = tbodyId.replace('-tbody', '-pag');
+    const pagId = tbodyId + '-pag';
     let pag = document.getElementById(pagId);
-    if (!pag) { pag = document.createElement('div'); pag.id = pagId; pag.style.cssText = 'display:flex;align-items:center;justify-content:flex-end;gap:6px;padding:12px 20px;border-top:1px solid var(--gray-100);flex-wrap:wrap;'; tbody.closest('table').after(pag); }
+    if (!pag) {
+        pag = document.createElement('div'); pag.id = pagId;
+        pag.style.cssText = 'display:flex;align-items:center;justify-content:flex-end;gap:5px;padding:10px 14px;border-top:1px solid var(--gray-100);flex-wrap:wrap;';
+        const parent = isDivBased ? tbody.parentElement : tbody.closest('table');
+        if (parent) parent.after(pag);
+    }
     pag.innerHTML = '';
-    if (totalPages <= 1 && total > 0) return; if (total === 0) return;
+    if (totalPages <= 1 && total > 0) return;
+    if (total === 0) return;
 
-    const info = document.createElement('span'); info.style.cssText = 'font-size:12px;color:var(--gray-400);margin-right:6px;flex:1;'; info.textContent = `${start+1}–${Math.min(end,total)} of ${total}`; pag.appendChild(info);
-    const prev = document.createElement('button'); prev.className = 'btn btn-outline'; prev.style.padding = '4px 10px'; prev.innerHTML = '←'; prev.disabled = page === 1; prev.onclick = () => { tableState[tbodyId] = page - 1; renderTablePage(tbodyId); }; pag.appendChild(prev);
-    for (let i = 1; i <= totalPages; i++) { const btn = document.createElement('button'); btn.className = 'btn ' + (i === page ? 'btn-maroon' : 'btn-outline'); btn.style.padding = '4px 10px'; btn.textContent = i; btn.onclick = () => { tableState[tbodyId] = i; renderTablePage(tbodyId); }; pag.appendChild(btn); }
-    const next = document.createElement('button'); next.className = 'btn btn-outline'; next.style.padding = '4px 10px'; next.innerHTML = '→'; next.disabled = page === totalPages; next.onclick = () => { tableState[tbodyId] = page + 1; renderTablePage(tbodyId); }; pag.appendChild(next);
+    const info = document.createElement('span'); info.style.cssText = 'font-size:11px;color:var(--gray-400);flex:1;'; info.textContent = `${start+1}–${Math.min(end,total)} of ${total}`; pag.appendChild(info);
+    const prev = document.createElement('button'); prev.className = 'btn btn-outline'; prev.style.padding = '3px 8px'; prev.innerHTML = '←'; prev.disabled = page === 1; prev.onclick = () => { tableState[tbodyId] = page-1; renderTablePage(tbodyId); }; pag.appendChild(prev);
+    for (let i = 1; i <= totalPages; i++) { const btn = document.createElement('button'); btn.className = 'btn '+(i===page?'btn-maroon':'btn-outline'); btn.style.padding = '3px 8px'; btn.textContent = i; btn.onclick = () => { tableState[tbodyId] = i; renderTablePage(tbodyId); }; pag.appendChild(btn); }
+    const next = document.createElement('button'); next.className = 'btn btn-outline'; next.style.padding = '3px 8px'; next.innerHTML = '→'; next.disabled = page === totalPages; next.onclick = () => { tableState[tbodyId] = page+1; renderTablePage(tbodyId); }; pag.appendChild(next);
 }
 
 /* ── Reports chart ────────────────────────────────────────── */
@@ -480,12 +563,34 @@ document.addEventListener('DOMContentLoaded', () => {
         document.head.appendChild(s);
     }
 
-    // Mark all rows visible, init table pagination
+    // Mark table rows visible and init pagination (users + approved — still <table><tbody>)
     document.querySelectorAll('.admin-table tbody tr:not(.empty-state-row)').forEach(r => r.dataset.visible = 'true');
-    ['users-tbody','faculties-tbody','pending-tbody','approved-tbody'].forEach(id => { tableState[id] = 1; renderTablePage(id); });
+    ['users-tbody', 'approved-tbody'].forEach(id => { tableState[id] = 1; renderTablePage(id); });
 
-    // Sync pending badge count
-    const realPending = document.querySelectorAll('#pending-tbody tr:not(.empty-state-row)').length;
+    // Faculties uses <div id="faculties-tbody"> with .fac-row children
+    const facDiv = document.getElementById('faculties-tbody');
+    if (facDiv) {
+        facDiv.querySelectorAll('.fac-row').forEach(r => r.dataset.visible = 'true');
+        tableState['faculties-tbody'] = 1;
+        renderTablePage('faculties-tbody');
+    }
+
+    // Pending uses <div id="pending-tbody"> with .pend-row children
+    const pendDiv = document.getElementById('pending-tbody');
+    if (pendDiv) {
+        pendDiv.querySelectorAll('.pend-row').forEach(r => r.dataset.visible = 'true');
+        divState['pending-tbody'] = 1;
+        renderDivPage('pending-tbody');
+    }
+
+    // Wire pending search + filter to filterDivRows
+    const ps = document.getElementById('pending-search');
+    const pf = document.getElementById('pending-sentiment-filter');
+    if (ps) ps.oninput = () => filterDivRows('pending-tbody', 'pending-search', 'pending-sentiment-filter');
+    if (pf) pf.onchange = () => filterDivRows('pending-tbody', 'pending-search', 'pending-sentiment-filter');
+
+    // Sync pending badge count from div rows
+    const realPending = document.querySelectorAll('#pending-tbody .pend-row').length;
     const nb = document.getElementById('pendingNavBadge'); if (nb) { if (realPending === 0) nb.style.display = 'none'; else nb.textContent = realPending; }
     const sb = document.getElementById('pendingSecBadge'); if (sb) { if (realPending === 0) sb.style.display = 'none'; else sb.textContent = realPending; }
     const sv = document.querySelector('.stat-card.s-pending .stat-value'); if (sv) sv.textContent = realPending;
@@ -500,7 +605,7 @@ document.addEventListener('DOMContentLoaded', () => {
             th.style.display = showing ? 'none' : 'table-cell';
             tds.forEach(td => td.style.display = showing ? 'none' : 'table-cell');
             this.innerHTML = showing
-                ? '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit'
+                ? '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit'
                 : '✕ Cancel';
             if (showing) { document.querySelectorAll('.user_checkbox').forEach(c => c.checked = false); document.getElementById('select_all_users').checked = false; toggleUserBulk(); }
         });

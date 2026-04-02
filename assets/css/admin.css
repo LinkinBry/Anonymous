@@ -1,0 +1,130 @@
+/* ============================================================
+   admin.css — Admin dashboard styles
+   Used by: admin_dashboard.php, add_faculty.php, edit_faculty.php
+   ============================================================ */
+
+/* ── Stat card color accents ──────────────────────────────── */
+.stat-card.s-users    { border-top-color: #6366f1; }
+.stat-card.s-faculty  { border-top-color: #f59e0b; }
+.stat-card.s-pending  { border-top-color: #f97316; }
+.stat-card.s-approved { border-top-color: #10b981; }
+.stat-card.s-rejected { border-top-color: #ef4444; }
+.stat-card.s-total    { border-top-color: var(--gray-400); }
+.stat-card.s-admins   { border-top-color: var(--maroon); }
+
+/* ── Faculty card in table ────────────────────────────────── */
+.fac-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid var(--gray-200); flex-shrink: 0; }
+.fac-photo-preview { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2px solid var(--gray-200); flex-shrink: 0; }
+
+/* ── SVG star display ─────────────────────────────────────── */
+.star-svg-wrap { display: inline-flex; align-items: center; vertical-align: middle; line-height: 1; overflow: hidden; }
+.avg-num { font-size: 12px; color: var(--gray-600); margin-left: 5px; font-weight: 600; }
+
+/* ── Add / Edit faculty modal fields ──────────────────────── */
+.af-group { margin-bottom: 16px; }
+.af-group label { display: block; font-size: 13px; font-weight: 600; color: var(--gray-600); margin-bottom: 6px; }
+.af-group label span { color: #ef4444; }
+.af-input {
+    width: 100%; padding: 10px 14px 10px 36px;
+    border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif; font-size: 14px;
+    color: var(--gray-800); outline: none;
+    transition: border-color 0.2s; background: white;
+}
+.af-input:focus { border-color: var(--maroon); box-shadow: 0 0 0 3px rgba(139,0,0,0.07); }
+.af-field { position: relative; }
+.af-field svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--gray-400); }
+
+.af-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.af-chip {
+    padding: 3px 12px; background: var(--maroon-pale); color: var(--maroon);
+    border: 1px solid rgba(139,0,0,0.15); border-radius: 12px;
+    font-size: 12px; cursor: pointer; transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+}
+.af-chip:hover { background: var(--maroon); color: white; }
+.af-chip-new  { background: white; color: var(--gray-600); border-color: var(--gray-200); }
+.af-chip-new:hover { border-color: var(--maroon); color: var(--maroon); background: white; }
+
+.af-alert {
+    background: #fee2e2; color: #991b1b;
+    padding: 10px 14px; border-radius: var(--radius-sm);
+    font-size: 13px; margin-bottom: 14px;
+    display: none; align-items: center; gap: 8px;
+}
+
+/* ── Faculty reviews modal tabs ───────────────────────────── */
+.fac-tab-btn { transition: background 0.18s, color 0.18s, border-color 0.18s; }
+
+.fac-rev-card {
+    padding: 10px 12px; border-radius: 8px;
+    border: 1px solid var(--gray-200); background: white;
+    cursor: pointer; transition: border-color 0.18s, background 0.18s, transform 0.15s;
+}
+.fac-rev-card:hover { border-color: var(--maroon); background: #fff8f8; transform: translateY(-1px); box-shadow: 0 2px 8px rgba(139,0,0,0.08); }
+
+/* ── User review item ─────────────────────────────────────── */
+.user-rev-item { padding: 10px 0; border-bottom: 1px solid var(--gray-100); cursor: pointer; border-radius: 6px; transition: background 0.15s; }
+.user-rev-item:hover { background: var(--maroon-pale); }
+.user-rev-item:last-child { border-bottom: none; }
+
+/* ── Add/Edit faculty forms (add_faculty.php, edit_faculty.php) ── */
+.card {
+    background: white; border-radius: var(--radius);
+    box-shadow: var(--shadow-md); border: 1px solid var(--gray-200);
+    width: 100%; max-width: 580px; overflow: hidden;
+}
+.card-header {
+    padding: 24px 28px; border-bottom: 1px solid var(--gray-100);
+    display: flex; align-items: center; gap: 14px;
+}
+.card-header h1 { font-family: 'Playfair Display', serif; font-size: 22px; color: var(--gray-800); }
+.card-header p  { font-size: 13px; color: var(--gray-400); margin-top: 2px; }
+.card-body { padding: 28px; }
+.card-footer {
+    padding: 16px 28px; border-top: 1px solid var(--gray-100);
+    display: flex; gap: 12px; justify-content: flex-end;
+    background: var(--gray-100);
+}
+
+.form-hint { font-size: 11px; color: var(--gray-400); margin-top: 5px; }
+.form-section-title { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--gray-400); font-weight: 600; margin-bottom: 12px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+/* Department chip row */
+.dept-suggestions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.dept-chip {
+    padding: 4px 12px; background: var(--maroon-pale); color: var(--maroon);
+    border: 1px solid rgba(139,0,0,0.15); border-radius: 12px;
+    font-size: 12px; cursor: pointer; transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+}
+.dept-chip:hover { background: var(--maroon); color: white; }
+
+/* field icon (left icon inside input) */
+.field-icon { position: relative; }
+.field-icon input { padding-left: 38px; }
+.field-icon svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--gray-400); }
+
+/* Inline save / cancel buttons on forms */
+.save-btn {
+    background: var(--maroon); color: white; border: none;
+    padding: 10px 28px; border-radius: 20px; font-size: 14px; font-weight: 500;
+    cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background 0.2s;
+    display: inline-flex; align-items: center; gap: 8px;
+}
+.save-btn:hover { background: var(--maroon-light); }
+
+/* ── Reports chart canvas ─────────────────────────────────── */
+#weeklyChart { display: block; width: 100% !important; }
+
+/* ── AI summary text box ──────────────────────────────────── */
+#aiSummaryText { white-space: pre-wrap; }
+
+/* ── Toggle track (session-warning + admin toggles) ──────── */
+.toggle-track {
+    position: relative; width: 32px; height: 18px;
+    background: var(--gray-200); border-radius: 9px;
+    transition: background 0.2s; display: inline-block;
+}
+.toggle-track:has(input:checked) { background: #3b82f6; }

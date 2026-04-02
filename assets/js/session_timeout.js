@@ -1,3 +1,8 @@
+/* ============================================================
+   session_timeout.js — Session inactivity warning & auto-logout
+   AnonymousReview System
+   ============================================================ */
+
 const SESSION_DURATION = 300;
 const WARNING_AT       = 10;
 
@@ -71,7 +76,6 @@ function resetTimers() {
     inactivityTimer = setTimeout(logoutNow,   SESSION_DURATION * 1000);
 }
 
-
 function checkServerSession() {
     fetch('session_refresh.php', { method: 'POST' })
         .then(r => r.json())
@@ -80,11 +84,9 @@ function checkServerSession() {
 }
 setInterval(checkServerSession, 10000);
 
-
 ['mousemove','keydown','click','scroll','touchstart'].forEach(evt => {
     document.addEventListener(evt, () => { if (!warningShown) resetTimers(); }, { passive: true });
 });
-
 
 document.addEventListener('DOMContentLoaded', () => {
     createWarningModal();

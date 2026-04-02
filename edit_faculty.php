@@ -22,7 +22,7 @@ $faculty = mysqli_fetch_assoc($fac_res);
 $errors = [];
 
 if (isset($_POST['edit_faculty'])) {
-    $name       = trim(mysqli_real_escape_string($conn, $_POST['name'] ?? ''));
+    $name       = trim(mysqli_real_escape_string($conn, $_POST['name']       ?? ''));
     $department = trim(mysqli_real_escape_string($conn, $_POST['department'] ?? ''));
 
     if (empty($name))       $errors[] = "Faculty name is required.";
@@ -38,13 +38,12 @@ if (isset($_POST['edit_faculty'])) {
         header("Location: admin_dashboard.php?edited_faculty=1#faculties");
         exit();
     } else {
-        // Keep submitted values for re-display
         $faculty['name']       = $_POST['name'];
         $faculty['department'] = $_POST['department'];
     }
 }
 
-$dept_res = mysqli_query($conn, "SELECT DISTINCT department FROM faculties WHERE department IS NOT NULL AND department != '' ORDER BY department ASC");
+$dept_res       = mysqli_query($conn, "SELECT DISTINCT department FROM faculties WHERE department IS NOT NULL AND department != '' ORDER BY department ASC");
 $existing_depts = [];
 while ($d = mysqli_fetch_assoc($dept_res)) $existing_depts[] = $d['department'];
 ?>
@@ -53,54 +52,10 @@ while ($d = mysqli_fetch_assoc($dept_res)) $existing_depts[] = $d['department'];
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Edit Faculty - AnonymousReview</title>
+<title>Edit Faculty — AnonymousReview</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
-<style>
-:root {
-    --maroon:#8B0000;--maroon-light:#a30000;--maroon-pale:#fff5f5;
-    --sidebar-w:240px;--gray-100:#f3f4f6;--gray-200:#e5e7eb;
-    --gray-400:#9ca3af;--gray-600:#4b5563;--gray-800:#1f2937;
-    --shadow-sm:0 1px 3px rgba(0,0,0,0.08);--shadow-md:0 4px 16px rgba(0,0,0,0.10);
-    --radius:14px;--radius-sm:8px;
-}
-*{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--gray-800);min-height:100vh;}
-.sidebar{position:fixed;left:0;top:0;width:var(--sidebar-w);height:100%;background:var(--maroon);display:flex;flex-direction:column;padding:28px 16px 20px;box-shadow:2px 0 12px rgba(139,0,0,0.18);z-index:100;}
-.sidebar-brand{font-family:'Playfair Display',serif;font-size:17px;color:white;text-align:center;margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.15);line-height:1.4;}
-.sidebar-avatar{width:70px;height:70px;border-radius:50%;border:3px solid rgba(255,255,255,0.4);display:block;margin:0 auto 10px;object-fit:cover;}
-.sidebar-name{text-align:center;color:white;font-size:14px;font-weight:600;margin-bottom:4px;}
-.sidebar-role{text-align:center;color:rgba(255,255,255,0.6);font-size:11px;margin-bottom:24px;text-transform:uppercase;letter-spacing:1px;}
-.sidebar nav{flex:1;}.nav-label{font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:rgba(255,255,255,0.4);padding:0 10px;margin-bottom:6px;margin-top:16px;}
-.sidebar a{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--radius-sm);color:rgba(255,255,255,0.85);text-decoration:none;font-size:14px;font-weight:500;transition:all 0.2s;margin-bottom:2px;}
-.sidebar a:hover,.sidebar a.active{background:rgba(255,255,255,0.15);color:white;}
-.sidebar-footer{border-top:1px solid rgba(255,255,255,0.15);padding-top:14px;margin-top:auto;}
-.main{margin-left:var(--sidebar-w);padding:32px;min-height:100vh;display:flex;align-items:flex-start;justify-content:center;}
-.card{background:white;border-radius:var(--radius);box-shadow:var(--shadow-md);border:1px solid var(--gray-200);width:100%;max-width:580px;overflow:hidden;}
-.card-header{padding:24px 28px;border-bottom:1px solid var(--gray-100);display:flex;align-items:center;gap:14px;}
-.card-header h1{font-family:'Playfair Display',serif;font-size:22px;color:var(--gray-800);}
-.card-header p{font-size:13px;color:var(--gray-400);margin-top:2px;}
-.card-body{padding:28px;}
-.form-group{margin-bottom:20px;}
-.form-group label{display:block;font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:7px;}
-.form-group label span{color:#ef4444;margin-left:2px;}
-.form-group input{width:100%;padding:11px 14px 11px 38px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--gray-800);outline:none;transition:border-color 0.2s;background:white;}
-.form-group input:focus{border-color:var(--maroon);box-shadow:0 0 0 3px rgba(139,0,0,0.07);}
-.form-hint{font-size:11px;color:var(--gray-400);margin-top:5px;}
-.alert{padding:12px 16px;border-radius:var(--radius-sm);font-size:13px;margin-bottom:20px;display:flex;align-items:flex-start;gap:8px;}
-.alert-error{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;}
-.card-footer{padding:16px 28px;border-top:1px solid var(--gray-100);display:flex;gap:12px;justify-content:flex-end;background:var(--gray-100);}
-.btn-primary{background:var(--maroon);color:white;border:none;padding:10px 28px;border-radius:20px;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:background 0.2s;display:inline-flex;align-items:center;gap:8px;}
-.btn-primary:hover{background:var(--maroon-light);}
-.btn-secondary{background:white;color:var(--gray-600);border:1px solid var(--gray-200);padding:10px 22px;border-radius:20px;font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:none;display:inline-flex;align-items:center;gap:6px;transition:all 0.2s;}
-.btn-secondary:hover{border-color:var(--maroon);color:var(--maroon);}
-.dept-suggestions{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
-.dept-chip{padding:4px 12px;background:var(--maroon-pale);color:var(--maroon);border:1px solid rgba(139,0,0,0.15);border-radius:12px;font-size:12px;cursor:pointer;transition:all 0.15s;font-family:'DM Sans',sans-serif;}
-.dept-chip:hover{background:var(--maroon);color:white;}
-.field-icon{position:relative;}
-.field-icon svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--gray-400);}
-.current-values{background:var(--gray-100);border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:20px;font-size:13px;color:var(--gray-600);border:1px solid var(--gray-200);}
-.current-values strong{color:var(--maroon);}
-</style>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/admin.css">
 </head>
 <body>
 
@@ -111,21 +66,36 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--gra
     <div class="sidebar-role">Administrator</div>
     <nav>
         <div class="nav-label">Manage</div>
-        <a href="admin_dashboard.php#overview"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Overview</a>
-        <a href="admin_dashboard.php#users"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Users</a>
-        <a href="admin_dashboard.php#faculties" class="active"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>Faculties</a>
-        <a href="admin_dashboard.php#pending"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Pending Reviews</a>
+        <a href="admin_dashboard.php#overview">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            Overview
+        </a>
+        <a href="admin_dashboard.php#users">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            Users
+        </a>
+        <a href="admin_dashboard.php#faculties" class="active">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
+            Faculties
+        </a>
+        <a href="admin_dashboard.php#pending">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Pending Reviews
+        </a>
     </nav>
     <div class="sidebar-footer">
-        <a href="logout.php"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>Logout</a>
+        <a href="logout.php">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+            Logout
+        </a>
     </div>
 </div>
 
-<div class="main">
+<div class="main" style="display:flex;align-items:flex-start;justify-content:center;">
     <div class="card">
         <div class="card-header">
-            <div style="width:44px;height:44px;border-radius:50%;background:var(--maroon-pale);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                <svg width="22" height="22" fill="none" stroke="var(--maroon)" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            <div style="width:44px;height:44px;border-radius:50%;background:#dbeafe;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <svg width="22" height="22" fill="none" stroke="#1e40af" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             </div>
             <div>
                 <h1>Edit Faculty</h1>
@@ -138,29 +108,30 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--gra
 
                 <?php if (!empty($errors)): ?>
                 <div class="alert alert-error">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;margin-top:1px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                     <div><?php echo implode('<br>', array_map('htmlspecialchars', $errors)); ?></div>
                 </div>
                 <?php endif; ?>
 
-                <!-- Name -->
                 <div class="form-group">
-                    <label>Full Name <span>*</span></label>
+                    <label>Full Name <span style="color:#ef4444">*</span></label>
                     <div class="field-icon">
                         <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                        <input type="text" name="name" placeholder="e.g. Dr. Juan dela Cruz"
-                            value="<?php echo htmlspecialchars($faculty['name']); ?>" required>
+                        <input type="text" name="name"
+                               placeholder="e.g. Dr. Juan dela Cruz"
+                               value="<?php echo htmlspecialchars($faculty['name']); ?>"
+                               required>
                     </div>
                 </div>
 
-                <!-- Department -->
                 <div class="form-group">
-                    <label>Department <span>*</span></label>
+                    <label>Department <span style="color:#ef4444">*</span></label>
                     <div class="field-icon">
                         <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
-                        <input type="text" name="department" id="deptInput" placeholder="e.g. College of Engineering"
-                            value="<?php echo htmlspecialchars($faculty['department']); ?>"
-                            list="deptList" required>
+                        <input type="text" name="department" id="deptInput"
+                               placeholder="e.g. College of Engineering"
+                               value="<?php echo htmlspecialchars($faculty['department']); ?>"
+                               list="deptList" required>
                     </div>
                     <datalist id="deptList">
                         <?php foreach ($existing_depts as $d): ?>
@@ -171,7 +142,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--gra
                     <div class="form-hint" style="margin-bottom:6px;">Or click an existing department:</div>
                     <div class="dept-suggestions">
                         <?php foreach ($existing_depts as $d): ?>
-                        <button type="button" class="dept-chip" onclick="document.getElementById('deptInput').value='<?php echo htmlspecialchars(addslashes($d)); ?>'">
+                        <button type="button" class="dept-chip"
+                                onclick="document.getElementById('deptInput').value='<?php echo htmlspecialchars(addslashes($d)); ?>'">
                             <?php echo htmlspecialchars($d); ?>
                         </button>
                         <?php endforeach; ?>
@@ -195,6 +167,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray-100);color:var(--gra
     </div>
 </div>
 
-<script src="session_timeout.js"></script>
+<script src="assets/js/session_timeout.js"></script>
 </body>
 </html>

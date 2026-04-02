@@ -5,22 +5,18 @@ include "session_check.php";
 if (!isset($_SESSION['user_id'])) { header("Location: login.php"); exit(); }
 $user_id = $_SESSION['user_id'];
 
-// Handle profile update
 if (isset($_POST['update_profile'])) {
     $fullname = mysqli_real_escape_string($conn, trim($_POST['fullname']));
     $username = mysqli_real_escape_string($conn, trim($_POST['username']));
     $email    = mysqli_real_escape_string($conn, trim($_POST['email']));
     $errors   = [];
 
-    // Check username taken by someone else
     $check = mysqli_query($conn, "SELECT id FROM users WHERE username='$username' AND id!='$user_id' LIMIT 1");
     if (mysqli_num_rows($check) > 0) $errors[] = "Username is already taken.";
 
-    // Check email taken by someone else
     $check2 = mysqli_query($conn, "SELECT id FROM users WHERE email='$email' AND id!='$user_id' LIMIT 1");
     if (mysqli_num_rows($check2) > 0) $errors[] = "Email is already in use.";
 
-    // Handle password change
     $pw_sql = '';
     if (!empty($_POST['new_password'])) {
         if (strlen($_POST['new_password']) < 6) {
@@ -32,7 +28,6 @@ if (isset($_POST['update_profile'])) {
         }
     }
 
-    // Handle profile picture upload
     $pic_sql = '';
     if (!empty($_FILES['profile_pic']['name'])) {
         $allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
@@ -62,11 +57,9 @@ if (isset($_POST['update_profile'])) {
     }
 }
 
-// Fetch user data
 $res  = mysqli_query($conn, "SELECT fullname, username, email, profile_pic, created_at FROM users WHERE id='$user_id' LIMIT 1");
 $user = mysqli_fetch_assoc($res);
 
-// Review stats
 $total    = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM reviews WHERE user_id='$user_id'"))['c'];
 $approved = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM reviews WHERE user_id='$user_id' AND status='approved'"))['c'];
 $pending  = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM reviews WHERE user_id='$user_id' AND status='pending'"))['c'];
@@ -80,102 +73,18 @@ $avatar = !empty($user['profile_pic']) && file_exists($user['profile_pic'])
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>My Profile - AnonymousReview</title>
+<title>My Profile — AnonymousReview</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
-<style>
-:root {
-    --maroon: #8B0000; --maroon-light: #a30000; --maroon-pale: #fff5f5;
-    --sidebar-w: 240px; --gray-100: #f3f4f6; --gray-200: #e5e7eb;
-    --gray-400: #9ca3af; --gray-600: #4b5563; --gray-800: #1f2937;
-    --shadow-sm: 0 1px 3px rgba(0,0,0,0.08); --shadow-md: 0 4px 16px rgba(0,0,0,0.10);
-    --radius: 14px; --radius-sm: 8px;
-}
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'DM Sans', sans-serif; background: var(--gray-100); color: var(--gray-800); min-height: 100vh; }
-
-/* Sidebar */
-.sidebar { position:fixed; left:0; top:0; width:var(--sidebar-w); height:100%; background:var(--maroon); display:flex; flex-direction:column; padding:28px 16px 20px; box-shadow:2px 0 12px rgba(139,0,0,0.18); z-index:100; }
-.sidebar-brand { font-family:'Playfair Display',serif; font-size:17px; color:white; text-align:center; margin-bottom:24px; padding-bottom:20px; border-bottom:1px solid rgba(255,255,255,0.15); }
-.sidebar-avatar { width:70px; height:70px; border-radius:50%; border:3px solid rgba(255,255,255,0.4); display:block; margin:0 auto 10px; object-fit:cover; }
-.sidebar-name { text-align:center; color:white; font-size:14px; font-weight:600; margin-bottom:6px; }
-.sidebar-role { text-align:center; color:rgba(255,255,255,0.6); font-size:11px; margin-bottom:24px; text-transform:uppercase; letter-spacing:1px; }
-.sidebar nav { flex:1; }
-.nav-label { font-size:10px; text-transform:uppercase; letter-spacing:1.2px; color:rgba(255,255,255,0.4); padding:0 10px; margin-bottom:6px; margin-top:16px; }
-.sidebar a { display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:var(--radius-sm); color:rgba(255,255,255,0.85); text-decoration:none; font-size:14px; font-weight:500; transition:all 0.2s; margin-bottom:2px; }
-.sidebar a:hover, .sidebar a.active { background:rgba(255,255,255,0.15); color:white; }
-.sidebar-footer { border-top:1px solid rgba(255,255,255,0.15); padding-top:14px; }
-
-/* Main */
-.main { margin-left:var(--sidebar-w); padding:32px; min-height:100vh; }
-.page-header { margin-bottom:28px; }
-.page-header h1 { font-family:'Playfair Display',serif; font-size:26px; color:var(--gray-800); }
-.page-header p { color:var(--gray-400); font-size:14px; margin-top:3px; }
-
-/* Profile layout */
-.profile-grid { display:grid; grid-template-columns:300px 1fr; gap:24px; align-items:start; }
-
-/* Profile card */
-.profile-card { background:white; border-radius:var(--radius); padding:28px; box-shadow:var(--shadow-sm); border:1px solid var(--gray-200); text-align:center; }
-.avatar-wrap { position:relative; display:inline-block; margin-bottom:16px; }
-.avatar-wrap img { width:110px; height:110px; border-radius:50%; object-fit:cover; border:4px solid var(--maroon-pale); }
-.avatar-edit-btn {
-    position:absolute; bottom:4px; right:4px;
-    width:30px; height:30px; border-radius:50%;
-    background:var(--maroon); border:2px solid white;
-    display:flex; align-items:center; justify-content:center;
-    cursor:pointer; transition:background 0.2s;
-}
-.avatar-edit-btn:hover { background:var(--maroon-light); }
-.avatar-edit-btn svg { pointer-events:none; }
-#picInput { display:none; }
-.profile-name { font-size:18px; font-weight:700; color:var(--gray-800); margin-bottom:4px; }
-.profile-username { font-size:14px; color:var(--gray-400); margin-bottom:16px; }
-.profile-stats { display:flex; justify-content:center; gap:20px; padding-top:16px; border-top:1px solid var(--gray-100); }
-.stat-item { text-align:center; }
-.stat-item strong { display:block; font-size:20px; font-weight:700; color:var(--maroon); }
-.stat-item span { font-size:11px; color:var(--gray-400); text-transform:uppercase; letter-spacing:0.5px; }
-.member-since { font-size:12px; color:var(--gray-400); margin-top:14px; }
-
-/* Form card */
-.form-card { background:white; border-radius:var(--radius); padding:28px; box-shadow:var(--shadow-sm); border:1px solid var(--gray-200); }
-.form-card h2 { font-size:16px; font-weight:600; color:var(--gray-800); margin-bottom:20px; padding-bottom:14px; border-bottom:1px solid var(--gray-100); }
-.form-section { margin-bottom:24px; }
-.form-section-title { font-size:12px; text-transform:uppercase; letter-spacing:1px; color:var(--gray-400); font-weight:600; margin-bottom:12px; }
-.form-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-.form-group { margin-bottom:16px; }
-.form-group label { display:block; font-size:13px; font-weight:500; color:var(--gray-600); margin-bottom:6px; }
-.form-group input {
-    width:100%; padding:10px 14px;
-    border:1px solid var(--gray-200); border-radius:var(--radius-sm);
-    font-family:'DM Sans',sans-serif; font-size:14px; color:var(--gray-800);
-    outline:none; transition:border-color 0.2s;
-}
-.form-group input:focus { border-color:var(--maroon); }
-.form-group input:disabled { background:var(--gray-100); color:var(--gray-400); cursor:not-allowed; }
-.form-hint { font-size:11px; color:var(--gray-400); margin-top:4px; }
-.save-btn {
-    background:var(--maroon); color:white; border:none;
-    padding:10px 28px; border-radius:20px; font-size:14px; font-weight:500;
-    cursor:pointer; font-family:'DM Sans',sans-serif; transition:background 0.2s;
-    display:inline-flex; align-items:center; gap:8px;
-}
-.save-btn:hover { background:var(--maroon-light); }
-
-/* Alerts */
-.alert { padding:12px 16px; border-radius:var(--radius-sm); font-size:13px; margin-bottom:20px; display:flex; align-items:center; gap:8px; }
-.alert-success { background:#d1fae5; color:#065f46; }
-.alert-error { background:#fee2e2; color:#991b1b; }
-
-/* Avatar preview overlay */
-.avatar-preview-note { font-size:11px; color:var(--gray-400); margin-top:8px; }
-</style>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/profile.css">
 </head>
 <body>
 
-<!-- Sidebar -->
 <div class="sidebar">
     <div class="sidebar-brand">AnonymousReview</div>
-    <img src="<?php echo htmlspecialchars($avatar); ?>" class="sidebar-avatar" alt="Avatar">
+    <a href="profile.php" style="display:block;text-align:center;">
+        <img src="<?php echo htmlspecialchars($avatar); ?>" class="sidebar-avatar" alt="Avatar">
+    </a>
     <div class="sidebar-name"><?php echo htmlspecialchars($user['fullname']); ?></div>
     <div class="sidebar-role">Student</div>
     <nav>
@@ -201,7 +110,6 @@ body { font-family: 'DM Sans', sans-serif; background: var(--gray-100); color: v
     </div>
 </div>
 
-<!-- Main -->
 <div class="main">
     <div class="page-header">
         <h1>My Profile</h1>
@@ -279,7 +187,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--gray-100); color: v
                 </div>
 
                 <div class="form-section">
-                    <div class="form-section-title">Change Password <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--gray-400);font-size:11px;">(leave blank to keep current)</span></div>
+                    <div class="form-section-title">
+                        Change Password
+                        <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--gray-400);font-size:11px;">(leave blank to keep current)</span>
+                    </div>
                     <div class="form-row">
                         <div class="form-group">
                             <label>New Password</label>
@@ -303,48 +214,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--gray-100); color: v
     </div>
 </div>
 
-<script>
-// Avatar preview
-function previewPic(input) {
-    if (input.files && input.files[0]) {
-        const reader = new FileReader();
-        reader.onload = e => {
-            document.getElementById('avatarPreview').src = e.target.result;
-            document.getElementById('picNote').textContent = '📷 New photo selected — save to apply.';
-        };
-        reader.readAsDataURL(input.files[0]);
-    }
-}
-
-// Password match check
-const newPw  = document.querySelector('input[name="new_password"]');
-const confPw = document.getElementById('confirmPw');
-const pwMsg  = document.getElementById('pwMatch');
-
-function checkPw() {
-    if (!confPw.value) { pwMsg.textContent = ''; return; }
-    if (newPw.value === confPw.value) {
-        pwMsg.style.color = '#065f46';
-        pwMsg.textContent = '✓ Passwords match';
-    } else {
-        pwMsg.style.color = '#991b1b';
-        pwMsg.textContent = '✗ Passwords do not match';
-    }
-}
-newPw.addEventListener('input', checkPw);
-confPw.addEventListener('input', checkPw);
-
-// Prevent submit if passwords don't match
-document.getElementById('profileForm').addEventListener('submit', function(e) {
-    if (newPw.value && newPw.value !== confPw.value) {
-        e.preventDefault();
-        pwMsg.style.color = '#991b1b';
-        pwMsg.textContent = '✗ Passwords do not match';
-        confPw.focus();
-    }
-});
-</script>
-<script src="session_timeout.js"></script>
-</body>
+<script src="assets/js/profile.js"></script>
+<script src="assets/js/session_timeout.js"></script>
 </body>
 </html>

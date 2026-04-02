@@ -1,8 +1,7 @@
 <?php
-session_start();  
+session_start();
 include "config.php";
 
-// If already logged in, redirect
 if (isset($_SESSION['user_id'])) {
     if ($_SESSION['role'] === 'admin') {
         header("Location: admin_dashboard.php");
@@ -27,11 +26,11 @@ if (isset($_POST['login'])) {
 
     if ($user) {
         if (password_verify($password, $user['password'])) {
-            $_SESSION['user_id']      = $user['id'];
-            $_SESSION['fullname']     = $user['fullname'];
-            $_SESSION['username']     = $user['username'];
-            $_SESSION['role']         = $user['role'];
-            $_SESSION['last_activity'] = time();
+            $_SESSION['user_id']         = $user['id'];
+            $_SESSION['fullname']        = $user['fullname'];
+            $_SESSION['username']        = $user['username'];
+            $_SESSION['role']            = $user['role'];
+            $_SESSION['last_activity']   = time();
             $_SESSION['session_expires'] = time() + 300;
 
             if ($user['role'] == 'admin') {
@@ -49,55 +48,61 @@ if (isset($_POST['login'])) {
 }
 ?>
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>Login</title>
-<link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login — AnonymousReview</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/auth.css">
 </head>
-<body>
-
-<div class="container">
+<body class="auth-page">
 
 <div class="left-panel">
-    <h1>
-        Anonymous Online<br>
-        <span class="highlight">Faculty Performance</span><br>
-        Evaluation and Feedback System
-    </h1>
+    <div>
+        <h1>
+            Anonymous Online<br>
+            <span class="highlight">Faculty Performance</span><br>
+            Evaluation and Feedback System
+        </h1>
+        <p>Share honest, anonymous feedback about your faculty members to help improve education quality.</p>
+    </div>
 </div>
 
 <div class="right-panel">
     <div class="form-box">
         <h2>Log in</h2>
+        <p class="subtitle">Welcome back. Enter your credentials to continue.</p>
 
         <?php if (isset($_GET['timeout'])): ?>
-        <div style="background:#fef3c7;color:#92400e;padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:13px;display:flex;align-items:center;gap:8px;">
+        <div class="auth-alert auth-alert-warning">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             You were logged out due to inactivity.
         </div>
         <?php endif; ?>
 
         <?php if (isset($error)): ?>
-        <p style="color:red;margin-bottom:15px;"><?php echo htmlspecialchars($error); ?></p>
+        <div class="auth-alert auth-alert-error">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <?php echo htmlspecialchars($error); ?>
+        </div>
         <?php endif; ?>
 
         <form method="POST">
             <div class="input-group">
-                <input type="text" name="username" placeholder="Username" required>
+                <input type="text" name="username" placeholder="Username" required autocomplete="username">
             </div>
             <div class="input-group">
-                <input type="password" name="password" placeholder="Password" required>
+                <input type="password" name="password" placeholder="Password" required autocomplete="current-password">
             </div>
-            <button type="submit" name="login" class="login-button">Login</button>
+            <button type="submit" name="login">Login</button>
         </form>
 
         <p class="link-text">
-            Don't have an account?
-            <a href="register.php">Register</a>
+            Don't have an account? <a href="register.php">Register</a>
         </p>
     </div>
-</div>
-
 </div>
 
 </body>

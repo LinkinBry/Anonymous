@@ -3,13 +3,30 @@
    Used by: profile.php
    ============================================================ */
 
+/* ── Sidebar toggle ───────────────────────────────────────── */
+(function() {
+    const STORAGE_KEY = 'ar_sidebar_collapsed';
+    const toggle = document.getElementById('sidebarToggle');
+    const body   = document.body;
+    function applyState(collapsed) { body.classList.toggle('sidebar-collapsed', collapsed); }
+    applyState(localStorage.getItem(STORAGE_KEY) === '1');
+    if (toggle) {
+        toggle.addEventListener('click', () => {
+            const nowCollapsed = !body.classList.contains('sidebar-collapsed');
+            applyState(nowCollapsed);
+            localStorage.setItem(STORAGE_KEY, nowCollapsed ? '1' : '0');
+        });
+    }
+})();
+
 /* ── Avatar preview before upload ────────────────────────── */
 function previewPic(input) {
     if (input.files && input.files[0]) {
         const reader = new FileReader();
         reader.onload = e => {
             document.getElementById('avatarPreview').src = e.target.result;
-            document.getElementById('picNote').textContent = '📷 New photo selected — save to apply.';
+            const note = document.getElementById('picNote');
+            if (note) note.textContent = '📷 New photo selected — save to apply.';
         };
         reader.readAsDataURL(input.files[0]);
     }
@@ -23,11 +40,11 @@ const pwMsg  = document.getElementById('pwMatch');
 function checkPw() {
     if (!confPw || !confPw.value) { if (pwMsg) pwMsg.textContent = ''; return; }
     if (newPw.value === confPw.value) {
-        pwMsg.style.color   = '#065f46';
-        pwMsg.textContent   = '✓ Passwords match';
+        pwMsg.style.color = '#065f46';
+        pwMsg.textContent = '✓ Passwords match';
     } else {
-        pwMsg.style.color   = '#991b1b';
-        pwMsg.textContent   = '✗ Passwords do not match';
+        pwMsg.style.color = '#991b1b';
+        pwMsg.textContent = '✗ Passwords do not match';
     }
 }
 

@@ -3,6 +3,28 @@
    Used by: dashboard.php
    ============================================================ */
 
+/* ── Sidebar toggle ───────────────────────────────────────── */
+(function() {
+    const STORAGE_KEY = 'ar_sidebar_collapsed';
+    const toggle = document.getElementById('sidebarToggle');
+    const body   = document.body;
+
+    function applyState(collapsed) {
+        body.classList.toggle('sidebar-collapsed', collapsed);
+    }
+
+    // Restore saved state
+    applyState(localStorage.getItem(STORAGE_KEY) === '1');
+
+    if (toggle) {
+        toggle.addEventListener('click', () => {
+            const nowCollapsed = !body.classList.contains('sidebar-collapsed');
+            applyState(nowCollapsed);
+            localStorage.setItem(STORAGE_KEY, nowCollapsed ? '1' : '0');
+        });
+    }
+})();
+
 /* ── Notification bell ────────────────────────────────────── */
 const notifWrap     = document.getElementById('notifWrap');
 const notifDropdown = document.getElementById('notifDropdown');
@@ -77,8 +99,8 @@ function filterFaculty() {
     paginateCards(visible);
 }
 
-/* ── Faculty pagination ────────────────────────────────────── */
-const CARDS_PER_PAGE = 6;
+/* ── Faculty pagination — 8 per page ──────────────────────── */
+const CARDS_PER_PAGE = 8;
 let currentPage = 1;
 const pagination = document.getElementById('pagination');
 
@@ -90,7 +112,7 @@ function paginateCards(cards) {
 
 function renderPage(cards, page, totalPages) {
     const start = (page - 1) * CARDS_PER_PAGE;
-    const end = start + CARDS_PER_PAGE;
+    const end   = start + CARDS_PER_PAGE;
     document.querySelectorAll('.faculty-card').forEach(card => card.style.display = 'none');
     cards.slice(start, end).forEach(card => card.style.display = '');
     renderPagination(cards, page, totalPages);
@@ -237,11 +259,18 @@ document.getElementById('resubmitModal').addEventListener('click', function(e) {
     if (e.target === this) closeResubmitModal();
 });
 
+/* ── My Reviews anchor scroll ─────────────────────────────── */
+function scrollToReviews(e) {
+    if (e) e.preventDefault();
+    const el = document.getElementById('reviews-section');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 /* ── Client-side review filter tabs ──────────────────────── */
 function setReviewFilter(filter, e) {
     if (e) e.preventDefault();
     document.querySelectorAll('.filter-tab').forEach(tab => tab.classList.remove('active'));
-    if (e) e.currentTarget.classList.add('active');
+    if (e && e.currentTarget) e.currentTarget.classList.add('active');
 
     const rows = document.querySelectorAll('.review-row');
     rows.forEach(row => {
@@ -249,11 +278,30 @@ function setReviewFilter(filter, e) {
     });
 
     const visibleCount = [...rows].filter(r => r.dataset.filtered === 'show').length;
-    const emptyState = document.getElementById('reviewEmptyState');
+    const emptyState   = document.getElementById('reviewEmptyState');
     if (emptyState) emptyState.style.display = visibleCount === 0 ? 'flex' : 'none';
+
+    // Update bulk select state
+    updateReviewBulkBar();
 
     reviewPage = 1;
     paginateReviews();
+}
+
+/* ── Bulk delete for reviews ──────────────────────────────── */
+function updateReviewBulkBar() {
+    const checked = document.querySelectorAll('.review-row-cb:checked');
+    const bar     = document.getElementById('reviewsBulkBar');
+    const cnt     = document.getElementById('reviewsBulkCount');
+    if (bar) bar.classList.toggle('show', checked.length > 0);
+    if (cnt) cnt.textContent = checked.length + ' review' + (checked.length !== 1 ? 's' : '') + ' selected';
+}
+
+function selectAllReviews(checked) {
+    document.querySelectorAll('.review-row:not([style*="none"]) .review-row-cb').forEach(cb => {
+        cb.checked = checked;
+    });
+    updateReviewBulkBar();
 }
 
 /* ── Review rows pagination ───────────────────────────────── */
@@ -459,11 +507,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 8000);
     });
 
-    // Hash scroll
-    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
-    const hash = window.location.hash;
-    if (hash) {
-        const el = document.getElementById(hash.slice(1));
-        if (el) setTimeout(() => el.scrollIntoView({ behavior: 'auto', block: 'start' }), 60);
+    // Review checkbox bulk bar
+    document.querySelectorAll('.review-row-cb').forEach(cb => {
+        cb.addEventListener('change', updateReviewBulkBar);
+    });
+
+    // My Reviews nav anchor
+    const myReviewsLink = document.getElementById('myReviewsNavLink');
+    if (myReviewsLink) {
+        myReviewsLink.addEventListener('click', scrollToReviews);
     }
 });

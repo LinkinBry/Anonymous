@@ -1,6 +1,8 @@
 <?php
 date_default_timezone_set('Asia/Manila');
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 $env = parse_ini_file(__DIR__ . '/.env');
 

@@ -150,6 +150,12 @@ Review: "' . addslashes($normalized) . '"';
         $photos_json = mysqli_real_escape_string($conn, json_encode($uploaded_photos));
         mysqli_query($conn, "UPDATE reviews SET photo='$photos_json' WHERE id='$new_review_id'");
     }
+    // Log submit activity
+    $fn_sub = mysqli_query($conn, "SELECT name FROM faculties WHERE id='$faculty_id' LIMIT 1");
+    if ($fn_sub && mysqli_num_rows($fn_sub) > 0) {
+        $fn_subname = mysqli_real_escape_string($conn, mysqli_fetch_assoc($fn_sub)['name']);
+        mysqli_query($conn, "INSERT INTO notifications (user_id, message, status, created_at) VALUES ('$user_id', 'You submitted a review for $fn_subname. It is pending approval.', 'read', NOW())");
+    }
     header("Location: dashboard.php?submitted=1#reviews"); exit();
 }
 
@@ -204,6 +210,13 @@ Review: "' . addslashes($normalized) . '"';
             mysqli_query($conn, "UPDATE reviews SET photo='$ep' WHERE id='$review_id' AND user_id='$user_id'");
         }
     }
+    // Log activity
+    $fn_res = mysqli_query($conn, "SELECT f.name AS fn FROM reviews r JOIN faculties f ON r.faculty_id=f.id WHERE r.id='$review_id' AND r.user_id='$user_id' LIMIT 1");
+    if ($fn_res && mysqli_num_rows($fn_res) > 0) {
+        $fn_row  = mysqli_fetch_assoc($fn_res);
+        $fn_safe = mysqli_real_escape_string($conn, $fn_row['fn']);
+        mysqli_query($conn, "INSERT INTO notifications (user_id, message, status, created_at) VALUES ('$user_id', 'You edited your review for $fn_safe. It is now pending re-approval.', 'read', NOW())");
+    }
     header("Location: dashboard.php?edited=1#reviews"); exit();
 }
 
@@ -234,10 +247,14 @@ Review: "' . addslashes($review_text) . '"';
     $review_text_safe = mysqli_real_escape_string($conn, $review_text);
     mysqli_query($conn, "INSERT INTO reviews (user_id, faculty_id, review_text, status, sentiment, is_toxic, summary)
                          VALUES ('$user_id','$faculty_id','$review_text_safe','pending','$sentiment','$is_toxic','$summary')");
+    // Log resubmit activity
+    $fn_rsub = mysqli_query($conn, "SELECT name FROM faculties WHERE id='$faculty_id' LIMIT 1");
+    if ($fn_rsub && mysqli_num_rows($fn_rsub) > 0) {
+        $fn_rsubname = mysqli_real_escape_string($conn, mysqli_fetch_assoc($fn_rsub)['name']);
+        mysqli_query($conn, "INSERT INTO notifications (user_id, message, status, created_at) VALUES ('$user_id', 'You resubmitted your review for $fn_rsubname.', 'read', NOW())");
+    }
     header("Location: dashboard.php?submitted=1#reviews"); exit();
 }
-
-/* ── Delete single review ──────────────────────────────────── */
 if (isset($_POST['delete_review'])) {
     $review_id = intval($_POST['review_id']);
     $rev = mysqli_fetch_assoc(mysqli_query($conn, "SELECT f.name AS fn FROM reviews r JOIN faculties f ON r.faculty_id=f.id WHERE r.id='$review_id' AND r.user_id='$user_id' LIMIT 1"));
@@ -252,9 +269,15 @@ if (isset($_POST['delete_review'])) {
 
 /* ── Bulk delete reviews ───────────────────────────────────── */
 if (isset($_POST['bulk_delete_reviews']) && !empty($_POST['selected_reviews'])) {
+    $deleted_count = 0;
     foreach ($_POST['selected_reviews'] as $rid) {
         $rid = intval($rid);
         mysqli_query($conn, "DELETE FROM reviews WHERE id='$rid' AND user_id='$user_id'");
+        $deleted_count++;
+    }
+    if ($deleted_count > 0) {
+        $del_msg = mysqli_real_escape_string($conn, "You deleted $deleted_count review(s).");
+        mysqli_query($conn, "INSERT INTO notifications (user_id, message, status, created_at) VALUES ('$user_id', '$del_msg', 'read', NOW())");
     }
     header("Location: dashboard.php?deleted=1#reviews"); exit();
 }
@@ -294,7 +317,7 @@ if ($recent_res && mysqli_num_rows($recent_res) > 0) {
 $activity_res = mysqli_query($conn, "
     SELECT message, status, created_at FROM notifications
     WHERE user_id='$user_id'
-    ORDER BY created_at DESC LIMIT 8
+    ORDER BY created_at DESC LIMIT 5
 ");
 $activities = [];
 if ($activity_res) {
@@ -326,8 +349,10 @@ $review_filter = isset($_GET['review_filter']) ? $_GET['review_filter'] : 'all';
 <div class="sidebar">
     <div class="sidebar-top">
         <!-- Replace src with your logo image path, e.g. src="assets/img/logo.png" -->
-        <div class="sidebar-logo">
-        <img src="image/logo.png" alt="Logo">
+        <div class="sidebar-logo-fallback">
+            <svg width="20" height="20" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
+            </svg>
         </div>
         <div class="sidebar-brand-text">
             AnonymousReview
@@ -674,7 +699,7 @@ $review_filter = isset($_GET['review_filter']) ? $_GET['review_filter'] : 'all';
                     <div class="review-row-top-right">
                         <span class="status-badge status-<?php echo $rev['status']; ?>"><?php echo ucfirst($rev['status']); ?></span>
                         <?php if ($rev['status'] === 'approved'): ?>
-                        <button class="action-icon-btn" title="Edit"
+                        <button type="button" class="action-icon-btn" title="Edit"
                                 onclick="openEditModal(<?php echo $rev['id']; ?>, '<?php echo htmlspecialchars(addslashes($rev['review_text'])); ?>', '<?php echo htmlspecialchars(addslashes($rev['faculty_name'])); ?>', '<?php echo htmlspecialchars(addslashes($rev['department'])); ?>', <?php echo $rev['faculty_id']; ?>, <?php echo intval($rev['rating_teaching']); ?>, <?php echo intval($rev['rating_communication']); ?>, <?php echo intval($rev['rating_punctuality']); ?>, <?php echo intval($rev['rating_fairness']); ?>, <?php echo intval($rev['rating_overall']); ?>)">
                             <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                         </button>

@@ -90,10 +90,10 @@ $avatar = !empty($user['profile_pic']) && file_exists($user['profile_pic'])
 <!-- ══ Sidebar ══════════════════════════════════════════════ -->
 <div class="sidebar">
     <div class="sidebar-top">
-        <div class="sidebar-logo-fallback">
-            <svg width="20" height="20" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        <div class="sidebar-logo">
+        <img src="image/logo.png" alt="Logo">
         </div>
-        <div class="sidebar-brand-text">AnonymousReview<span class="sidebar-brand-sub">Student Portal</span></div>
+        <div class="sidebar-brand-text">OlshcoReview<span class="sidebar-brand-sub">Anonymous Faculty Feedback</span></div>
     </div>
     <div class="sidebar-user-wrap">
         <a href="profile.php" style="display:block;text-align:center;">

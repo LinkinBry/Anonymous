@@ -100,7 +100,7 @@ function filterFaculty() {
 }
 
 /* ── Faculty pagination — 8 per page ──────────────────────── */
-const CARDS_PER_PAGE = 8;
+const CARDS_PER_PAGE = 5;
 let currentPage = 1;
 const pagination = document.getElementById('pagination');
 
@@ -286,6 +286,29 @@ function setReviewFilter(filter, e) {
 
     reviewPage = 1;
     paginateReviews();
+}
+
+/* ── Delete mode toggle for reviews ──────────────────────── */
+let _deleteMode = false;
+
+function toggleDeleteMode() {
+    _deleteMode = !_deleteMode;
+    document.body.classList.toggle('review-delete-mode', _deleteMode);
+    const btn = document.getElementById('deleteModeBtn');
+    const bar = document.getElementById('reviewsBulkBar');
+    if (_deleteMode) {
+        btn.innerHTML = '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Cancel';
+        btn.style.background = '#6b7280';
+        btn.style.color = 'white';
+    } else {
+        btn.innerHTML = '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg> Delete';
+        btn.style.background = '';
+        btn.style.color = '';
+        // Uncheck all
+        document.querySelectorAll('.review-row-cb').forEach(cb => cb.checked = false);
+        bar.classList.remove('show');
+        updateReviewBulkBar();
+    }
 }
 
 /* ── Bulk delete for reviews ──────────────────────────────── */

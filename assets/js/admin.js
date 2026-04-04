@@ -18,6 +18,68 @@
     }
 })();
 
+/* ── Table pagination (10 per page) ───────────────────────── */
+const ADMIN_PER_PAGE = 10;
+const pagState = {};
+
+function paginateTable(tbodyId) {
+    const tbody = document.getElementById(tbodyId);
+    if (!tbody) return;
+    const rows    = [...tbody.querySelectorAll('tr[data-text]')];
+    const visible = rows.filter(r => r.style.display !== 'none');
+    const page    = pagState[tbodyId] || 1;
+    const total   = visible.length;
+    const totalPages = Math.ceil(total / ADMIN_PER_PAGE) || 1;
+    const start   = (page - 1) * ADMIN_PER_PAGE;
+    const end     = start + ADMIN_PER_PAGE;
+
+    rows.forEach(r => r.style.display = 'none');
+    visible.slice(start, end).forEach(r => r.style.display = '');
+
+    // Render pagination UI
+    const pagId = tbodyId + '-pag';
+    let pag = document.getElementById(pagId);
+    if (!pag) {
+        pag = document.createElement('div');
+        pag.id = pagId;
+        pag.className = 'table-pagination';
+        const tbl = tbody.closest('table');
+        if (tbl && tbl.parentNode) tbl.parentNode.insertBefore(pag, tbl.nextSibling);
+    }
+    pag.innerHTML = '';
+    if (total === 0) return;
+
+    const info = document.createElement('span');
+    info.className = 'pag-info';
+    info.textContent = `${Math.min(start + 1, total)}–${Math.min(end, total)} of ${total}`;
+    pag.appendChild(info);
+
+    const prev = document.createElement('button');
+    prev.className = 'pag-btn'; prev.type = 'button'; prev.textContent = '←';
+    prev.disabled = page <= 1;
+    prev.onclick = () => { pagState[tbodyId] = page - 1; paginateTable(tbodyId); };
+    pag.appendChild(prev);
+
+    // Show limited page buttons
+    const maxBtns = 5;
+    let startBtn = Math.max(1, page - Math.floor(maxBtns / 2));
+    let endBtn   = Math.min(totalPages, startBtn + maxBtns - 1);
+    if (endBtn - startBtn < maxBtns - 1) startBtn = Math.max(1, endBtn - maxBtns + 1);
+    for (let i = startBtn; i <= endBtn; i++) {
+        const btn = document.createElement('button');
+        btn.className = 'pag-btn' + (i === page ? ' active' : '');
+        btn.type = 'button'; btn.textContent = i;
+        btn.onclick = ((pg) => () => { pagState[tbodyId] = pg; paginateTable(tbodyId); })(i);
+        pag.appendChild(btn);
+    }
+
+    const next = document.createElement('button');
+    next.className = 'pag-btn'; next.type = 'button'; next.textContent = '→';
+    next.disabled = page >= totalPages;
+    next.onclick = () => { pagState[tbodyId] = page + 1; paginateTable(tbodyId); };
+    pag.appendChild(next);
+}
+
 /* ── Smooth scroll for sidebar nav anchors ────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.sidebar a[href^="#"]').forEach(link => {
@@ -41,6 +103,12 @@ document.addEventListener('DOMContentLoaded', () => {
         s.onload = () => renderChart('reviews');
         document.head.appendChild(s);
     }
+
+    /* init table pagination */
+    ['users-tbody', 'approved-tbody'].forEach(id => {
+        pagState[id] = 1;
+        paginateTable(id);
+    });
 
     /* edit users toggle */
     const editBtn = document.getElementById('edit_users_btn');
@@ -119,16 +187,18 @@ function filterFacRows() {
 
 function filterUserRows() {
     const q = document.getElementById('users-search').value.toLowerCase().trim();
-    document.querySelectorAll('#users-tbody tr').forEach(row => {
+    document.querySelectorAll('#users-tbody tr[data-text]').forEach(row => {
         row.style.display = !q || row.dataset.text.includes(q) ? '' : 'none';
     });
+    pagState['users-tbody'] = 1;
+    paginateTable('users-tbody');
 }
 
 function filterApprovedRows() {
     const q   = document.getElementById('approved-search').value.toLowerCase().trim();
     const fac = document.getElementById('approved-faculty-filter').value.toLowerCase();
     let   any = false;
-    document.querySelectorAll('#approved-tbody tr').forEach(row => {
+    document.querySelectorAll('#approved-tbody tr[data-text]').forEach(row => {
         const matchText = !q   || row.dataset.text.includes(q);
         const matchFac  = !fac || row.dataset.text.includes(fac);
         const show = matchText && matchFac;
@@ -137,6 +207,8 @@ function filterApprovedRows() {
     });
     const noRes = document.getElementById('no-approved-results');
     if (noRes) noRes.style.display = any ? 'none' : '';
+    pagState['approved-tbody'] = 1;
+    paginateTable('approved-tbody');
 }
 
 /* ── Bulk helpers ─────────────────────────────────────────── */

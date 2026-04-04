@@ -179,7 +179,8 @@ $approved_count  = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FRO
 $rejected_count  = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM reviews WHERE status='rejected'"))['c'];
 
 $pending_reviews = mysqli_query($conn, "
-    SELECT r.id, r.user_id, u.fullname AS user_fullname, f.name AS faculty_name,
+    SELECT r.id, r.user_id, u.fullname AS user_fullname, u.username, COALESCE(u.profile_pic,'') AS user_pic,
+        f.name AS faculty_name,
         r.review_text, r.sentiment, r.is_toxic, r.summary, r.created_at,
         r.rating_teaching, r.rating_communication, r.rating_punctuality, r.rating_fairness, r.rating_overall,
         COALESCE(r.photo,'') AS review_photo
@@ -265,18 +266,17 @@ $ef_arr = $af_arr;
         <a href="#users">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
             <span class="nav-link-text">Users</span>
-            <span class="sidebar-nav-badge"><?php echo $total_users; ?></span>
         </a>
         <a href="#faculties">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
             <span class="nav-link-text">Faculty</span>
-            <span class="sidebar-nav-badge"><?php echo $total_faculties; ?></span>
         </a>
-        <a href="#pending">
+        <a href="#pending" class="nav-pending-link">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             <span class="nav-link-text">Pending Reviews</span>
             <?php if ($pending_count > 0): ?>
             <span class="sidebar-nav-badge" style="background:#E24B4A;" id="pendingNavBadge"><?php echo $pending_count; ?></span>
+            <span class="sidebar-pending-badge" id="pendingNavBadgeCollapsed"><?php echo $pending_count > 9 ? '9+' : $pending_count; ?></span>
             <?php endif; ?>
         </a>
         <a href="#approved">
@@ -423,7 +423,13 @@ $ef_arr = $af_arr;
         ?>
         <div class="pend-row" data-text="<?php echo htmlspecialchars(strtolower($r['review_text'].' '.$r['user_fullname'].' '.$r['faculty_name'])); ?>" data-sentiment="<?php echo $s; ?>">
             <input type="checkbox" name="selected_reviews[]" value="<?php echo $r['id']; ?>" class="pend-check review_cb" onchange="updateReviewBulk()">
-            <div class="pend-avatar"><?php echo strtoupper(substr($r['user_fullname'], 0, 2)); ?></div>
+            <div class="pend-avatar" style="overflow:hidden;padding:0;">
+                <?php if (!empty($r['user_pic']) && file_exists($r['user_pic'])): ?>
+                    <img src="<?php echo htmlspecialchars($r['user_pic']); ?>" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;">
+                <?php else: ?>
+                    <span style="font-size:13px;font-weight:700;"><?php echo strtoupper(substr($r['user_fullname'], 0, 2)); ?></span>
+                <?php endif; ?>
+            </div>
             <div class="pend-body">
                 <div class="pend-meta">
                     <span class="pend-user"><?php echo htmlspecialchars($r['user_fullname']); ?></span>
@@ -528,7 +534,7 @@ $ef_arr = $af_arr;
                 <div style="margin-left:8px;display:flex;gap:3px;flex-shrink:0;">
                     <button type="button" class="btn btn-outline" style="padding:3px 8px;font-size:10px;" onclick="openFacultyModal(<?php echo $f['id']; ?>,'<?php echo htmlspecialchars(addslashes($f['name'])); ?>','<?php echo htmlspecialchars(addslashes($f['department']??'')); ?>')">View</button>
                     <button type="button" class="btn btn-outline" style="padding:3px 8px;font-size:10px;" onclick="openEditFacultyModal(<?php echo $f['id']; ?>,'<?php echo htmlspecialchars(addslashes($f['name'])); ?>','<?php echo htmlspecialchars(addslashes($f['department']??'')); ?>','<?php echo $fphoto ?? ''; ?>')">Edit</button>
-                    <a href="?delete_faculty=<?php echo $f['id']; ?>#faculties" class="btn btn-red" style="padding:3px 8px;font-size:10px;" onclick="return confirm('Delete this faculty and all their reviews?')">Del</a>
+                    <a href="?delete_faculty=<?php echo $f['id']; ?>#faculties" class="btn btn-red" style="padding:3px 8px;font-size:10px;" onclick="return confirm('Delete this faculty and all their reviews?')"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg></a>
                 </div>
             </div>
             <?php endwhile; ?>
@@ -586,7 +592,7 @@ $ef_arr = $af_arr;
                             <button type="button" class="btn btn-outline" style="padding:3px 7px;font-size:10px;"
                                     onclick="openUserModal(<?php echo $u['id']; ?>,'<?php echo htmlspecialchars(addslashes($u['fullname'])); ?>','<?php echo htmlspecialchars(addslashes($u['username'])); ?>','<?php echo htmlspecialchars(addslashes($u['email'])); ?>','<?php echo (!empty($u['profile_pic'])&&file_exists($u['profile_pic']))?htmlspecialchars(addslashes($u['profile_pic'])):'https://ui-avatars.com/api/?name='.urlencode($u['fullname']).'&background=7C0A02&color=fff&size=80'; ?>')">View</button>
                             <button type="button" class="btn btn-red" style="padding:3px 7px;font-size:10px;"
-                                    onclick="confirmDeleteUser(<?php echo $u['id']; ?>,'<?php echo htmlspecialchars(addslashes($u['fullname'])); ?>')">Del</button>
+                                    onclick="confirmDeleteUser(<?php echo $u['id']; ?>,'<?php echo htmlspecialchars(addslashes($u['fullname'])); ?>')"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
                         </div>
                     </td>
                 </tr>
@@ -640,7 +646,7 @@ $ef_arr = $af_arr;
                     <div style="display:flex;gap:3px;">
                         <button type="button" class="btn btn-outline" style="padding:3px 8px;font-size:10px;"
                                 onclick="openModal('<?php echo htmlspecialchars(addslashes($r['review_text'])); ?>','<?php echo htmlspecialchars(addslashes($r['faculty_name'])); ?>','<?php echo htmlspecialchars(addslashes($r['user_fullname'])); ?>',<?php echo intval($r['rating_teaching']); ?>,<?php echo intval($r['rating_communication']); ?>,<?php echo intval($r['rating_punctuality']); ?>,<?php echo intval($r['rating_fairness']); ?>,<?php echo intval($r['rating_overall']); ?>,'<?php echo htmlspecialchars(addslashes($r['review_photo'])); ?>')">View</button>
-                        <a href="reject_review.php?id=<?php echo $r['id']; ?>" class="btn btn-red" style="padding:3px 8px;font-size:10px;" onclick="return confirm('Delete this approved review?')">Delete</a>
+                        <a href="reject_review.php?id=<?php echo $r['id']; ?>" class="btn btn-red" style="padding:3px 8px;font-size:10px;" onclick="return confirm('Delete this approved review?')"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg></a>
                     </div>
                 </td>
             </tr>
@@ -653,7 +659,7 @@ $ef_arr = $af_arr;
         <div id="no-approved-results" style="display:none;text-align:center;padding:16px;color:var(--gray-400);font-size:13px;">No results match your search.</div>
         <div class="bulk-bar" id="approved_bulk_bar">
             <span id="approved_selected_count">0 reviews selected</span>
-            <button type="submit" name="bulk_delete_approved" class="btn btn-red" style="font-size:11px;" onclick="return confirm('Delete selected reviews permanently?')">Delete Selected</button>
+            <button type="submit" name="bulk_delete_approved" class="btn btn-red" style="font-size:11px;" onclick="return confirm('Delete selected reviews permanently?')"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg> Delete Selected</button>
         </div>
         </form>
     </div>

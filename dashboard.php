@@ -20,7 +20,7 @@ $avatar = !empty($user['profile_pic']) && file_exists($user['profile_pic'])
 
 $notif_count   = 0;
 $notifications = [];
-$notif_res     = mysqli_query($conn, "SELECT * FROM notifications WHERE user_id='$user_id' ORDER BY created_at DESC LIMIT 5");
+$notif_res     = mysqli_query($conn, "SELECT * FROM notifications WHERE user_id='$user_id' AND (message LIKE '%approved%' OR message LIKE '%rejected%') AND status='unread' ORDER BY created_at DESC LIMIT 5");
 if ($notif_res && mysqli_num_rows($notif_res) > 0) {
     while ($row = mysqli_fetch_assoc($notif_res)) {
         $notifications[] = $row;
@@ -331,7 +331,7 @@ $review_filter = isset($_GET['review_filter']) ? $_GET['review_filter'] : 'all';
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard — AnonymousReview</title>
+<title>Dashboard — OlshcoReview</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/style.css">
 <link rel="stylesheet" href="assets/css/dashboard.css">
@@ -349,14 +349,12 @@ $review_filter = isset($_GET['review_filter']) ? $_GET['review_filter'] : 'all';
 <div class="sidebar">
     <div class="sidebar-top">
         <!-- Replace src with your logo image path, e.g. src="assets/img/logo.png" -->
-        <div class="sidebar-logo-fallback">
-            <svg width="20" height="20" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="2" viewBox="0 0 24 24">
-                <path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
-            </svg>
+        <div class="sidebar-logo">
+            <img src="image/logo.png" alt="Logo" onerror="this.parentElement.innerHTML='<svg width=&quot;20&quot; height=&quot;20&quot; fill=&quot;none&quot; stroke=&quot;rgba(255,255,255,0.9)&quot; stroke-width=&quot;2&quot; viewBox=&quot;0 0 24 24&quot;><path d=&quot;M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z&quot;/></svg>'">
         </div>
         <div class="sidebar-brand-text">
-            AnonymousReview
-            <span class="sidebar-brand-sub">Student Portal</span>
+            OlshcoReview
+            <span class="sidebar-brand-sub">Faculty Evaluation System</span>
         </div>
     </div>
 
@@ -622,10 +620,13 @@ $review_filter = isset($_GET['review_filter']) ? $_GET['review_filter'] : 'all';
                 </button>
             </div>
             <?php if (!empty($recent_reviews)): ?>
-            <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--gray-600);cursor:pointer;user-select:none;">
-                <input type="checkbox" id="selectAllReviews" onchange="selectAllReviews(this.checked)" style="accent-color:var(--maroon);width:15px;height:15px;">
-                Select all
-            </label>
+            <button type="button" id="deleteModeBtn"
+                onclick="toggleDeleteMode()"
+                class="btn btn-outline"
+                style="padding:6px 14px;border-radius:20px;font-size:13px;display:inline-flex;align-items:center;gap:6px;">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                Delete
+            </button>
             <?php endif; ?>
         </div>
 
@@ -635,9 +636,10 @@ $review_filter = isset($_GET['review_filter']) ? $_GET['review_filter'] : 'all';
             <span id="reviewsBulkCount">0 reviews selected</span>
             <button type="submit" name="bulk_delete_reviews" class="btn btn-red"
                     onclick="return confirm('Delete selected reviews permanently?')">
-                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
                 Delete Selected
             </button>
+            <button type="button" class="btn btn-outline" onclick="toggleDeleteMode()" style="font-size:12px;padding:5px 12px;">Cancel</button>
         </div>
 
         <!-- Banners -->
@@ -704,6 +706,10 @@ $review_filter = isset($_GET['review_filter']) ? $_GET['review_filter'] : 'all';
                             <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                         </button>
                         <?php endif; ?>
+                        <button type="button" class="action-icon-btn action-icon-del" title="Delete"
+                                onclick="openDeleteModal(<?php echo $rev['id']; ?>, '<?php echo htmlspecialchars(addslashes($rev['faculty_name'])); ?>')">
+                            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                        </button>
                     </div>
                 </div>
                 <div class="review-row-text"><?php echo htmlspecialchars($rev['review_text']); ?></div>

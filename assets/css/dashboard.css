@@ -146,7 +146,10 @@
 .reviews-bulk-bar.show { display: flex; }
 .reviews-bulk-bar span { font-size: 13px; color: var(--maroon); font-weight: 500; flex: 1; }
 
-/* ── Review rows ──────────────────────────────────────────── */
+/* Delete mode — checkboxes hidden by default, revealed when delete mode is on */
+.review-row-checkbox { flex-shrink: 0; margin-top: 3px; overflow: hidden; max-width: 0; opacity: 0; transition: max-width 0.2s, opacity 0.2s; }
+.review-row-checkbox input[type=checkbox] { width: 16px; height: 16px; cursor: pointer; accent-color: var(--maroon); }
+body.review-delete-mode .review-row-checkbox { max-width: 24px; opacity: 1; }
 .review-row {
     display: flex; align-items: flex-start; gap: 12px;
     padding: 14px 0; border-bottom: 1px solid var(--gray-100);

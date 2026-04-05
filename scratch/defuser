@@ -1,1 +1,1 @@
-sudo service mysql start && fuser -k 8080/tcp ; php8.3 -S 0.0.0.0:8080 &
+sudo service mysql start && fuser -k 8080/tcp ; php8.3 -S 0.0.0.0:8080 router.php

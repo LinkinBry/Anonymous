@@ -3,15 +3,15 @@ include "config.php";
 include "email_helper.php";
 include "session_check.php";
 
-if (!isset($_SESSION['user_id'])) { header("Location: index.php"); exit(); }
+if (!isset($_SESSION['user_id'])) { header("Location: /"); exit(); }
 
 $user_id = $_SESSION['user_id'];
 $result  = mysqli_query($conn, "SELECT id, fullname, role, profile_pic FROM users WHERE id='$user_id' LIMIT 1");
 if ($result && mysqli_num_rows($result) > 0) {
     $current_user = mysqli_fetch_assoc($result);
-} else { header("Location: logout.php"); exit(); }
+} else { header("Location: /logout"); exit(); }
 
-if ($current_user['role'] != 'admin') { header("Location: dashboard.php"); exit(); }
+if ($current_user['role'] != 'admin') { header("Location: /dashboard"); exit(); }
 
 $admin_avatar = !empty($current_user['profile_pic']) && file_exists($current_user['profile_pic'])
     ? $current_user['profile_pic']
@@ -297,7 +297,7 @@ $ef_arr = $af_arr;
         </a>
     </nav>
     <div class="sidebar-footer">
-        <a href="logout.php">
+        <a href="/logout">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
             <span class="nav-link-text">Logout</span>
         </a>

@@ -4,7 +4,7 @@ include "config.php";
 if (isset($_SESSION['user_id'])) {
     $user_id = $_SESSION['user_id'];
 } else {
-    header("Location: index.php");
+    header("Location: /");
     exit();
 }
 
@@ -364,7 +364,7 @@ $review_filter = isset($_GET['review_filter']) ? $_GET['review_filter'] : 'all';
     </div>
 
     <div class="sidebar-user-wrap">
-        <a href="profile.php" style="display:block;text-align:center;" title="Edit Profile">
+        <a href="/profile" style="display:block;text-align:center;" title="Edit Profile">
             <img src="<?php echo htmlspecialchars($avatar); ?>" class="sidebar-avatar" alt="Avatar">
         </a>
         <div class="sidebar-name"><?php echo htmlspecialchars($user['fullname']); ?></div>
@@ -381,7 +381,7 @@ $review_filter = isset($_GET['review_filter']) ? $_GET['review_filter'] : 'all';
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
             <span class="nav-link-text">My Reviews</span>
         </a>
-        <a href="profile.php">
+        <a href="/profile">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
             <span class="nav-link-text">Profile</span>
         </a>
@@ -392,7 +392,7 @@ $review_filter = isset($_GET['review_filter']) ? $_GET['review_filter'] : 'all';
     </nav>
 
     <div class="sidebar-footer">
-        <a href="logout.php">
+        <a href="/logout">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
             <span class="nav-link-text">Logout</span>
         </a>

@@ -30,7 +30,7 @@ if (isset($_POST['register'])) {
             mysqli_query($conn, "INSERT INTO users (fullname, username, email, password)
                                   VALUES ('$pseudo_safe','$user_safe','$email_safe','$hashed_safe')");
             sendBrevoEmail($email, $pseudo_name, 'Welcome to AnonymousReview!', welcomeEmailHtml($pseudo_name));
-            header("Location: index.php");
+            header("Location: /");
             exit();
         }
     }

@@ -4,9 +4,9 @@ include "config.php";
 
 if (isset($_SESSION['user_id'])) {
     if ($_SESSION['role'] === 'admin') {
-        header("Location: admin_dashboard.php");
+        header("Location: /admin_dashboard");
     } else {
-        header("Location: dashboard.php");
+        header("Location: /dashboard");
     }
     exit();
 }
@@ -34,9 +34,9 @@ if (isset($_POST['login'])) {
             $_SESSION['session_expires'] = time() + 300;
 
             if ($user['role'] == 'admin') {
-                header("Location: admin_dashboard.php");
+                header("Location: /admin_dashboard");
             } else {
-                header("Location: dashboard.php");
+                header("Location: /dashboard");
             }
             exit();
         } else {

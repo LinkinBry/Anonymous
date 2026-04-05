@@ -509,7 +509,7 @@ $ef_arr = $af_arr;
                     <input type="text" id="faculties-search" placeholder="Search faculty…" oninput="filterFacRows()">
                 </div>
                 <select id="faculties-dept-filter" class="filter-sel" style="font-size:11px;" onchange="filterFacRows()">
-                    <option value="">All Depts</option>
+                    <option value="">All Deparments</option>
                     <?php $depts_res = mysqli_query($conn, "SELECT DISTINCT department FROM faculties WHERE department IS NOT NULL AND department != '' ORDER BY department ASC");
                     while ($d = mysqli_fetch_assoc($depts_res)): ?>
                     <option value="<?php echo htmlspecialchars(strtolower($d['department'])); ?>"><?php echo htmlspecialchars($d['department']); ?></option>

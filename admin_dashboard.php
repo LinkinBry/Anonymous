@@ -56,7 +56,10 @@ if (isset($_POST['bulk_reject']) && !empty($_POST['selected_reviews'])) {
 /* ── Single Delete User ────────────────────────────────────────────────── */
 if (isset($_POST['delete_single_user'])) {
     $uid = intval($_POST['delete_user_id']);
-    if ($uid != $user_id) mysqli_query($conn, "DELETE FROM users WHERE id='$uid' AND role='user'");
+    if ($uid != $user_id) {
+        mysqli_query($conn, "DELETE FROM reviews WHERE user_id='$uid'");
+        mysqli_query($conn, "DELETE FROM users WHERE id='$uid' AND role='user'");
+    }
     header("Location: admin_dashboard.php#users"); exit();
 }
 
@@ -64,7 +67,10 @@ if (isset($_POST['delete_single_user'])) {
 if (isset($_POST['bulk_delete_users']) && !empty($_POST['selected_users'])) {
     foreach ($_POST['selected_users'] as $uid) {
         $uid = intval($uid);
-        if ($uid != $user_id) mysqli_query($conn, "DELETE FROM users WHERE id='$uid' AND role='user'");
+        if ($uid != $user_id) {
+            mysqli_query($conn, "DELETE FROM reviews WHERE user_id='$uid'");
+            mysqli_query($conn, "DELETE FROM users WHERE id='$uid' AND role='user'");
+        }
     }
     header("Location: admin_dashboard.php#users"); exit();
 }
@@ -173,12 +179,12 @@ $faculties = mysqli_query($conn, "
 $total_users     = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM users WHERE role='user'"))['c'];
 $total_admins    = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM users WHERE role='admin'"))['c'];
 $total_faculties = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM faculties"))['c'];
-$total_reviews   = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM reviews"))['c'];
+$total_reviews   = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM reviews r JOIN users u ON r.user_id=u.id"))['c'];
 
 // ── CRITICAL: Single source of truth for pending count ──────────────────
-$pending_count   = intval(mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM reviews WHERE status='pending'"))['c']);
-$approved_count  = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM reviews WHERE status='approved'"))['c'];
-$rejected_count  = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM reviews WHERE status='rejected'"))['c'];
+$pending_count   = intval(mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM reviews r JOIN users u ON r.user_id=u.id WHERE r.status='pending'"))['c']);
+$approved_count  = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM reviews r JOIN users u ON r.user_id=u.id WHERE r.status='approved'"))['c'];
+$rejected_count  = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM reviews r JOIN users u ON r.user_id=u.id WHERE r.status='rejected'"))['c'];
 
 $pending_reviews = mysqli_query($conn, "
     SELECT r.id, r.user_id, u.fullname AS user_fullname, u.username, COALESCE(u.profile_pic,'') AS user_pic,
@@ -209,9 +215,9 @@ for ($i = 6; $i >= 0; $i--) {
     $weekly[] = [
         'date'     => $date,
         'label'    => $label,
-        'reviews'  => mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM reviews WHERE DATE(created_at)='$date'"))['c'],
-        'approved' => mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM reviews WHERE DATE(created_at)='$date' AND status='approved'"))['c'],
-        'rejected' => mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM reviews WHERE DATE(created_at)='$date' AND status='rejected'"))['c'],
+        'reviews'  => mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM reviews r JOIN users u ON r.user_id=u.id WHERE DATE(r.created_at)='$date'"))['c'],
+        'approved' => mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM reviews r JOIN users u ON r.user_id=u.id WHERE DATE(r.created_at)='$date' AND r.status='approved'"))['c'],
+        'rejected' => mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM reviews r JOIN users u ON r.user_id=u.id WHERE DATE(r.created_at)='$date' AND r.status='rejected'"))['c'],
         'users'    => mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM users WHERE DATE(created_at)='$date'"))['c'],
     ];
 }

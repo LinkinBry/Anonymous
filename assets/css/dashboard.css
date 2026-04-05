@@ -3,47 +3,180 @@
    Used by: dashboard.php
    ============================================================ */
 
-/* ── Stat card color accents ──────────────────────────────── */
-.stat-card.total    { border-top-color: var(--gray-400); }
-.stat-card.pending  { border-top-color: #f59e0b; }
-.stat-card.approved { border-top-color: #10b981; }
-.stat-card.rejected { border-top-color: #ef4444; }
+/* ══════════════════════════════════════════════════════════
+   STAT CARDS — New flat style matching the image
+   ══════════════════════════════════════════════════════════ */
+.stats-grid { display: grid; gap: 16px; margin-bottom: 28px; }
+.stats-row-4 { grid-template-columns: repeat(4, 1fr); }
+.stats-row-3 { grid-template-columns: repeat(3, 1fr); }
 
-.stat-card.total   .stat-value { color: var(--gray-600); }
-.stat-card.pending .stat-value { color: #f59e0b; }
-.stat-card.approved .stat-value{ color: #10b981; }
-.stat-card.rejected .stat-value{ color: #ef4444; }
+/* Override base stat-card for dashboard */
+.stat-card {
+    background: white;
+    border-radius: 12px;
+    padding: 22px 22px 0 22px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+    border: 1px solid var(--gray-200);
+    border-top: none !important;        /* kill old top border accent */
+    position: relative;
+    overflow: hidden;
+    transition: box-shadow 0.2s, transform 0.2s;
+    display: flex;
+    flex-direction: column;
+}
+.stat-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.10); transform: translateY(-2px); }
 
-/* ── Faculty grid ─────────────────────────────────────────── */
+.stat-card-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 18px;
+}
+
+.stat-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--gray-600);
+    margin-bottom: 10px;
+}
+
+.stat-value {
+    font-size: 42px;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 0;
+}
+
+.stat-icon {
+    position: static;
+    transform: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* Colored bottom bar */
+.stat-bar {
+    height: 7px;
+    border-radius: 0 0 8px 8px;
+    margin: 0 -22px;        /* stretch full width past padding */
+    margin-top: auto;
+}
+
+/* Per-card accent colors */
+.stat-card.total   .stat-value  { color: var(--gray-700); }
+.stat-card.total   .stat-icon   { background: rgba(107,114,128,0.1); }
+.stat-card.total   .stat-bar    { background: var(--gray-400); }
+
+.stat-card.pending .stat-value  { color: #f59e0b; }
+.stat-card.pending .stat-icon   { background: rgba(245,158,11,0.12); }
+.stat-card.pending .stat-bar    { background: #f59e0b; }
+
+.stat-card.approved .stat-value { color: #10b981; }
+.stat-card.approved .stat-icon  { background: rgba(16,185,129,0.12); }
+.stat-card.approved .stat-bar   { background: #10b981; }
+
+.stat-card.rejected .stat-value { color: #ef4444; }
+.stat-card.rejected .stat-icon  { background: rgba(239,68,68,0.12); }
+.stat-card.rejected .stat-bar   { background: #ef4444; }
+
+/* ══════════════════════════════════════════════════════════
+   FACULTY GRID — New horizontal card style
+   ══════════════════════════════════════════════════════════ */
 .faculty-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(195px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
     gap: 18px;
-    margin-bottom: 32px;
+    margin-bottom: 0;
 }
+
 .faculty-card {
-    background: white; border-radius: var(--radius);
-    padding: 22px 18px; text-align: center;
-    box-shadow: var(--shadow-sm); border: 1px solid var(--gray-200);
-    transition: all 0.25s; cursor: pointer;
-    display: flex; flex-direction: column; align-items: center;
+    background: white;
+    border-radius: 16px;
+    padding: 22px 20px 18px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+    border: 1px solid var(--gray-200);
+    transition: all 0.25s;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
 }
 .faculty-card:hover {
-    box-shadow: var(--shadow-md);
-    transform: translateY(-4px);
+    box-shadow: 0 6px 24px rgba(139,0,0,0.12);
+    transform: translateY(-3px);
     border-color: var(--maroon);
 }
-.faculty-card img { width: 68px; height: 68px; border-radius: 50%; margin-bottom: 12px; border: 3px solid var(--maroon-pale); flex-shrink: 0; }
-.faculty-card h3  { font-size: 15px; font-weight: 600; color: var(--gray-800); margin-bottom: 4px; }
-.faculty-card p   { font-size: 13px; color: var(--gray-400); margin-bottom: 12px; }
 
-/* ── Faculty action buttons on card ──────────────────────── */
+/* Top row: avatar + info */
+.faculty-card-top {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 4px;
+    width: 100%;
+}
+.faculty-card img {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--maroon-pale);
+    flex-shrink: 0;
+    margin-bottom: 0;
+}
+.faculty-card-info { min-width: 0; flex: 1; }
+.faculty-card h3 {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--gray-800);
+    margin-bottom: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.faculty-card p {
+    font-size: 12px;
+    color: var(--gray-400);
+    margin-bottom: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Divider */
+.faculty-card-divider {
+    width: 100%;
+    height: 1px;
+    background: var(--gray-100);
+    margin: 14px 0 12px;
+}
+
+/* Evaluate button */
 .btn-evaluate {
-    display: inline-flex; align-items: center; gap: 5px;
-    text-decoration: none; background: var(--maroon); color: white;
-    border: none; padding: 8px 18px; border-radius: 20px;
-    font-size: 13px; font-weight: 500; cursor: pointer;
-    font-family: 'DM Sans', sans-serif; transition: background 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    text-decoration: none;
+    background: var(--maroon);
+    color: white;
+    border: none;
+    padding: 9px 0;
+    border-radius: 30px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: background 0.2s;
+    width: 100%;
     margin-top: auto;
 }
 .btn-evaluate:hover         { background: var(--maroon-light); }
@@ -53,6 +186,65 @@
 .btn-rejected-card:hover    { background: #dc2626; }
 .btn-edit                   { background: var(--maroon); }
 .btn-edit:hover             { background: var(--maroon-light); }
+
+/* Stars inside faculty card */
+.faculty-card-stars {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 10px;
+}
+
+/* Show More card */
+.faculty-card-showmore {
+    background: white;
+    border-radius: 16px;
+    padding: 22px 20px 18px;
+    border: 2px dashed var(--gray-300);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: all 0.22s;
+    min-height: 160px;
+    text-align: center;
+}
+.faculty-card-showmore:hover {
+    border-color: var(--maroon);
+    box-shadow: 0 4px 16px rgba(139,0,0,0.09);
+    transform: translateY(-2px);
+}
+.faculty-card-showmore .showmore-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--maroon-pale);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--maroon);
+    transition: background 0.2s;
+}
+.faculty-card-showmore:hover .showmore-icon { background: rgba(139,0,0,0.15); }
+.faculty-card-showmore span {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--maroon);
+}
+
+/* Hidden rows revealed by Show More */
+.faculty-card.hidden-card { display: none; }
+
+/* Pagination row below the grid */
+#pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin: 18px 0 28px;
+}
 
 /* ── Search / filter bar area ─────────────────────────────── */
 .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 12px; }
@@ -88,7 +280,7 @@
 .search-form button:hover { background: var(--maroon-light); }
 .search-clear { cursor: pointer; color: var(--gray-400); font-size: 17px; line-height: 1; display: none; }
 
-/* ── Quick stats bar (topbar right area) ──────────────────── */
+/* ── Quick stats bar ──────────────────────────────────────── */
 .quick-action-btn {
     display: inline-flex; align-items: center; gap: 6px;
     padding: 8px 16px; border-radius: 20px; font-size: 13px;
@@ -146,7 +338,7 @@
 .reviews-bulk-bar.show { display: flex; }
 .reviews-bulk-bar span { font-size: 13px; color: var(--maroon); font-weight: 500; flex: 1; }
 
-/* Delete mode — checkboxes hidden by default, revealed when delete mode is on */
+/* Delete mode checkboxes */
 .review-row-checkbox { flex-shrink: 0; margin-top: 3px; overflow: hidden; max-width: 0; opacity: 0; transition: max-width 0.2s, opacity 0.2s; }
 .review-row-checkbox input[type=checkbox] { width: 16px; height: 16px; cursor: pointer; accent-color: var(--maroon); }
 body.review-delete-mode .review-row-checkbox { max-width: 24px; opacity: 1; }
@@ -157,16 +349,8 @@ body.review-delete-mode .review-row-checkbox { max-width: 24px; opacity: 1; }
 }
 .review-row:last-child { border-bottom: none; }
 .review-row-checkbox { flex-shrink: 0; margin-top: 3px; }
-.review-row-checkbox input[type=checkbox] {
-    width: 16px; height: 16px; cursor: pointer;
-    accent-color: var(--maroon);
-}
-.review-row-icon {
-    width: 38px; height: 38px; border-radius: 50%;
-    background: var(--maroon-pale);
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0; margin-top: 2px;
-}
+.review-row-checkbox input[type=checkbox] { width: 16px; height: 16px; cursor: pointer; accent-color: var(--maroon); }
+.review-row-icon { width: 38px; height: 38px; border-radius: 50%; background: var(--maroon-pale); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
 .review-row-body { flex: 1; min-width: 0; }
 .review-row-top  { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; gap: 8px; }
 .review-row-top-left { flex: 1; min-width: 0; }
@@ -259,11 +443,7 @@ body.review-delete-mode .review-row-checkbox { max-width: 24px; opacity: 1; }
     position: relative;
 }
 .activity-item:last-child { border-bottom: none; }
-.activity-dot {
-    width: 36px; height: 36px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0; margin-top: 1px;
-}
+.activity-dot { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
 .activity-dot.submitted { background: #dbeafe; }
 .activity-dot.approved  { background: #d1fae5; }
 .activity-dot.rejected  { background: #fee2e2; }
@@ -313,3 +493,16 @@ body.review-delete-mode .review-row-checkbox { max-width: 24px; opacity: 1; }
 
 /* ── Anchor scroll fix ────────────────────────────────────── */
 #reviews { scroll-margin-top: 24px; }
+
+/* ── Page btn (pagination) ────────────────────────────────── */
+.page-btn {
+    min-width: 36px; height: 36px; border-radius: 8px;
+    border: 1px solid var(--gray-200); background: white;
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; color: var(--gray-600);
+    transition: all 0.18s; display: flex; align-items: center; justify-content: center; padding: 0 10px;
+}
+.page-btn:hover  { border-color: var(--maroon); color: var(--maroon); }
+.page-btn.active { background: var(--maroon); color: white; border-color: var(--maroon); }
+.page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.page-info { font-size: 13px; color: var(--gray-400); margin: 0 6px; }

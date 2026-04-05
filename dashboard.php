@@ -18,7 +18,7 @@ $avatar = !empty($user['profile_pic']) && file_exists($user['profile_pic'])
     ? $user['profile_pic']
     : 'https://ui-avatars.com/api/?name=' . urlencode($user['fullname']) . '&background=6B0000&color=fff&size=80';
 
-// ── Notifications: show last 5 (approved/rejected), badge = unread count ──
+// ── Notifications ──────────────────────────────────────────
 $notif_count   = 0;
 $notifications = [];
 $notif_res = mysqli_query($conn, "
@@ -157,7 +157,6 @@ Review: "' . addslashes($normalized) . '"';
         $photos_json = mysqli_real_escape_string($conn, json_encode($uploaded_photos));
         mysqli_query($conn, "UPDATE reviews SET photo='$photos_json' WHERE id='$new_review_id'");
     }
-    // Log submit activity
     $fn_sub = mysqli_query($conn, "SELECT name FROM faculties WHERE id='$faculty_id' LIMIT 1");
     if ($fn_sub && mysqli_num_rows($fn_sub) > 0) {
         $fn_subname = mysqli_real_escape_string($conn, mysqli_fetch_assoc($fn_sub)['name']);
@@ -217,7 +216,6 @@ Review: "' . addslashes($normalized) . '"';
             mysqli_query($conn, "UPDATE reviews SET photo='$ep' WHERE id='$review_id' AND user_id='$user_id'");
         }
     }
-    // Log activity
     $fn_res = mysqli_query($conn, "SELECT f.name AS fn FROM reviews r JOIN faculties f ON r.faculty_id=f.id WHERE r.id='$review_id' AND r.user_id='$user_id' LIMIT 1");
     if ($fn_res && mysqli_num_rows($fn_res) > 0) {
         $fn_row  = mysqli_fetch_assoc($fn_res);
@@ -254,7 +252,6 @@ Review: "' . addslashes($review_text) . '"';
     $review_text_safe = mysqli_real_escape_string($conn, $review_text);
     mysqli_query($conn, "INSERT INTO reviews (user_id, faculty_id, review_text, status, sentiment, is_toxic, summary)
                          VALUES ('$user_id','$faculty_id','$review_text_safe','pending','$sentiment','$is_toxic','$summary')");
-    // Log resubmit activity
     $fn_rsub = mysqli_query($conn, "SELECT name FROM faculties WHERE id='$faculty_id' LIMIT 1");
     if ($fn_rsub && mysqli_num_rows($fn_rsub) > 0) {
         $fn_rsubname = mysqli_real_escape_string($conn, mysqli_fetch_assoc($fn_rsub)['name']);
@@ -331,6 +328,9 @@ if ($activity_res) {
 }
 
 $review_filter = isset($_GET['review_filter']) ? $_GET['review_filter'] : 'all';
+
+// Cards per page for initial view (Show More reveals the rest)
+define('FACULTY_INITIAL', 8);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -467,31 +467,68 @@ $review_filter = isset($_GET['review_filter']) ? $_GET['review_filter'] : 'all';
         </div>
     </div>
 
-    <!-- Stats -->
+    <!-- ══ STAT CARDS — New flat style ══════════════════════════════════ -->
     <div class="stats-grid stats-row-4">
-        <div class="stat-card total">
-            <div class="stat-label">Total Reviews</div>
-            <div class="stat-value"><?php echo $total_reviews; ?></div>
-            <div class="stat-icon"><div style="width:48px;height:48px;border-radius:50%;background:rgba(75,85,99,0.1);display:flex;align-items:center;justify-content:center;"><svg width="22" height="22" fill="none" stroke="#4b5563" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div></div>
-        </div>
-        <div class="stat-card pending">
-            <div class="stat-label">Pending</div>
-            <div class="stat-value"><?php echo $pending_count; ?></div>
-            <div class="stat-icon"><div style="width:48px;height:48px;border-radius:50%;background:rgba(245,158,11,0.12);display:flex;align-items:center;justify-content:center;"><svg width="22" height="22" fill="none" stroke="#f59e0b" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div></div>
-        </div>
-        <div class="stat-card approved">
-            <div class="stat-label">Approved</div>
-            <div class="stat-value"><?php echo $approved_count; ?></div>
-            <div class="stat-icon"><div style="width:48px;height:48px;border-radius:50%;background:rgba(16,185,129,0.12);display:flex;align-items:center;justify-content:center;"><svg width="22" height="22" fill="none" stroke="#10b981" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div></div>
-        </div>
-        <div class="stat-card rejected">
-            <div class="stat-label">Rejected</div>
-            <div class="stat-value"><?php echo $rejected_count; ?></div>
-            <div class="stat-icon"><div style="width:48px;height:48px;border-radius:50%;background:rgba(239,68,68,0.12);display:flex;align-items:center;justify-content:center;"><svg width="22" height="22" fill="none" stroke="#ef4444" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div></div>
-        </div>
-    </div>
 
-    <!-- Faculty Section -->
+        <!-- Total Reviews -->
+        <div class="stat-card total">
+            <div class="stat-card-inner">
+                <div>
+                    <div class="stat-label">Total Reviews</div>
+                    <div class="stat-value"><?php echo $total_reviews; ?></div>
+                </div>
+                <div class="stat-icon">
+                    <svg width="22" height="22" fill="none" stroke="#4b5563" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                </div>
+            </div>
+            <div class="stat-bar"></div>
+        </div>
+
+        <!-- Pending -->
+        <div class="stat-card pending">
+            <div class="stat-card-inner">
+                <div>
+                    <div class="stat-label">Pending</div>
+                    <div class="stat-value"><?php echo $pending_count; ?></div>
+                </div>
+                <div class="stat-icon">
+                    <svg width="22" height="22" fill="none" stroke="#f59e0b" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </div>
+            </div>
+            <div class="stat-bar"></div>
+        </div>
+
+        <!-- Approved -->
+        <div class="stat-card approved">
+            <div class="stat-card-inner">
+                <div>
+                    <div class="stat-label">Approved</div>
+                    <div class="stat-value"><?php echo $approved_count; ?></div>
+                </div>
+                <div class="stat-icon">
+                    <svg width="22" height="22" fill="none" stroke="#10b981" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                </div>
+            </div>
+            <div class="stat-bar"></div>
+        </div>
+
+        <!-- Rejected -->
+        <div class="stat-card rejected">
+            <div class="stat-card-inner">
+                <div>
+                    <div class="stat-label">Rejected</div>
+                    <div class="stat-value"><?php echo $rejected_count; ?></div>
+                </div>
+                <div class="stat-icon">
+                    <svg width="22" height="22" fill="none" stroke="#ef4444" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                </div>
+            </div>
+            <div class="stat-bar"></div>
+        </div>
+
+    </div><!-- end stats-grid -->
+
+    <!-- ══ Faculty Section ══════════════════════════════════════════════ -->
     <div class="section-header" style="margin-bottom:18px;">
         <div class="section-title">Faculty Members</div>
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
@@ -517,40 +554,57 @@ $review_filter = isset($_GET['review_filter']) ? $_GET['review_filter'] : 'all';
             $user_review  = $user_reviews_map[$faculty['id']] ?? null;
             $has_reviewed = $user_review !== null;
             $review_status= $has_reviewed ? $user_review['status'] : null;
-        ?>
-        <div class="faculty-card" data-index="<?php echo $i; ?>" data-dept="<?php echo htmlspecialchars($faculty['department'] ?? ''); ?>">
-            <img src="<?php echo (!empty($faculty['photo']) && file_exists($faculty['photo']))
+            $f_avatar     = (!empty($faculty['photo']) && file_exists($faculty['photo']))
                 ? htmlspecialchars($faculty['photo'])
-                : 'https://ui-avatars.com/api/?name='.urlencode($faculty['name']).'&background=8B0000&color=fff&size=80'; ?>"
-                 alt="Faculty">
-            <h3><?php echo htmlspecialchars($faculty['name']); ?></h3>
-            <p><?php echo htmlspecialchars($faculty['department'] ?? ''); ?></p>
+                : 'https://ui-avatars.com/api/?name='.urlencode($faculty['name']).'&background=8B0000&color=fff&size=80';
+            // Cards beyond the initial count are hidden until Show More is clicked
+            $hidden_class = ($i >= FACULTY_INITIAL) ? ' hidden-card' : '';
+        ?>
+        <div class="faculty-card<?php echo $hidden_class; ?>"
+             data-index="<?php echo $i; ?>"
+             data-dept="<?php echo htmlspecialchars($faculty['department'] ?? ''); ?>">
 
+            <!-- Top: avatar + name/dept -->
+            <div class="faculty-card-top">
+                <img src="<?php echo $f_avatar; ?>" alt="<?php echo htmlspecialchars($faculty['name']); ?>">
+                <div class="faculty-card-info">
+                    <h3><?php echo htmlspecialchars($faculty['name']); ?></h3>
+                    <p><?php echo htmlspecialchars($faculty['department'] ?? ''); ?></p>
+                </div>
+            </div>
+
+            <!-- Stars (if rated) -->
             <?php
             $avg = floatval($faculty['avg_stars'] ?? 0);
             if ($avg > 0):
                 $pct = min(100, ($avg / 5) * 100);
-                $sz  = 16; $gap = 3;
+                $sz  = 15; $gap = 2;
                 $w   = $sz * 5 + $gap * 4;
                 $uid = 'ds' . substr(md5($faculty['id'] . $avg), 0, 7);
                 $cw  = round($pct / 100 * $w, 2);
-                $empty = $filled = '';
+                $empty_s = $filled_s = '';
                 for ($si = 0; $si < 5; $si++) {
                     $x = $si * ($sz + $gap);
-                    $empty  .= '<text x="'.$x.'" y="'.$sz.'" font-size="'.$sz.'" fill="#d1d5db">★</text>';
-                    $filled .= '<text x="'.$x.'" y="'.$sz.'" font-size="'.$sz.'" fill="#f59e0b">★</text>';
+                    $empty_s  .= '<text x="'.$x.'" y="'.$sz.'" font-size="'.$sz.'" fill="#d1d5db">★</text>';
+                    $filled_s .= '<text x="'.$x.'" y="'.$sz.'" font-size="'.$sz.'" fill="#f59e0b">★</text>';
                 }
             ?>
-            <div style="margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap;">
+            <div class="faculty-card-stars" style="margin-top:8px;">
                 <svg width="<?php echo $w; ?>" height="<?php echo $sz; ?>" viewBox="0 0 <?php echo $w; ?> <?php echo $sz; ?>" xmlns="http://www.w3.org/2000/svg" style="display:block;vertical-align:middle;">
                     <defs><clipPath id="<?php echo $uid; ?>"><rect x="0" y="0" width="<?php echo $cw; ?>" height="<?php echo $sz; ?>"/></clipPath></defs>
-                    <?php echo $empty; ?>
-                    <g clip-path="url(#<?php echo $uid; ?>)"><?php echo $filled; ?></g>
+                    <?php echo $empty_s; ?>
+                    <g clip-path="url(#<?php echo $uid; ?>)"><?php echo $filled_s; ?></g>
                 </svg>
-                <span style="font-size:13px;color:var(--gray-400);"><?php echo number_format($avg,1); ?> (<?php echo $faculty['review_count']; ?>)</span>
+                <span style="font-size:12px;color:var(--gray-400);"><?php echo number_format($avg,1); ?> (<?php echo $faculty['review_count']; ?>)</span>
             </div>
+            <?php else: ?>
+            <div style="margin-top:8px;font-size:12px;color:var(--gray-400);">No ratings yet</div>
             <?php endif; ?>
 
+            <!-- Divider -->
+            <div class="faculty-card-divider"></div>
+
+            <!-- Status badge if reviewed -->
             <?php if ($has_reviewed): ?>
                 <span class="status-badge status-<?php echo $review_status; ?>" style="display:inline-flex;align-items:center;gap:4px;margin-bottom:10px;">
                     <?php if ($review_status === 'pending'): ?>
@@ -560,7 +614,11 @@ $review_filter = isset($_GET['review_filter']) ? $_GET['review_filter'] : 'all';
                     <?php else: ?>
                         <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Rejected
                     <?php endif; ?>
-                </span><br>
+                </span>
+            <?php endif; ?>
+
+            <!-- Action button -->
+            <?php if ($has_reviewed): ?>
                 <?php if ($review_status === 'approved'): ?>
                     <button class="btn-evaluate btn-edit"
                             onclick="openEditModal(<?php echo $user_review['id']; ?>, '<?php echo htmlspecialchars(addslashes($user_review['review_text'])); ?>', '<?php echo htmlspecialchars(addslashes($faculty['name'])); ?>', '<?php echo htmlspecialchars(addslashes($faculty['department'] ?? '')); ?>', <?php echo $faculty['id']; ?>, <?php echo intval($user_review['rating_teaching']); ?>, <?php echo intval($user_review['rating_communication']); ?>, <?php echo intval($user_review['rating_punctuality']); ?>, <?php echo intval($user_review['rating_fairness']); ?>, <?php echo intval($user_review['rating_overall']); ?>)">
@@ -581,14 +639,29 @@ $review_filter = isset($_GET['review_filter']) ? $_GET['review_filter'] : 'all';
                 <?php endif; ?>
             <?php else: ?>
                 <button class="btn-evaluate"
-                        onclick="openModalForFaculty(<?php echo $faculty['id']; ?>, '<?php echo htmlspecialchars(addslashes($faculty['name'])); ?>', '<?php echo htmlspecialchars(addslashes($faculty['department'] ?? '')); ?>', '<?php echo (!empty($faculty['photo'])&&file_exists($faculty['photo']))?htmlspecialchars(addslashes($faculty['photo'])):'https://ui-avatars.com/api/?name='.urlencode($faculty['name']).'&background=8B0000&color=fff&size=42'; ?>')">
+                        onclick="openModalForFaculty(<?php echo $faculty['id']; ?>, '<?php echo htmlspecialchars(addslashes($faculty['name'])); ?>', '<?php echo htmlspecialchars(addslashes($faculty['department'] ?? '')); ?>', '<?php echo $f_avatar; ?>')">
                     Evaluate
                 </button>
             <?php endif; ?>
+
         </div>
         <?php endforeach; ?>
-    </div>
-    <div class="pagination" id="pagination"></div>
+
+        <!-- Show More card (only if there are more than FACULTY_INITIAL cards) -->
+        <?php if (count($faculties) > FACULTY_INITIAL): ?>
+        <div class="faculty-card-showmore" id="showMoreCard" onclick="showMoreFaculty()">
+            <div class="showmore-icon">
+                <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+            </div>
+            <span>Show more</span>
+        </div>
+        <?php endif; ?>
+
+    </div><!-- end faculty-grid -->
+
+    <!-- Pagination (hidden until Show More is clicked) -->
+    <div class="pagination" id="pagination" style="display:none;"></div>
+
     <?php else: ?>
     <div class="empty-state">
         <svg width="64" height="64" fill="none" stroke="#9ca3af" stroke-width="1.5" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
@@ -665,9 +738,7 @@ $review_filter = isset($_GET['review_filter']) ? $_GET['review_filter'] : 'all';
                 You have already submitted a review for this faculty member.
             </div>
             <?php elseif ($_GET['error'] === 'empty'): ?>
-            <div class="success-banner" style="background:#fef3c7;color:#92400e;">
-                Review cannot be empty.
-            </div>
+            <div class="success-banner" style="background:#fef3c7;color:#92400e;">Review cannot be empty.</div>
             <?php endif; ?>
         <?php endif; ?>
 
@@ -916,13 +987,13 @@ $review_filter = isset($_GET['review_filter']) ? $_GET['review_filter'] : 'all';
                         </div>
                         <div class="dept-body">
                             <?php foreach ($available as $f):
-                                $f_avatar = (!empty($f['photo']) && file_exists($f['photo']))
+                                $f_avatar_modal = (!empty($f['photo']) && file_exists($f['photo']))
                                     ? htmlspecialchars($f['photo'])
                                     : 'https://ui-avatars.com/api/?name='.urlencode($f['name']).'&background=8B0000&color=fff&size=40';
                             ?>
                             <div class="faculty-option"
-                                 onclick="selectFaculty(<?php echo $f['id']; ?>, '<?php echo htmlspecialchars(addslashes($f['name'])); ?>', '<?php echo htmlspecialchars(addslashes($dept)); ?>', '<?php echo $f_avatar; ?>')">
-                                <img src="<?php echo $f_avatar; ?>" alt="">
+                                 onclick="selectFaculty(<?php echo $f['id']; ?>, '<?php echo htmlspecialchars(addslashes($f['name'])); ?>', '<?php echo htmlspecialchars(addslashes($dept)); ?>', '<?php echo $f_avatar_modal; ?>')">
+                                <img src="<?php echo $f_avatar_modal; ?>" alt="">
                                 <?php echo htmlspecialchars($f['name']); ?>
                             </div>
                             <?php endforeach; ?>
@@ -1036,5 +1107,26 @@ $review_filter = isset($_GET['review_filter']) ? $_GET['review_filter'] : 'all';
 
 <script src="assets/js/dashboard.js"></script>
 <script src="assets/js/session_timeout.js"></script>
+
+<script>
+// Wire pagination visibility to Show More
+(function() {
+    const pag = document.getElementById('pagination');
+    if (pag) {
+        // Pagination div starts hidden; showMoreFaculty() will reveal it via paginateCards()
+        // We override renderPagination to also show the pagination container
+        const origRenderPag = window.renderPagination;
+        // Ensure pagination div is visible when pagination renders
+        const origPaginateCards = window.paginateCards;
+        window.paginateCards = function(cards) {
+            if (pag) pag.style.display = 'flex';
+            // Call the original
+            const totalPages = Math.ceil(cards.length / 8);
+            window.currentPage = 1;
+            window.renderPage(cards, 1, totalPages);
+        };
+    }
+})();
+</script>
 </body>
 </html>

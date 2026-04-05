@@ -13,7 +13,6 @@
         body.classList.toggle('sidebar-collapsed', collapsed);
     }
 
-    // Restore saved state
     applyState(localStorage.getItem(STORAGE_KEY) === '1');
 
     if (toggle) {
@@ -91,18 +90,26 @@ if (clearSearch) {
 /* ── Department filter (client-side) ──────────────────────── */
 function filterFaculty() {
     const dept = document.getElementById('deptFilter').value;
+    // If show-more hasn't been clicked yet, reveal all first so filter works
     const allCards = document.querySelectorAll('.faculty-card');
     allCards.forEach(card => {
-        card.style.display = (dept === 'all' || card.dataset.dept === dept) ? '' : 'none';
+        const matchesDept = (dept === 'all' || card.dataset.dept === dept);
+        card.style.display = matchesDept ? '' : 'none';
     });
+    // Hide show-more card during dept filter to avoid confusion
+    const showMoreCard = document.getElementById('showMoreCard');
+    if (showMoreCard) showMoreCard.style.display = 'none';
+    // Show pagination after filter
     const visible = [...allCards].filter(c => c.style.display !== 'none');
     paginateCards(visible);
 }
 
-/* ── Faculty pagination — 8 per page ──────────────────────── */
-const CARDS_PER_PAGE = 5;
-let currentPage = 1;
-const pagination = document.getElementById('pagination');
+/* ══════════════════════════════════════════════════════════
+   FACULTY PAGINATION — 8 per page (shown after Show More)
+   ══════════════════════════════════════════════════════════ */
+const CARDS_PER_PAGE = 8;
+let currentPage      = 1;
+const pagination     = document.getElementById('pagination');
 
 function paginateCards(cards) {
     const totalPages = Math.ceil(cards.length / CARDS_PER_PAGE);
@@ -113,6 +120,7 @@ function paginateCards(cards) {
 function renderPage(cards, page, totalPages) {
     const start = (page - 1) * CARDS_PER_PAGE;
     const end   = start + CARDS_PER_PAGE;
+    // Hide all, then show slice
     document.querySelectorAll('.faculty-card').forEach(card => card.style.display = 'none');
     cards.slice(start, end).forEach(card => card.style.display = '');
     renderPagination(cards, page, totalPages);
@@ -149,6 +157,23 @@ function renderPagination(cards, page, totalPages) {
     next.disabled = page === totalPages;
     next.onclick = () => { currentPage++; renderPage(cards, currentPage, totalPages); };
     pagination.appendChild(next);
+}
+
+/* ── Show More faculty ────────────────────────────────────── */
+function showMoreFaculty() {
+    // Reveal all hidden cards
+    document.querySelectorAll('.faculty-card.hidden-card').forEach(c => {
+        c.classList.remove('hidden-card');
+        c.style.display = '';
+    });
+
+    // Hide the show-more card
+    const showMoreCard = document.getElementById('showMoreCard');
+    if (showMoreCard) showMoreCard.style.display = 'none';
+
+    // Now paginate all visible cards
+    const allCards = [...document.querySelectorAll('.faculty-card')];
+    paginateCards(allCards);
 }
 
 /* ── Review modal ─────────────────────────────────────────── */
@@ -281,9 +306,7 @@ function setReviewFilter(filter, e) {
     const emptyState   = document.getElementById('reviewEmptyState');
     if (emptyState) emptyState.style.display = visibleCount === 0 ? 'flex' : 'none';
 
-    // Update bulk select state
     updateReviewBulkBar();
-
     reviewPage = 1;
     paginateReviews();
 }
@@ -304,7 +327,6 @@ function toggleDeleteMode() {
         btn.innerHTML = '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg> Delete';
         btn.style.background = '';
         btn.style.color = '';
-        // Uncheck all
         document.querySelectorAll('.review-row-cb').forEach(cb => cb.checked = false);
         bar.classList.remove('show');
         updateReviewBulkBar();
@@ -509,9 +531,17 @@ function addBubble(text, from, id) {
 
 /* ── DOMContentLoaded init ────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
-    // Init faculty pagination
+    // Faculty: show first CARDS_PER_PAGE cards, hide the rest (Show More handles them)
     const allFacultyCards = [...document.querySelectorAll('.faculty-card')];
-    if (allFacultyCards.length > 0) paginateCards(allFacultyCards);
+    if (allFacultyCards.length > CARDS_PER_PAGE) {
+        // Cards beyond the first page get hidden-card class (already set in PHP)
+        // First CARDS_PER_PAGE are visible; Show More reveals the rest + pagination
+    }
+    // If total cards <= CARDS_PER_PAGE, no Show More needed, hide show-more card
+    const showMoreCard = document.getElementById('showMoreCard');
+    if (showMoreCard && allFacultyCards.length <= CARDS_PER_PAGE) {
+        showMoreCard.style.display = 'none';
+    }
 
     // Init review filter
     document.querySelectorAll('.review-row').forEach(r => r.dataset.filtered = 'show');

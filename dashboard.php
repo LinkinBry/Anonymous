@@ -329,8 +329,8 @@ if ($activity_res) {
 
 $review_filter = isset($_GET['review_filter']) ? $_GET['review_filter'] : 'all';
 
-// Cards per page for initial view (Show More reveals the rest)
-define('FACULTY_INITIAL', 8);
+// Cards shown initially in the faculty grid (6th spot reserved for Show More)
+define('FACULTY_INITIAL', 5);
 ?>
 <!DOCTYPE html>
 <html lang="en">

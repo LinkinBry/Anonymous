@@ -93,7 +93,7 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
     gap: 18px;
-    margin-bottom: 0;
+    margin-bottom: 28px;
 }
 
 .faculty-card {
@@ -369,7 +369,16 @@ body.review-delete-mode .review-row-checkbox { max-width: 24px; opacity: 1; }
     flex-shrink: 0;
 }
 .action-icon-btn:hover     { border-color: #1d4ed8; color: #1d4ed8; background: #eff6ff; }
-.action-icon-del:hover     { border-color: #ef4444; color: #ef4444; background: #fee2e2; }
+.action-icon-del {
+    border-color: #ef4444;
+    color: white;
+    background: #ef4444;
+}
+.action-icon-del:hover {
+    border-color: #dc2626;
+    color: white;
+    background: #dc2626;
+}
 
 /* ── Empty state ──────────────────────────────────────────── */
 .review-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; text-align: center; }

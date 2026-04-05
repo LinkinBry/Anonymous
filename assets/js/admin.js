@@ -48,7 +48,7 @@ function paginateSection(wrapId, paginationId, rows) {
     if (!pag) return;
     pag.innerHTML = '';
 
-    if (total <= SECTION_PER_PAGE) return;  // no pagination needed
+    if (total < SECTION_PER_PAGE) return;  // no pagination needed
 
     // Info
     const info = document.createElement('span');

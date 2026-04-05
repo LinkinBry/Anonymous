@@ -186,7 +186,7 @@ $avatar = !empty($user['profile_pic']) && file_exists($user['profile_pic'])
 
                         <div class="form-row">
                             <div class="form-group">
-                                <label>Full Name</label>
+                                <label>Pseudonym</label>
                                 <input type="text" name="fullname" value="<?php echo htmlspecialchars($user['fullname']); ?>" required>
                             </div>
                             <div class="form-group">

@@ -1026,7 +1026,7 @@ $review_filter = isset($_GET['review_filter']) ? $_GET['review_filter'] : 'all';
         <button class="faq-chip" onclick="askFaq('Why was my review rejected?')">Why was my review rejected?</button>
     </div>
     <div id="chat-messages">
-        <div class="chat-msg bot">Hi! Ask me anything about using AnonymousReview. 👋</div>
+        <div class="chat-msg bot">Hi! Ask me anything about using OlshcoReview. 👋</div>
     </div>
     <div id="chat-footer">
         <input id="chat-input" type="text" placeholder="Type a question..." onkeydown="if(event.key==='Enter') sendChat()">

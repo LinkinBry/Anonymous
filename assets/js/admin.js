@@ -18,66 +18,81 @@
     }
 })();
 
-/* ── Table pagination (10 per page) ───────────────────────── */
-const ADMIN_PER_PAGE = 10;
-const pagState = {};
+/* ══════════════════════════════════════════════════════════════
+   UNIVERSAL 5-ITEM SECTION PAGINATOR
+   Works on any wrap with class .admin-pageable-row
+   ══════════════════════════════════════════════════════════════ */
+const SECTION_PER_PAGE = 5;
+const sectionPages     = {};  // { sectionKey: currentPage }
 
-function paginateTable(tbodyId) {
-    const tbody = document.getElementById(tbodyId);
-    if (!tbody) return;
-    const rows    = [...tbody.querySelectorAll('tr[data-text]')];
-    const visible = rows.filter(r => r.style.display !== 'none');
-    const page    = pagState[tbodyId] || 1;
-    const total   = visible.length;
-    const totalPages = Math.ceil(total / ADMIN_PER_PAGE) || 1;
-    const start   = (page - 1) * ADMIN_PER_PAGE;
-    const end     = start + ADMIN_PER_PAGE;
+/**
+ * paginateSection(wrapId, paginationId, rows)
+ * Shows 5 rows at a time, renders prev/page-nums/next in paginationId.
+ * Only renders pagination if rows.length > SECTION_PER_PAGE.
+ */
+function paginateSection(wrapId, paginationId, rows) {
+    const key  = wrapId;
+    const page = sectionPages[key] || 1;
+    const total = rows.length;
+    const totalPages = Math.ceil(total / SECTION_PER_PAGE) || 1;
+    const safeP = Math.min(page, totalPages);
+    sectionPages[key] = safeP;
 
-    rows.forEach(r => r.style.display = 'none');
-    visible.slice(start, end).forEach(r => r.style.display = '');
+    const start = (safeP - 1) * SECTION_PER_PAGE;
+    const end   = start + SECTION_PER_PAGE;
 
-    // Render pagination UI
-    const pagId = tbodyId + '-pag';
-    let pag = document.getElementById(pagId);
-    if (!pag) {
-        pag = document.createElement('div');
-        pag.id = pagId;
-        pag.className = 'table-pagination';
-        const tbl = tbody.closest('table');
-        if (tbl && tbl.parentNode) tbl.parentNode.insertBefore(pag, tbl.nextSibling);
-    }
+    // Hide all rows in wrap, show only current page
+    rows.forEach((r, i) => { r.style.display = (i >= start && i < end) ? '' : 'none'; });
+
+    const pag = document.getElementById(paginationId);
+    if (!pag) return;
     pag.innerHTML = '';
-    if (total === 0) return;
 
+    if (total <= SECTION_PER_PAGE) return;  // no pagination needed
+
+    // Info
     const info = document.createElement('span');
     info.className = 'pag-info';
     info.textContent = `${Math.min(start + 1, total)}–${Math.min(end, total)} of ${total}`;
     pag.appendChild(info);
 
+    // Prev
     const prev = document.createElement('button');
     prev.className = 'pag-btn'; prev.type = 'button'; prev.textContent = '←';
-    prev.disabled = page <= 1;
-    prev.onclick = () => { pagState[tbodyId] = page - 1; paginateTable(tbodyId); };
+    prev.disabled = safeP <= 1;
+    prev.onclick = () => { sectionPages[key] = safeP - 1; paginateSection(wrapId, paginationId, rows); };
     pag.appendChild(prev);
 
-    // Show limited page buttons
+    // Page buttons (max 5 shown)
     const maxBtns = 5;
-    let startBtn = Math.max(1, page - Math.floor(maxBtns / 2));
+    let startBtn = Math.max(1, safeP - Math.floor(maxBtns / 2));
     let endBtn   = Math.min(totalPages, startBtn + maxBtns - 1);
     if (endBtn - startBtn < maxBtns - 1) startBtn = Math.max(1, endBtn - maxBtns + 1);
     for (let i = startBtn; i <= endBtn; i++) {
         const btn = document.createElement('button');
-        btn.className = 'pag-btn' + (i === page ? ' active' : '');
+        btn.className = 'pag-btn' + (i === safeP ? ' active' : '');
         btn.type = 'button'; btn.textContent = i;
-        btn.onclick = ((pg) => () => { pagState[tbodyId] = pg; paginateTable(tbodyId); })(i);
+        const pg = i;
+        btn.onclick = () => { sectionPages[key] = pg; paginateSection(wrapId, paginationId, rows); };
         pag.appendChild(btn);
     }
 
+    // Next
     const next = document.createElement('button');
     next.className = 'pag-btn'; next.type = 'button'; next.textContent = '→';
-    next.disabled = page >= totalPages;
-    next.onclick = () => { pagState[tbodyId] = page + 1; paginateTable(tbodyId); };
+    next.disabled = safeP >= totalPages;
+    next.onclick = () => { sectionPages[key] = safeP + 1; paginateSection(wrapId, paginationId, rows); };
     pag.appendChild(next);
+}
+
+/** Collect visible rows from a wrap and re-paginate */
+function repaginate(wrapId, paginationId, selector) {
+    const wrap = document.getElementById(wrapId);
+    if (!wrap) return;
+    // All rows that haven't been hidden by filter
+    const rows = [...wrap.querySelectorAll(selector || '.admin-pageable-row')].filter(r => !r.classList.contains('filter-hidden'));
+    sectionPages[wrapId] = 1;
+    paginateSection(wrapId, paginationId, rows);
 }
 
 /* ── Smooth scroll for sidebar nav anchors ────────────────── */
@@ -96,7 +111,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (el) setTimeout(() => el.scrollIntoView({ behavior: 'auto', block: 'start' }), 80);
     }
 
-    /* init chart */
+    /* ── Init all section paginators ── */
+    initAllPaginators();
+
+    /* ── Chart ── */
     if (document.getElementById('weeklyChart')) {
         const s = document.createElement('script');
         s.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js';
@@ -104,37 +122,42 @@ document.addEventListener('DOMContentLoaded', () => {
         document.head.appendChild(s);
     }
 
-    /* init table pagination */
-    ['users-tbody', 'approved-tbody'].forEach(id => {
-        pagState[id] = 1;
-        paginateTable(id);
-    });
-
-    /* edit users toggle */
+    /* ── Edit users toggle ── */
     const editBtn = document.getElementById('edit_users_btn');
     if (editBtn) {
         editBtn.addEventListener('click', function () {
-            const th      = document.getElementById('select_all_th');
             const tds     = document.querySelectorAll('.checkbox_td');
-            const showing = th.style.display !== 'none';
-            th.style.display = showing ? 'none' : 'table-cell';
-            tds.forEach(td => td.style.display = showing ? 'none' : 'table-cell');
+            const showing = tds.length > 0 && tds[0].style.display !== 'none';
+            tds.forEach(td => td.style.display = showing ? 'none' : 'inline-flex');
             this.innerHTML = showing
                 ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit'
                 : '✕ Cancel';
             if (showing) {
                 document.querySelectorAll('.user_checkbox').forEach(c => c.checked = false);
-                document.getElementById('select_all_users').checked = false;
                 toggleUserBulk();
             }
-        });
-        document.getElementById('select_all_users').addEventListener('change', function () {
-            document.querySelectorAll('.user_checkbox').forEach(c => c.checked = this.checked);
-            toggleUserBulk();
         });
         document.querySelectorAll('.user_checkbox').forEach(c => c.addEventListener('change', toggleUserBulk));
     }
 });
+
+function initAllPaginators() {
+    // Pending reviews
+    const pendingRows = [...document.querySelectorAll('#pending-rows-wrap .admin-pageable-row')];
+    if (pendingRows.length) paginateSection('pending-rows-wrap', 'pending-pagination', pendingRows);
+
+    // Faculty
+    const facRows = [...document.querySelectorAll('#fac-rows-wrap .admin-pageable-row')];
+    if (facRows.length) paginateSection('fac-rows-wrap', 'faculty-pagination', facRows);
+
+    // Users
+    const userRows = [...document.querySelectorAll('#users-rows-wrap .admin-pageable-row')];
+    if (userRows.length) paginateSection('users-rows-wrap', 'users-pagination', userRows);
+
+    // Approved reviews
+    const approvedRows = [...document.querySelectorAll('#approved-rows-wrap .admin-pageable-row')];
+    if (approvedRows.length) paginateSection('approved-rows-wrap', 'approved-pagination', approvedRows);
+}
 
 /* ── Escape helper ────────────────────────────────────────── */
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -160,55 +183,68 @@ function starsHtml(val, size) {
 function filterPendingRows() {
     const q   = document.getElementById('pending-search').value.toLowerCase().trim();
     const sen = document.getElementById('pending-sentiment-filter').value.toLowerCase();
+    const rows = [...document.querySelectorAll('#pending-rows-wrap .admin-pageable-row')];
     let   any = false;
-    document.querySelectorAll('#pending-rows-wrap .pend-row').forEach(row => {
+    rows.forEach(row => {
         const matchText = !q    || row.dataset.text.includes(q);
         const matchSen  = !sen  || row.dataset.sentiment === sen;
         const show = matchText && matchSen;
-        row.style.display = show ? '' : 'none';
+        row.classList.toggle('filter-hidden', !show);
         if (show) any = true;
     });
     document.getElementById('no-pending-results').style.display = any ? 'none' : '';
+    // Re-paginate visible rows
+    const visible = rows.filter(r => !r.classList.contains('filter-hidden'));
+    sectionPages['pending-rows-wrap'] = 1;
+    paginateSection('pending-rows-wrap', 'pending-pagination', visible);
 }
 
 function filterFacRows() {
     const q    = document.getElementById('faculties-search').value.toLowerCase().trim();
     const dept = document.getElementById('faculties-dept-filter').value.toLowerCase();
+    const rows = [...document.querySelectorAll('#fac-rows-wrap .admin-pageable-row')];
     let   any  = false;
-    document.querySelectorAll('#fac-rows-wrap .fac-row').forEach(row => {
+    rows.forEach(row => {
         const matchText = !q    || row.dataset.text.includes(q);
         const matchDept = !dept || row.dataset.dept === dept;
         const show = matchText && matchDept;
-        row.style.display = show ? '' : 'none';
+        row.classList.toggle('filter-hidden', !show);
         if (show) any = true;
     });
     document.getElementById('no-fac-results').style.display = any ? 'none' : '';
+    const visible = rows.filter(r => !r.classList.contains('filter-hidden'));
+    sectionPages['fac-rows-wrap'] = 1;
+    paginateSection('fac-rows-wrap', 'faculty-pagination', visible);
 }
 
 function filterUserRows() {
     const q = document.getElementById('users-search').value.toLowerCase().trim();
-    document.querySelectorAll('#users-tbody tr[data-text]').forEach(row => {
-        row.style.display = !q || row.dataset.text.includes(q) ? '' : 'none';
+    const rows = [...document.querySelectorAll('#users-rows-wrap .admin-pageable-row')];
+    rows.forEach(row => {
+        row.classList.toggle('filter-hidden', q && !row.dataset.text.includes(q));
     });
-    pagState['users-tbody'] = 1;
-    paginateTable('users-tbody');
+    const visible = rows.filter(r => !r.classList.contains('filter-hidden'));
+    sectionPages['users-rows-wrap'] = 1;
+    paginateSection('users-rows-wrap', 'users-pagination', visible);
 }
 
 function filterApprovedRows() {
     const q   = document.getElementById('approved-search').value.toLowerCase().trim();
     const fac = document.getElementById('approved-faculty-filter').value.toLowerCase();
+    const rows = [...document.querySelectorAll('#approved-rows-wrap .admin-pageable-row')];
     let   any = false;
-    document.querySelectorAll('#approved-tbody tr[data-text]').forEach(row => {
+    rows.forEach(row => {
         const matchText = !q   || row.dataset.text.includes(q);
         const matchFac  = !fac || row.dataset.text.includes(fac);
         const show = matchText && matchFac;
-        row.style.display = show ? '' : 'none';
+        row.classList.toggle('filter-hidden', !show);
         if (show) any = true;
     });
     const noRes = document.getElementById('no-approved-results');
     if (noRes) noRes.style.display = any ? 'none' : '';
-    pagState['approved-tbody'] = 1;
-    paginateTable('approved-tbody');
+    const visible = rows.filter(r => !r.classList.contains('filter-hidden'));
+    sectionPages['approved-rows-wrap'] = 1;
+    paginateSection('approved-rows-wrap', 'approved-pagination', visible);
 }
 
 /* ── Bulk helpers ─────────────────────────────────────────── */

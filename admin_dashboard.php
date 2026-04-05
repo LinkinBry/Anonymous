@@ -174,7 +174,9 @@ $total_users     = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FRO
 $total_admins    = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM users WHERE role='admin'"))['c'];
 $total_faculties = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM faculties"))['c'];
 $total_reviews   = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM reviews"))['c'];
-$pending_count   = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM reviews WHERE status='pending'"))['c'];
+
+// ── CRITICAL: Single source of truth for pending count ──────────────────
+$pending_count   = intval(mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM reviews WHERE status='pending'"))['c']);
 $approved_count  = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM reviews WHERE status='approved'"))['c'];
 $rejected_count  = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM reviews WHERE status='rejected'"))['c'];
 
@@ -389,7 +391,9 @@ $ef_arr = $af_arr;
             <div class="section-title">
                 <svg viewBox="0 0 24 24" fill="none" stroke="var(--maroon)" stroke-width="2" style="width:16px;height:16px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                 Pending Reviews
-                <?php if ($pending_count > 0): ?><span class="section-badge" id="pendingSecBadge"><?php echo $pending_count; ?></span><?php endif; ?>
+                <?php if ($pending_count > 0): ?>
+                <span class="section-badge" id="pendingSecBadge"><?php echo $pending_count; ?></span>
+                <?php endif; ?>
             </div>
             <div style="display:flex;gap:8px;align-items:center;">
                 <div class="search-box" style="min-width:180px;">
@@ -416,12 +420,14 @@ $ef_arr = $af_arr;
             </button>
         </div>
 
+        <!-- Pending rows — all rendered, JS handles pagination -->
         <div id="pending-rows-wrap">
-        <?php $has_pending = false; while ($r = mysqli_fetch_assoc($pending_reviews)): $has_pending = true;
+        <?php $has_pending = false; $pending_rows_data = []; while ($r = mysqli_fetch_assoc($pending_reviews)): $has_pending = true;
+            $pending_rows_data[] = $r;
             $s = $r['sentiment'] ?? 'neutral';
             $cls = $s === 'positive' ? 'ai-pos' : ($s === 'negative' ? 'ai-neg' : 'ai-neu');
         ?>
-        <div class="pend-row" data-text="<?php echo htmlspecialchars(strtolower($r['review_text'].' '.$r['user_fullname'].' '.$r['faculty_name'])); ?>" data-sentiment="<?php echo $s; ?>">
+        <div class="pend-row admin-pageable-row" data-section="pending" data-text="<?php echo htmlspecialchars(strtolower($r['review_text'].' '.$r['user_fullname'].' '.$r['faculty_name'])); ?>" data-sentiment="<?php echo $s; ?>">
             <input type="checkbox" name="selected_reviews[]" value="<?php echo $r['id']; ?>" class="pend-check review_cb" onchange="updateReviewBulk()">
             <div class="pend-avatar" style="overflow:hidden;padding:0;">
                 <?php if (!empty($r['user_pic']) && file_exists($r['user_pic'])): ?>
@@ -468,6 +474,7 @@ $ef_arr = $af_arr;
         <?php endif; ?>
         <div id="no-pending-results" style="display:none;text-align:center;padding:24px;color:var(--gray-400);font-size:13px;">No results match your search.</div>
         </div>
+        <div id="pending-pagination" class="section-pagination"></div>
         </form>
     </div>
 
@@ -510,7 +517,7 @@ $ef_arr = $af_arr;
                 $full   = floor($avg);
                 $fphoto = (!empty($f['photo']) && file_exists($f['photo'])) ? htmlspecialchars($f['photo']) : null;
             ?>
-            <div class="fac-row" data-text="<?php echo htmlspecialchars(strtolower($f['name'].' '.($f['department']??''))); ?>" data-dept="<?php echo htmlspecialchars(strtolower($f['department']??'')); ?>">
+            <div class="fac-row admin-pageable-row" data-section="faculty" data-text="<?php echo htmlspecialchars(strtolower($f['name'].' '.($f['department']??''))); ?>" data-dept="<?php echo htmlspecialchars(strtolower($f['department']??'')); ?>">
                 <span class="fac-row-rank"><?php echo $fac_rank; ?></span>
                 <div class="fac-row-av">
                     <?php if ($fphoto): ?><img src="<?php echo $fphoto; ?>" alt="">
@@ -540,6 +547,7 @@ $ef_arr = $af_arr;
             <?php endwhile; ?>
             <div id="no-fac-results" style="display:none;text-align:center;padding:24px;color:var(--gray-400);font-size:13px;">No faculty found.</div>
             </div>
+            <div id="faculty-pagination" class="section-pagination"></div>
         </div>
 
         <!-- ── Users Table ───────────────────────────────────────────────── -->
@@ -561,44 +569,33 @@ $ef_arr = $af_arr;
                 </div>
             </div>
             <form method="POST" id="usersForm">
-            <table class="admin-table">
-                <thead><tr>
-                    <th style="display:none;width:34px;" id="select_all_th"><input type="checkbox" id="select_all_users"></th>
-                    <th style="width:38px;"></th>
-                    <th>User</th>
-                    <th>Email</th>
-                    <th style="width:90px;"></th>
-                </tr></thead>
-                <tbody id="users-tbody">
-                <?php while ($u = mysqli_fetch_assoc($users)): ?>
-                <tr data-text="<?php echo htmlspecialchars(strtolower($u['fullname'].' '.$u['username'].' '.$u['email'])); ?>">
-                    <td style="display:none;" class="checkbox_td">
-                        <input type="checkbox" name="selected_users[]" value="<?php echo $u['id']; ?>" class="user_checkbox">
-                    </td>
-                    <td>
-                        <?php if (!empty($u['profile_pic']) && file_exists($u['profile_pic'])): ?>
-                        <img class="user-avatar" src="<?php echo htmlspecialchars($u['profile_pic']); ?>" alt="">
-                        <?php else: ?>
-                        <div class="user-av-circle"><?php echo strtoupper(substr($u['fullname'], 0, 2)); ?></div>
-                        <?php endif; ?>
-                    </td>
-                    <td>
-                        <div style="font-size:12px;font-weight:600;color:var(--gray-800);"><?php echo htmlspecialchars($u['fullname']); ?></div>
-                        <div style="font-size:11px;color:var(--gray-400);">@<?php echo htmlspecialchars($u['username']); ?></div>
-                    </td>
-                    <td style="font-size:11px;color:var(--gray-500);"><?php echo htmlspecialchars($u['email']); ?></td>
-                    <td>
-                        <div style="display:flex;gap:3px;">
-                            <button type="button" class="btn btn-outline" style="padding:3px 7px;font-size:10px;"
-                                    onclick="openUserModal(<?php echo $u['id']; ?>,'<?php echo htmlspecialchars(addslashes($u['fullname'])); ?>','<?php echo htmlspecialchars(addslashes($u['username'])); ?>','<?php echo htmlspecialchars(addslashes($u['email'])); ?>','<?php echo (!empty($u['profile_pic'])&&file_exists($u['profile_pic']))?htmlspecialchars(addslashes($u['profile_pic'])):'https://ui-avatars.com/api/?name='.urlencode($u['fullname']).'&background=7C0A02&color=fff&size=80'; ?>')">View</button>
-                            <button type="button" class="btn btn-red" style="padding:3px 7px;font-size:10px;"
-                                    onclick="confirmDeleteUser(<?php echo $u['id']; ?>,'<?php echo htmlspecialchars(addslashes($u['fullname'])); ?>')"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
-                        </div>
-                    </td>
-                </tr>
-                <?php endwhile; ?>
-                </tbody>
-            </table>
+            <div id="users-rows-wrap">
+            <?php while ($u = mysqli_fetch_assoc($users)): ?>
+            <div class="admin-pageable-row" data-section="users" data-text="<?php echo htmlspecialchars(strtolower($u['fullname'].' '.$u['username'].' '.$u['email'])); ?>" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--gray-100);">
+                <div class="checkbox_td" style="display:none;flex-shrink:0;">
+                    <input type="checkbox" name="selected_users[]" value="<?php echo $u['id']; ?>" class="user_checkbox">
+                </div>
+                <div style="flex-shrink:0;">
+                    <?php if (!empty($u['profile_pic']) && file_exists($u['profile_pic'])): ?>
+                    <img class="user-avatar" src="<?php echo htmlspecialchars($u['profile_pic']); ?>" alt="">
+                    <?php else: ?>
+                    <div class="user-av-circle"><?php echo strtoupper(substr($u['fullname'], 0, 2)); ?></div>
+                    <?php endif; ?>
+                </div>
+                <div style="flex:1;min-width:0;">
+                    <div style="font-size:13px;font-weight:600;color:var(--gray-800);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><?php echo htmlspecialchars($u['fullname']); ?></div>
+                    <div style="font-size:11px;color:var(--gray-400);">@<?php echo htmlspecialchars($u['username']); ?> · <?php echo htmlspecialchars($u['email']); ?></div>
+                </div>
+                <div style="display:flex;gap:3px;flex-shrink:0;">
+                    <button type="button" class="btn btn-outline" style="padding:3px 7px;font-size:10px;"
+                            onclick="openUserModal(<?php echo $u['id']; ?>,'<?php echo htmlspecialchars(addslashes($u['fullname'])); ?>','<?php echo htmlspecialchars(addslashes($u['username'])); ?>','<?php echo htmlspecialchars(addslashes($u['email'])); ?>','<?php echo (!empty($u['profile_pic'])&&file_exists($u['profile_pic']))?htmlspecialchars(addslashes($u['profile_pic'])):'https://ui-avatars.com/api/?name='.urlencode($u['fullname']).'&background=7C0A02&color=fff&size=80'; ?>')">View</button>
+                    <button type="button" class="btn btn-red" style="padding:3px 7px;font-size:10px;"
+                            onclick="confirmDeleteUser(<?php echo $u['id']; ?>,'<?php echo htmlspecialchars(addslashes($u['fullname'])); ?>')"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
+                </div>
+            </div>
+            <?php endwhile; ?>
+            </div>
+            <div id="users-pagination" class="section-pagination"></div>
             <div class="bulk-bar" id="bulk_actions">
                 <span id="selected_count">0 users selected</span>
                 <button type="submit" name="bulk_delete_users" class="btn btn-red" style="font-size:11px;" onclick="return confirm('Delete selected users permanently?')">Delete Selected</button>
@@ -630,33 +627,37 @@ $ef_arr = $af_arr;
             </select>
         </div>
         <form method="POST">
-        <table class="admin-table">
-            <thead><tr>
-                <th style="width:34px;"><input type="checkbox" id="select_all_approved" onchange="document.querySelectorAll('.approved_cb').forEach(c=>c.checked=this.checked);updateApprovedBulk();"></th>
-                <th>Faculty</th><th>Reviewer</th><th>Date</th><th style="width:110px;"></th>
-            </tr></thead>
-            <tbody id="approved-tbody">
-            <?php $has_approved = false; while ($r = mysqli_fetch_assoc($approved_reviews)): $has_approved = true; ?>
-            <tr data-text="<?php echo htmlspecialchars(strtolower($r['faculty_name'].' '.$r['user_fullname'])); ?>">
-                <td><input type="checkbox" name="selected_approved[]" value="<?php echo $r['id']; ?>" class="approved_cb" onchange="updateApprovedBulk()"></td>
-                <td style="font-weight:500;font-size:12px;"><?php echo htmlspecialchars($r['faculty_name']); ?></td>
-                <td><span class="pseudo-name"><?php echo htmlspecialchars($r['user_fullname']); ?></span></td>
-                <td style="font-size:11px;color:var(--gray-400);"><?php echo date("M j, Y", strtotime($r['created_at'])); ?></td>
-                <td>
-                    <div style="display:flex;gap:3px;">
-                        <button type="button" class="btn btn-outline" style="padding:3px 8px;font-size:10px;"
-                                onclick="openModal('<?php echo htmlspecialchars(addslashes($r['review_text'])); ?>','<?php echo htmlspecialchars(addslashes($r['faculty_name'])); ?>','<?php echo htmlspecialchars(addslashes($r['user_fullname'])); ?>',<?php echo intval($r['rating_teaching']); ?>,<?php echo intval($r['rating_communication']); ?>,<?php echo intval($r['rating_punctuality']); ?>,<?php echo intval($r['rating_fairness']); ?>,<?php echo intval($r['rating_overall']); ?>,'<?php echo htmlspecialchars(addslashes($r['review_photo'])); ?>')">View</button>
-                        <a href="reject_review.php?id=<?php echo $r['id']; ?>" class="btn btn-red" style="padding:3px 8px;font-size:10px;" onclick="return confirm('Delete this approved review?')"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg></a>
-                    </div>
-                </td>
-            </tr>
-            <?php endwhile; ?>
-            <?php if (!$has_approved): ?>
-            <tr><td colspan="5" style="text-align:center;padding:28px;color:var(--gray-400);font-size:13px;">No approved reviews yet.</td></tr>
-            <?php endif; ?>
-            </tbody>
-        </table>
+        <!-- select all row -->
+        <div style="padding:8px 16px;border-bottom:1px solid var(--gray-100);display:flex;align-items:center;gap:8px;background:var(--gray-50);">
+            <input type="checkbox" id="select_all_approved" onchange="document.querySelectorAll('.approved_cb').forEach(c=>c.checked=this.checked);updateApprovedBulk();">
+            <label for="select_all_approved" style="font-size:12px;color:var(--gray-500);cursor:pointer;">Select all visible</label>
+        </div>
+        <div id="approved-rows-wrap">
+        <?php $has_approved = false; while ($r = mysqli_fetch_assoc($approved_reviews)): $has_approved = true; ?>
+        <div class="admin-pageable-row" data-section="approved" data-text="<?php echo htmlspecialchars(strtolower($r['faculty_name'].' '.$r['user_fullname'])); ?>" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--gray-100);">
+            <div style="flex-shrink:0;"><input type="checkbox" name="selected_approved[]" value="<?php echo $r['id']; ?>" class="approved_cb" onchange="updateApprovedBulk()"></div>
+            <div style="flex:1;min-width:0;">
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                    <span style="font-weight:600;font-size:13px;color:var(--maroon);"><?php echo htmlspecialchars($r['faculty_name']); ?></span>
+                    <span style="font-size:11px;color:var(--gray-400);">·</span>
+                    <span class="pseudo-name"><?php echo htmlspecialchars($r['user_fullname']); ?></span>
+                    <span style="font-size:11px;color:var(--gray-400);margin-left:auto;"><?php echo date("M j, Y", strtotime($r['created_at'])); ?></span>
+                </div>
+                <div style="font-size:12px;color:var(--gray-600);margin-top:2px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;"><?php echo htmlspecialchars($r['review_text']); ?></div>
+            </div>
+            <div style="display:flex;gap:3px;flex-shrink:0;">
+                <button type="button" class="btn btn-outline" style="padding:3px 8px;font-size:10px;"
+                        onclick="openModal('<?php echo htmlspecialchars(addslashes($r['review_text'])); ?>','<?php echo htmlspecialchars(addslashes($r['faculty_name'])); ?>','<?php echo htmlspecialchars(addslashes($r['user_fullname'])); ?>',<?php echo intval($r['rating_teaching']); ?>,<?php echo intval($r['rating_communication']); ?>,<?php echo intval($r['rating_punctuality']); ?>,<?php echo intval($r['rating_fairness']); ?>,<?php echo intval($r['rating_overall']); ?>,'<?php echo htmlspecialchars(addslashes($r['review_photo'])); ?>')">View</button>
+                <a href="reject_review.php?id=<?php echo $r['id']; ?>" class="btn btn-red" style="padding:3px 8px;font-size:10px;" onclick="return confirm('Delete this approved review?')"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg></a>
+            </div>
+        </div>
+        <?php endwhile; ?>
+        <?php if (!$has_approved): ?>
+        <div style="text-align:center;padding:28px;color:var(--gray-400);font-size:13px;">No approved reviews yet.</div>
+        <?php endif; ?>
+        </div>
         <div id="no-approved-results" style="display:none;text-align:center;padding:16px;color:var(--gray-400);font-size:13px;">No results match your search.</div>
+        <div id="approved-pagination" class="section-pagination"></div>
         <div class="bulk-bar" id="approved_bulk_bar">
             <span id="approved_selected_count">0 reviews selected</span>
             <button type="submit" name="bulk_delete_approved" class="btn btn-red" style="font-size:11px;" onclick="return confirm('Delete selected reviews permanently?')"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg> Delete Selected</button>

@@ -18,9 +18,16 @@ $avatar = !empty($user['profile_pic']) && file_exists($user['profile_pic'])
     ? $user['profile_pic']
     : 'https://ui-avatars.com/api/?name=' . urlencode($user['fullname']) . '&background=6B0000&color=fff&size=80';
 
+// ── Notifications: show last 5 (approved/rejected), badge = unread count ──
 $notif_count   = 0;
 $notifications = [];
-$notif_res     = mysqli_query($conn, "SELECT * FROM notifications WHERE user_id='$user_id' AND (message LIKE '%approved%' OR message LIKE '%rejected%') AND status='unread' ORDER BY created_at DESC LIMIT 5");
+$notif_res = mysqli_query($conn, "
+    SELECT * FROM notifications
+    WHERE user_id='$user_id'
+      AND (message LIKE '%approved%' OR message LIKE '%rejected%')
+    ORDER BY created_at DESC
+    LIMIT 5
+");
 if ($notif_res && mysqli_num_rows($notif_res) > 0) {
     while ($row = mysqli_fetch_assoc($notif_res)) {
         $notifications[] = $row;
@@ -259,7 +266,6 @@ if (isset($_POST['delete_review'])) {
     $review_id = intval($_POST['review_id']);
     $rev = mysqli_fetch_assoc(mysqli_query($conn, "SELECT f.name AS fn FROM reviews r JOIN faculties f ON r.faculty_id=f.id WHERE r.id='$review_id' AND r.user_id='$user_id' LIMIT 1"));
     mysqli_query($conn, "DELETE FROM reviews WHERE id='$review_id' AND user_id='$user_id'");
-    // Log activity
     if ($rev) {
         $fn_safe = mysqli_real_escape_string($conn, $rev['fn']);
         mysqli_query($conn, "INSERT INTO notifications (user_id, message, status, created_at) VALUES ('$user_id', 'You deleted your review for $fn_safe.', 'read', NOW())");
@@ -313,7 +319,7 @@ if ($recent_res && mysqli_num_rows($recent_res) > 0) {
     while ($row = mysqli_fetch_assoc($recent_res)) $recent_reviews[] = $row;
 }
 
-/* ── Recent Activity (notifications = review events) ──────── */
+/* ── Recent Activity ──────────────────────────────────────── */
 $activity_res = mysqli_query($conn, "
     SELECT message, status, created_at FROM notifications
     WHERE user_id='$user_id'
@@ -348,7 +354,6 @@ $review_filter = isset($_GET['review_filter']) ? $_GET['review_filter'] : 'all';
 <!-- ══ Sidebar ══════════════════════════════════════════════════════════ -->
 <div class="sidebar">
     <div class="sidebar-top">
-        <!-- Replace src with your logo image path, e.g. src="assets/img/logo.png" -->
         <div class="sidebar-logo">
             <img src="image/logo.png" alt="Logo" onerror="this.parentElement.innerHTML='<svg width=&quot;20&quot; height=&quot;20&quot; fill=&quot;none&quot; stroke=&quot;rgba(255,255,255,0.9)&quot; stroke-width=&quot;2&quot; viewBox=&quot;0 0 24 24&quot;><path d=&quot;M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z&quot;/></svg>'">
         </div>
@@ -406,7 +411,6 @@ $review_filter = isset($_GET['review_filter']) ? $_GET['review_filter'] : 'all';
         <div class="topbar-right">
             <div class="today-date">📅 <?php echo date("F j, Y"); ?></div>
 
-            <!-- Write review quick action -->
             <button class="quick-action-btn" onclick="openReviewModal()"
                     style="background:var(--maroon);color:white;">
                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -605,7 +609,6 @@ $review_filter = isset($_GET['review_filter']) ? $_GET['review_filter'] : 'all';
             </button>
         </div>
 
-        <!-- Filter tabs + select all -->
         <div class="filter-tabs">
             <div class="filter-tabs-left">
                 <button onclick="setReviewFilter('all',event)"      class="filter-tab <?php echo $review_filter === 'all'      ? 'active' : ''; ?>">All</button>
@@ -630,7 +633,6 @@ $review_filter = isset($_GET['review_filter']) ? $_GET['review_filter'] : 'all';
             <?php endif; ?>
         </div>
 
-        <!-- Bulk delete bar -->
         <form method="POST" id="bulkDeleteForm">
         <div class="reviews-bulk-bar" id="reviewsBulkBar">
             <span id="reviewsBulkCount">0 reviews selected</span>
@@ -642,7 +644,6 @@ $review_filter = isset($_GET['review_filter']) ? $_GET['review_filter'] : 'all';
             <button type="button" class="btn btn-outline" onclick="toggleDeleteMode()" style="font-size:12px;padding:5px 12px;">Cancel</button>
         </div>
 
-        <!-- Banners -->
         <?php if (isset($_GET['submitted'])): ?>
             <div class="success-banner"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Your review has been submitted and is pending admin approval.</div>
         <?php endif; ?>
@@ -670,7 +671,6 @@ $review_filter = isset($_GET['review_filter']) ? $_GET['review_filter'] : 'all';
             <?php endif; ?>
         <?php endif; ?>
 
-        <!-- Review rows -->
         <?php if (empty($recent_reviews)): ?>
         <div class="review-empty" id="reviewEmptyState">
             <div class="review-empty-icon">

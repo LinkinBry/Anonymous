@@ -39,13 +39,36 @@ php_flag session.cookie_secure Off
     RewriteEngine On
     RewriteBase /
 
-    # Redirect /login to index.php
+    # Redirect .php URLs to clean URLs
+    RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /([^/]+/)*([^.]+)\.php\ HTTP/
+    RewriteRule ^(([^/]+/)*)([^.]+)\.php$ /$1$3 [R=301,L]
+
+    # Redirect index to login
+    RewriteRule ^index/?$ /login [R=301,L]
+
+    # Clean URL to PHP mappings
     RewriteRule ^login/?$   index.php   [L,NC]
     RewriteRule ^register/?$ register.php [L,NC]
     RewriteRule ^dashboard/?$ dashboard.php [L,NC]
     RewriteRule ^logout/?$  logout.php  [L,NC]
     RewriteRule ^profile/?$ profile.php [L,NC]
     RewriteRule ^admin/?$   admin_dashboard.php [L,NC]
+    RewriteRule ^approve_review/?$ approve_review.php [L,NC]
+    RewriteRule ^reject_review/?$ reject_review.php [L,NC]
+    RewriteRule ^add_faculty/?$ add_faculty.php [L,NC]
+    RewriteRule ^edit_faculty/?$ edit_faculty.php [L,NC]
+    RewriteRule ^faculty_summary/?$ faculty_summary.php [L,NC]
+    RewriteRule ^submit_review/?$ submit_review.php [L,NC]
+    RewriteRule ^chatbot/?$ chatbot.php [L,NC]
+    RewriteRule ^clear_notifications/?$ clear_notifications.php [L,NC]
+    RewriteRule ^mark_notifications_read/?$ mark_notifications_read.php [L,NC]
+    RewriteRule ^get_faculty_reviews/?$ get_faculty_reviews.php [L,NC]
+    RewriteRule ^get_user_reviews/?$ get_user_reviews.php [L,NC]
+    RewriteRule ^session_check/?$ session_check.php [L,NC]
+    RewriteRule ^session_refresh/?$ session_refresh.php [L,NC]
+    RewriteRule ^email_helper/?$ email_helper.php [L,NC]
+    RewriteRule ^run/?$ run.php [L,NC]
+    RewriteRule ^e/?$ e.php [L,NC]
 
     # Block access to dot-files except .htaccess itself
     RewriteRule (^|/)\.(?!htaccess) - [F]

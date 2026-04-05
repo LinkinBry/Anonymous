@@ -100,7 +100,7 @@ if (isset($_POST['login'])) {
         </form>
 
         <p class="link-text">
-            Don't have an account? <a href="register.php">Register</a>
+            Don't have an account? <a href="/register">Register</a>
         </p>
     </div>
 </div>

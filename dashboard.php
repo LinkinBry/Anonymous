@@ -4,7 +4,7 @@ include "config.php";
 if (isset($_SESSION['user_id'])) {
     $user_id = $_SESSION['user_id'];
 } else {
-    header("Location: login.php");
+    header("Location: index.php");
     exit();
 }
 
@@ -373,7 +373,7 @@ $review_filter = isset($_GET['review_filter']) ? $_GET['review_filter'] : 'all';
 
     <nav>
         <div class="nav-label">Menu</div>
-        <a href="dashboard.php" class="active">
+        <a href="/dashboard" class="active">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
             <span class="nav-link-text">Dashboard</span>
         </a>

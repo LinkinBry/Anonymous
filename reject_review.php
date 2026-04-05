@@ -2,7 +2,7 @@
 include "config.php";
 include "email_helper.php";
 
-if (!isset($_SESSION['user_id'])) { header("Location: login.php"); exit(); }
+if (!isset($_SESSION['user_id'])) { header("Location: index.php"); exit(); }
 
 $review_id = intval($_GET['id']);
 

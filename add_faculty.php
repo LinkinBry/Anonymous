@@ -2,7 +2,7 @@
 include "config.php";
 include "session_check.php";
 
-if (!isset($_SESSION['user_id'])) { header("Location: login.php"); exit(); }
+if (!isset($_SESSION['user_id'])) { header("Location: index.php"); exit(); }
 $user_id = $_SESSION['user_id'];
 
 $me = mysqli_fetch_assoc(mysqli_query($conn, "SELECT role, fullname, profile_pic FROM users WHERE id='$user_id' LIMIT 1"));

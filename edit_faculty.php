@@ -2,7 +2,7 @@
 include "config.php";
 include "session_check.php";
 
-if (!isset($_SESSION['user_id'])) { header("Location: login.php"); exit(); }
+if (!isset($_SESSION['user_id'])) { header("Location: index.php"); exit(); }
 $user_id = $_SESSION['user_id'];
 
 $me = mysqli_fetch_assoc(mysqli_query($conn, "SELECT role, fullname, profile_pic FROM users WHERE id='$user_id' LIMIT 1"));
@@ -35,7 +35,7 @@ if (isset($_POST['edit_faculty'])) {
 
     if (empty($errors)) {
         mysqli_query($conn, "UPDATE faculties SET name='$name', department='$department' WHERE id='$faculty_id'");
-        header("Location: admin_dashboard.php?edited_faculty=1#faculties");
+        header("Location: /admin_dashboard?edited_faculty=1#faculties");
         exit();
     } else {
         $faculty['name']       = $_POST['name'];

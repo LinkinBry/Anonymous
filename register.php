@@ -140,7 +140,7 @@ if (isset($_POST['register'])) {
             <button type="submit" name="register" class="btn-register">Create Account</button>
         </form>
 
-        <p class="link-text">Already have an account? <a href="index.php">Log in</a></p>
+        <p class="link-text">Already have an account? <a href="/login">Log in</a></p>
     </div>
 </div>
 

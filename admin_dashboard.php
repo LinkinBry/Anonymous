@@ -3,7 +3,7 @@ include "config.php";
 include "email_helper.php";
 include "session_check.php";
 
-if (!isset($_SESSION['user_id'])) { header("Location: login.php"); exit(); }
+if (!isset($_SESSION['user_id'])) { header("Location: index.php"); exit(); }
 
 $user_id = $_SESSION['user_id'];
 $result  = mysqli_query($conn, "SELECT id, fullname, role, profile_pic FROM users WHERE id='$user_id' LIMIT 1");
@@ -60,7 +60,7 @@ if (isset($_POST['delete_single_user'])) {
         mysqli_query($conn, "DELETE FROM reviews WHERE user_id='$uid'");
         mysqli_query($conn, "DELETE FROM users WHERE id='$uid' AND role='user'");
     }
-    header("Location: admin_dashboard.php#users"); exit();
+    header("Location: /admin_dashboard#users"); exit();
 }
 
 /* ── Bulk Delete Users ─────────────────────────────────────────────────── */

@@ -4,87 +4,107 @@
    ============================================================ */
 
 /* ══════════════════════════════════════════════════════════
-   STAT CARDS — New flat style matching the image
+   STAT CARDS — Matching the image design
    ══════════════════════════════════════════════════════════ */
 .stats-grid { display: grid; gap: 16px; margin-bottom: 28px; }
 .stats-row-4 { grid-template-columns: repeat(4, 1fr); }
 .stats-row-3 { grid-template-columns: repeat(3, 1fr); }
 
-/* Override base stat-card for dashboard */
+/* Base stat-card */
 .stat-card {
     background: white;
-    border-radius: 12px;
-    padding: 22px 22px 0 22px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+    border-radius: 16px;
+    padding: 24px 22px 0 22px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
     border: 1px solid var(--gray-200);
-    border-top: none !important;        /* kill old top border accent */
+    border-top: none !important;
     position: relative;
     overflow: hidden;
     transition: box-shadow 0.2s, transform 0.2s;
     display: flex;
     flex-direction: column;
+    min-height: 148px;
 }
-.stat-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.10); transform: translateY(-2px); }
+.stat-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.11); transform: translateY(-2px); }
 
+/* Inner layout: label+value on left, icon on right */
 .stat-card-inner {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 18px;
+    flex: 1;
+    padding-bottom: 18px;
 }
 
+/* Label — uppercase, small, colored per card */
 .stat-label {
     font-size: 11px;
     font-weight: 700;
-    letter-spacing: 1.2px;
+    letter-spacing: 1.4px;
     text-transform: uppercase;
-    color: var(--gray-600);
     margin-bottom: 10px;
+    display: block;
 }
 
+/* Value — large bold number, colored per card */
 .stat-value {
-    font-size: 42px;
+    font-size: 48px;
     font-weight: 800;
     line-height: 1;
     margin-bottom: 0;
+    display: block;
 }
 
+/* Icon — right side, large, circle background */
 .stat-icon {
     position: static;
     transform: none;
-    width: 44px;
-    height: 44px;
+    width: 52px;
+    height: 52px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    margin-top: 2px;
+}
+.stat-icon svg {
+    width: 26px;
+    height: 26px;
 }
 
-/* Colored bottom bar */
+/* Colored bottom bar — thick accent */
 .stat-bar {
-    height: 7px;
-    border-radius: 0 0 8px 8px;
-    margin: 0 -22px;        /* stretch full width past padding */
+    height: 10px;
+    border-radius: 0 0 12px 12px;
+    margin: 0 -22px;
     margin-top: auto;
+    flex-shrink: 0;
 }
 
-/* Per-card accent colors */
-.stat-card.total   .stat-value  { color: var(--gray-700); }
-.stat-card.total   .stat-icon   { background: rgba(107,114,128,0.1); }
-.stat-card.total   .stat-bar    { background: var(--gray-400); }
+/* ── Total card — gray/dark ──────────────────────────────── */
+.stat-card.total .stat-label { color: #4b5563; }
+.stat-card.total .stat-value { color: #374151; }
+.stat-card.total .stat-icon  { background: rgba(107,114,128,0.12); }
+.stat-card.total .stat-bar   { background: #6b7280; }
 
-.stat-card.pending .stat-value  { color: #f59e0b; }
-.stat-card.pending .stat-icon   { background: rgba(245,158,11,0.12); }
-.stat-card.pending .stat-bar    { background: #f59e0b; }
+/* ── Pending card — orange ───────────────────────────────── */
+.stat-card.pending .stat-label { color: #d97706; }
+.stat-card.pending .stat-value { color: #f59e0b; }
+.stat-card.pending .stat-icon  { background: rgba(245,158,11,0.12); }
+.stat-card.pending .stat-bar   { background: #f59e0b; }
 
+/* ── Approved card — green ───────────────────────────────── */
+.stat-card.approved .stat-label { color: #059669; }
 .stat-card.approved .stat-value { color: #10b981; }
 .stat-card.approved .stat-icon  { background: rgba(16,185,129,0.12); }
 .stat-card.approved .stat-bar   { background: #10b981; }
 
+/* ── Rejected card — red ─────────────────────────────────── */
+.stat-card.rejected .stat-label { color: #dc2626; }
 .stat-card.rejected .stat-value { color: #ef4444; }
 .stat-card.rejected .stat-icon  { background: rgba(239,68,68,0.12); }
-.stat-card.rejected .stat-bar   { background: #ef4444; }
+.stat-card.rejected .stat-bar   { background: #dc2626; }
 
 /* ══════════════════════════════════════════════════════════
    FACULTY GRID — New horizontal card style

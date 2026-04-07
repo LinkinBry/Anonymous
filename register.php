@@ -30,7 +30,7 @@ if (isset($_POST['register'])) {
             mysqli_query($conn, "INSERT INTO users (fullname, username, email, password)
                                   VALUES ('$pseudo_safe','$user_safe','$email_safe','$hashed_safe')");
             sendBrevoEmail($email, $pseudo_name, 'Welcome to AnonymousReview!', welcomeEmailHtml($pseudo_name));
-            header("Location: /");
+            header("Location: index.php");
             exit();
         }
     }
@@ -140,7 +140,7 @@ if (isset($_POST['register'])) {
             <button type="submit" name="register" class="btn-register">Create Account</button>
         </form>
 
-        <p class="link-text">Already have an account? <a href="/login">Log in</a></p>
+        <p class="link-text">Already have an account? <a href="index.php">Log in</a></p>
     </div>
 </div>
 

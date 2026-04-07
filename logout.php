@@ -5,9 +5,9 @@ session_destroy();
 
 // Check if it was a timeout logout
 if (isset($_GET['timeout'])) {
-    header("Location: /?timeout=1");
+    header("Location: index.php?timeout=1");
 } else {
-    header("Location: /");
+    header("Location: index.php");
 }
 exit();
 ?>

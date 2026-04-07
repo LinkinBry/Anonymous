@@ -2,7 +2,7 @@
 include "config.php";
 include "email_helper.php";
 
-if (!isset($_SESSION['user_id'])) { header("Location: /"); exit(); }
+if (!isset($_SESSION['user_id'])) { header("Location: index.php"); exit(); }
 
 $review_id = intval($_GET['id']);
 
@@ -41,6 +41,6 @@ if ($res && mysqli_num_rows($res) > 0) {
     );
 }
 
-header("Location: /admin_dashboard");
+header("Location: admin_dashboard.php");
 exit();
 ?>

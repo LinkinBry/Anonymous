@@ -2,7 +2,7 @@
 include "config.php";
 include "session_check.php";
 
-if (!isset($_SESSION['user_id'])) { header("Location: /"); exit(); }
+if (!isset($_SESSION['user_id'])) { header("Location: index.php"); exit(); }
 $user_id = $_SESSION['user_id'];
 
 if (isset($_POST['update_profile'])) {
@@ -52,7 +52,7 @@ if (isset($_POST['update_profile'])) {
         mysqli_query($conn, "UPDATE users SET fullname='$fullname', username='$username', email='$email' $pw_sql $pic_sql WHERE id='$user_id'");
         $_SESSION['username'] = $username;
         $_SESSION['fullname'] = $fullname;
-        header("Location: /profile?updated=1");
+        header("Location: profile.php?updated=1");
         exit();
     }
 }
@@ -96,7 +96,7 @@ $avatar = !empty($user['profile_pic']) && file_exists($user['profile_pic'])
         <div class="sidebar-brand-text">OlshcoReview<span class="sidebar-brand-sub">Anonymous Faculty Feedback</span></div>
     </div>
     <div class="sidebar-user-wrap">
-        <a href="/profile" style="display:block;text-align:center;">
+        <a href="profile.php" style="display:block;text-align:center;">
             <img src="<?php echo htmlspecialchars($avatar); ?>" class="sidebar-avatar" alt="Avatar">
         </a>
         <div class="sidebar-name"><?php echo htmlspecialchars($user['fullname']); ?></div>
@@ -104,17 +104,17 @@ $avatar = !empty($user['profile_pic']) && file_exists($user['profile_pic'])
     </div>
     <nav>
         <div class="nav-label">Menu</div>
-        <a href="/dashboard">
+        <a href="dashboard.php">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
             <span class="nav-link-text">Dashboard</span>
         </a>
-        <a href="/profile" class="active">
+        <a href="profile.php" class="active">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
             <span class="nav-link-text">Profile</span>
         </a>
     </nav>
     <div class="sidebar-footer">
-        <a href="/logout">
+        <a href="logout.php">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
             <span class="nav-link-text">Logout</span>
         </a>

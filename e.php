@@ -22,8 +22,8 @@
 </div>
 
 <div class="nav-right">
-<a href="/login">SIGN IN</a>
-<a href="/register" class="register-btn">REGISTER</a>
+<a href="index.php">SIGN IN</a>
+<a href="register.php" class="register-btn">REGISTER</a>
 </div>
 
 </div>

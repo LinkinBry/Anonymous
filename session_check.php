@@ -25,7 +25,7 @@ if (isset($_SESSION['user_id'])) {
                 exit();
             }
 
-            header("Location: /?timeout=1");
+            header("Location: index.php?timeout=1");
             exit();
         }
     }

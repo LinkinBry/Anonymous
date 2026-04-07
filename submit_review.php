@@ -2,7 +2,7 @@
 include "config.php";
 
 if (!isset($_SESSION['user_id'])) {
-    header("Location: /");
+    header("Location: index.php");
     exit();
 }
 
@@ -17,7 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $review_text = trim($_POST['review_text'] ?? '');
 
     if (empty($review_text)) {
-        header("Location: /dashboard?error=empty");
+        header("Location: dashboard.php?error=empty");
         exit();
     }
 
@@ -25,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $exists = mysqli_fetch_assoc(mysqli_query($conn,
         "SELECT id FROM reviews WHERE user_id='$user_id' AND faculty_id='$faculty_id' LIMIT 1"));
     if ($exists) {
-        header("Location: /dashboard?error=duplicate");
+        header("Location: dashboard.php?error=duplicate");
         exit();
     }
 
@@ -77,7 +77,7 @@ Review: "' . addslashes($review_text) . '"';
 
     // ── Block toxic/hateful reviews ──────────────────────────────────────────
     if ($is_toxic) {
-        header("Location: /dashboard?error=toxic");
+        header("Location: dashboard.php?error=toxic");
         exit();
     }
 
@@ -89,7 +89,7 @@ Review: "' . addslashes($review_text) . '"';
     mysqli_query($conn, "INSERT INTO reviews (user_id, faculty_id, review_text, status, sentiment, is_toxic, summary)
                          VALUES ('$user_id', '$faculty_id', '$review_text_safe', 'pending', '$sentiment_safe', '$is_toxic', '$summary_safe')");
 
-    header("Location: /dashboard?submitted=1");
+    header("Location: dashboard.php?submitted=1");
     exit();
 }
 

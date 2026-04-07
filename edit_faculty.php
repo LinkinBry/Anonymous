@@ -2,21 +2,21 @@
 include "config.php";
 include "session_check.php";
 
-if (!isset($_SESSION['user_id'])) { header("Location: /"); exit(); }
+if (!isset($_SESSION['user_id'])) { header("Location: index.php"); exit(); }
 $user_id = $_SESSION['user_id'];
 
 $me = mysqli_fetch_assoc(mysqli_query($conn, "SELECT role, fullname, profile_pic FROM users WHERE id='$user_id' LIMIT 1"));
-if ($me['role'] !== 'admin') { header("Location: /dashboard"); exit(); }
+if ($me['role'] !== 'admin') { header("Location: dashboard.php"); exit(); }
 
 $admin_avatar = !empty($me['profile_pic']) && file_exists($me['profile_pic'])
     ? $me['profile_pic']
     : 'https://ui-avatars.com/api/?name=' . urlencode($me['fullname']) . '&background=6B0000&color=fff&size=80';
 
 $faculty_id = intval($_GET['id'] ?? 0);
-if ($faculty_id <= 0) { header("Location: /admin_dashboard#faculties"); exit(); }
+if ($faculty_id <= 0) { header("Location: admin_dashboard.php#faculties"); exit(); }
 
 $fac_res = mysqli_query($conn, "SELECT * FROM faculties WHERE id='$faculty_id' LIMIT 1");
-if (!$fac_res || mysqli_num_rows($fac_res) === 0) { header("Location: /admin_dashboard#faculties"); exit(); }
+if (!$fac_res || mysqli_num_rows($fac_res) === 0) { header("Location: admin_dashboard.php#faculties"); exit(); }
 $faculty = mysqli_fetch_assoc($fac_res);
 
 $errors = [];
@@ -35,7 +35,7 @@ if (isset($_POST['edit_faculty'])) {
 
     if (empty($errors)) {
         mysqli_query($conn, "UPDATE faculties SET name='$name', department='$department' WHERE id='$faculty_id'");
-        header("Location: /admin_dashboard?edited_faculty=1#faculties");
+        header("Location: admin_dashboard.php?edited_faculty=1#faculties");
         exit();
     } else {
         $faculty['name']       = $_POST['name'];
@@ -84,7 +84,7 @@ while ($d = mysqli_fetch_assoc($dept_res)) $existing_depts[] = $d['department'];
         </a>
     </nav>
     <div class="sidebar-footer">
-        <a href="/logout">
+        <a href="logout.php">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
             Logout
         </a>

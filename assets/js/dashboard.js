@@ -510,16 +510,29 @@ function sendChat() {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: 'message=' + encodeURIComponent(msg)
     })
-    .then(r => r.json())
+    .then(r => {
+        if (!r.ok) {
+            throw new Error(`HTTP ${r.status}: ${r.statusText}`);
+        }
+        return r.json();
+    })
     .then(data => {
         const t = document.getElementById('typing-indicator');
         if (t) t.remove();
-        addBubble(data.reply || 'Sorry, try again.', 'bot');
+        if (data.error) {
+            console.error('Chatbot error:', data.error);
+            addBubble('Error: ' + data.error, 'bot');
+        } else if (data.reply) {
+            addBubble(data.reply, 'bot');
+        } else {
+            addBubble('Sorry, no response received.', 'bot');
+        }
     })
-    .catch(() => {
+    .catch(err => {
         const t = document.getElementById('typing-indicator');
         if (t) t.remove();
-        addBubble('Connection error. Please try again.', 'bot');
+        console.error('Chat error:', err);
+        addBubble('Connection failed: ' + err.message, 'bot');
     });
 }
 

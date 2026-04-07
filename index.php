@@ -4,9 +4,9 @@ include "config.php";
 
 if (isset($_SESSION['user_id'])) {
     if ($_SESSION['role'] === 'admin') {
-        header("Location: /admin_dashboard");
+        header("Location: admin_dashboard.php");
     } else {
-        header("Location: /dashboard");
+        header("Location: dashboard.php");
     }
     exit();
 }
@@ -34,9 +34,9 @@ if (isset($_POST['login'])) {
             $_SESSION['session_expires'] = time() + 300;
 
             if ($user['role'] == 'admin') {
-                header("Location: /admin_dashboard");
+                header("Location: admin_dashboard.php");
             } else {
-                header("Location: /dashboard");
+                header("Location: dashboard.php");
             }
             exit();
         } else {
@@ -100,7 +100,7 @@ if (isset($_POST['login'])) {
         </form>
 
         <p class="link-text">
-            Don't have an account? <a href="/register">Register</a>
+            Don't have an account? <a href="register.php">Register</a>
         </p>
     </div>
 </div>

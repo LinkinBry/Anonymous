@@ -475,7 +475,7 @@ function clearEditReviewPhotos() {
    PHP chatbot.php is used only as a session-gated FAQ fallback.
    ══════════════════════════════════════════════════════════ */
 
-const GROQ_API_KEY = 'YOUR_GROQ_API_KEY_HERE'; // Replace with your actual key
+const GROQ_API_KEY = window.GROQ_API_KEY;
 const GROQ_MODEL   = 'llama-3.3-70b-versatile';
 
 const CHATBOT_SYSTEM = `You are a helpful FAQ assistant for OlshcoReview, an Anonymous Online Faculty Performance Evaluation and Feedback System. Be concise and friendly.

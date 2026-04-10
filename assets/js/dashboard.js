@@ -90,21 +90,17 @@ if (clearSearch) {
 /* ── Department filter (client-side) ──────────────────────── */
 function filterFaculty() {
     const dept = document.getElementById('deptFilter').value;
-    // First, reveal all hidden cards so filter works on all faculty
     document.querySelectorAll('.faculty-card.hidden-card').forEach(card => {
         card.classList.remove('hidden-card');
         card.style.display = '';
     });
-    // Now apply department filter
     const allCards = document.querySelectorAll('.faculty-card');
     allCards.forEach(card => {
         const matchesDept = (dept === 'all' || card.dataset.dept === dept);
         card.style.display = matchesDept ? '' : 'none';
     });
-    // Hide show-more card during dept filter to avoid confusion
     const showMoreCard = document.getElementById('showMoreCard');
     if (showMoreCard) showMoreCard.style.display = 'none';
-    // Show pagination after filter
     const visible = [...allCards].filter(c => c.style.display !== 'none');
     paginateCards(visible);
 }
@@ -126,7 +122,6 @@ function paginateCards(cards) {
 function renderPage(cards, page, totalPages) {
     const start = (page - 1) * CARDS_PER_PAGE;
     const end   = start + CARDS_PER_PAGE;
-    // Hide all, then show slice
     document.querySelectorAll('.faculty-card').forEach(card => card.style.display = 'none');
     cards.slice(start, end).forEach(card => card.style.display = '');
     renderPagination(cards, page, totalPages);
@@ -169,14 +164,9 @@ function renderPagination(cards, page, totalPages) {
 function showMoreFaculty() {
     const hiddenCards = [...document.querySelectorAll('.faculty-card.hidden-card')];
     if (!hiddenCards.length) return;
-
-    // Reveal all hidden cards
     hiddenCards.forEach(card => card.classList.remove('hidden-card'));
-
     const showMoreCard = document.getElementById('showMoreCard');
     if (showMoreCard) showMoreCard.style.display = 'none';
-
-    // Get currently visible cards (respecting any department filter)
     const visibleCards = [...document.querySelectorAll('.faculty-card')].filter(card => card.style.display !== 'none');
     paginateCards(visibleCards);
 }
@@ -478,18 +468,57 @@ function clearEditReviewPhotos() {
     buildPhotoGrid([], 'editReviewPhotosPreviewGrid', 'editPhotoDropzone', 'editPhotosAddMore', 'editPhotosCount', 'removeEditPhoto');
 }
 
-/* ── Chatbot ──────────────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════
+   CHATBOT — Client-side Groq API (InfinityFree compatible)
+   InfinityFree blocks outgoing server-side curl to external
+   APIs. The fix: call Groq directly from the browser JS.
+   PHP chatbot.php is used only as a session-gated FAQ fallback.
+   ══════════════════════════════════════════════════════════ */
+
+const GROQ_API_KEY = 'YOUR_GROQ_API_KEY_HERE'; // Replace with your actual key
+const GROQ_MODEL   = 'llama-3.3-70b-versatile';
+
+const CHATBOT_SYSTEM = `You are a helpful FAQ assistant for OlshcoReview, an Anonymous Online Faculty Performance Evaluation and Feedback System. Be concise and friendly.
+
+SUBMITTING A REVIEW: Go to Dashboard → find faculty → click "Evaluate" → Step 1 select faculty, Step 2 rate on 5 star categories + write review → Submit. Review goes pending until admin approves.
+
+STAR RATING CATEGORIES (all required, 1-5 stars each):
+1. Teaching Effectiveness
+2. Communication Skills
+3. Punctuality & Availability
+4. Fairness in Grading
+5. Overall Satisfaction
+
+EDITING: Only approved reviews can be edited. After editing, review goes back to pending for re-approval.
+
+REVIEW STATUSES: Pending = awaiting admin approval. Approved = published. Rejected = not accepted, can resubmit via "Resubmit" button on the faculty card.
+
+ONE REVIEW PER FACULTY: Cannot submit a second review for same faculty. Edit or resubmit existing one.
+
+ANONYMITY: All reviews are 100% anonymous. Only username visible to admins, never real identity.
+
+NOTIFICATIONS: In-app + email notifications when approved or rejected.
+
+TOXIC CONTENT: AI scans reviews before submission. Flagged reviews are blocked. Keep feedback respectful.
+
+PROFILE: Update pseudonym, username, email, password, profile photo from the Profile page (click avatar in sidebar).
+
+Keep answers short (3-5 sentences max). Use line breaks for steps. Do not invent features.`;
+
 function toggleChat() {
     const w = document.getElementById('chat-window');
-    w.style.display = w.style.display === 'flex' ? 'none' : 'flex';
-    if (w.style.display === 'flex') {
+    const isOpen = w.style.display === 'flex';
+    w.style.display = isOpen ? 'none' : 'flex';
+    if (!isOpen) {
         w.style.flexDirection = 'column';
         document.getElementById('chat-input').focus();
     }
 }
 
-document.getElementById('chat-input').addEventListener('input', function() {
-    if (this.value.trim()) document.getElementById('faqSuggestions').style.display = 'none';
+document.getElementById('chat-input').addEventListener('input', function () {
+    if (this.value.trim()) {
+        document.getElementById('faqSuggestions').style.display = 'none';
+    }
 });
 
 function askFaq(question) {
@@ -498,50 +527,75 @@ function askFaq(question) {
     sendChat();
 }
 
-function sendChat() {
+async function sendChat() {
     const input = document.getElementById('chat-input');
-    const msg = input.value.trim();
+    const msg   = input.value.trim();
     if (!msg) return;
+
     addBubble(msg, 'user');
     input.value = '';
-    addBubble('Typing...', 'bot', 'typing-indicator');
-    fetch('chatbot.php', {
+
+    const typingEl = addBubble('Typing…', 'bot', 'typing-indicator');
+
+    try {
+        // PRIMARY: call Groq directly from browser (bypasses InfinityFree curl block)
+        const reply = await callGroqDirect(msg);
+        typingEl.remove();
+        addBubble(reply, 'bot');
+    } catch (groqErr) {
+        // FALLBACK: PHP FAQ matcher (no curl needed)
+        console.warn('Groq direct call failed:', groqErr.message, '— falling back to PHP FAQ');
+        try {
+            const res  = await fetch('chatbot.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'message=' + encodeURIComponent(msg)
+            });
+            const data = await res.json();
+            typingEl.remove();
+            addBubble(data.reply || "Sorry, I couldn't get a response right now.", 'bot');
+        } catch (phpErr) {
+            typingEl.remove();
+            addBubble("I'm having trouble connecting right now. Please try again in a moment.", 'bot');
+        }
+    }
+}
+
+async function callGroqDirect(userMessage) {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: 'message=' + encodeURIComponent(msg)
-    })
-    .then(r => {
-        if (!r.ok) {
-            throw new Error(`HTTP ${r.status}: ${r.statusText}`);
-        }
-        return r.json();
-    })
-    .then(data => {
-        const t = document.getElementById('typing-indicator');
-        if (t) t.remove();
-        if (data.error) {
-            console.error('Chatbot error:', data.error);
-            addBubble('Error: ' + data.error, 'bot');
-        } else if (data.reply) {
-            addBubble(data.reply, 'bot');
-        } else {
-            addBubble('Sorry, no response received.', 'bot');
-        }
-    })
-    .catch(err => {
-        const t = document.getElementById('typing-indicator');
-        if (t) t.remove();
-        console.error('Chat error:', err);
-        addBubble('Connection failed: ' + err.message, 'bot');
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + GROQ_API_KEY
+        },
+        body: JSON.stringify({
+            model: GROQ_MODEL,
+            max_tokens: 400,
+            messages: [
+                { role: 'system', content: CHATBOT_SYSTEM },
+                { role: 'user',   content: userMessage }
+            ]
+        })
     });
+
+    if (!response.ok) {
+        const errText = await response.text();
+        throw new Error('Groq API ' + response.status + ': ' + errText.slice(0, 120));
+    }
+
+    const data  = await response.json();
+    const reply = data?.choices?.[0]?.message?.content;
+    if (!reply) throw new Error('Empty Groq response');
+    return reply;
 }
 
 function addBubble(text, from, id) {
     const box = document.getElementById('chat-messages');
-    const d = document.createElement('div');
+    const d   = document.createElement('div');
     d.className = 'chat-msg ' + from;
     if (id) d.id = id;
-    d.textContent = text;
+    // Render newlines nicely
+    d.innerHTML = String(text).replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
     box.appendChild(d);
     box.scrollTop = box.scrollHeight;
     return d;
@@ -582,4 +636,4 @@ document.addEventListener('DOMContentLoaded', () => {
     if (myReviewsLink) {
         myReviewsLink.addEventListener('click', scrollToReviews);
     }
-}); t
+});

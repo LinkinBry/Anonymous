@@ -1,199 +1,109 @@
 <?php
-// Custom logging function
-function chatbot_log($message) {
-    $log_file = __DIR__ . '/chatbot_errors.log';
-    $timestamp = date('Y-m-d H:i:s');
-    $entry = "[$timestamp] $message\n";
-
-    error_log($message);
-    $fp = fopen($log_file, 'a');
-    if ($fp) {
-        fwrite($fp, $entry);
-        fclose($fp);
-    }
-}
+/**
+ * chatbot.php — FAQ-only backend (InfinityFree compatible)
+ * InfinityFree blocks outgoing curl to external APIs on free plans.
+ * This file handles the FAQ matching server-side.
+ * The AI enhancement is handled client-side via fetch in dashboard.js.
+ */
 
 header('Content-Type: application/json');
 
-function provideFAQResponse($message) {
-    $lower = strtolower($message);
+// Must include config for session
+include 'config.php';
 
-    if (strpos($lower, 'submit') !== false || strpos($lower, 'review') !== false) {
-        return "To submit a review: Go to Dashboard, find the faculty member, click 'Evaluate', fill out the rating form, and click 'Submit Review'. Your review will be pending until admin approval.";
-    }
-    if (strpos($lower, 'anonymous') !== false || strpos($lower, 'private') !== false) {
-        return "Yes! All reviews are completely anonymous. Only your username is visible to admins during moderation, never your full identity.";
-    }
-    if (strpos($lower, 'pending') !== false || strpos($lower, 'approved') !== false || strpos($lower, 'rejected') !== false) {
-        return "Review statuses: Pending = waiting for approval, Approved = published and visible, Rejected = not accepted. You can resubmit rejected reviews.";
-    }
-    if (strpos($lower, 'edit') !== false || strpos($lower, 'delete') !== false) {
-        return "You can edit approved reviews directly from your dashboard. After editing, your review goes back to pending status. Rejected reviews can be resubmitted.";
-    }
-    if (strpos($lower, 'notification') !== false || strpos($lower, 'email') !== false) {
-        return "You'll receive both in-app and email notifications when your review is approved or rejected.";
-    }
-    if (strpos($lower, 'profile') !== false) {
-        return "Visit the Profile page to update your information, change your password, and upload a profile picture.";
-    }
-    if (strpos($lower, 'toxic') !== false || strpos($lower, 'hateful') !== false) {
-        return "Reviews are automatically checked for toxic or hateful content. Please keep feedback respectful and constructive.";
-    }
-
-    return "I'm the FAQ Assistant for OlshcoReview. Ask me about submitting reviews, anonymity, review status, editing, notifications, or your profile. What would you like to know?";
+if (!isset($_SESSION['user_id'])) {
+    http_response_code(401);
+    echo json_encode(['error' => 'Not logged in']);
+    exit();
 }
 
-try {
-    include 'config.php';
+$user_message = trim($_POST['message'] ?? '');
+if (empty($user_message)) {
+    echo json_encode(['error' => 'Empty message']);
+    exit();
+}
 
-    chatbot_log('Chatbot initialized');
+echo json_encode(['reply' => getFAQResponse($user_message)]);
 
-    if (!isset($_SESSION['user_id'])) {
-        http_response_code(401);
-        echo json_encode(['error' => 'Not logged in']);
-        exit();
+// ── FAQ matcher ────────────────────────────────────────────────────────────
+function getFAQResponse(string $msg): string {
+    $lower = mb_strtolower($msg);
+
+    // Submit / How to review
+    if (preg_match('/submit|how.*(review|evaluate)|write.*review|evaluate.*faculty/i', $lower)) {
+        return "To submit a review:\n1. Go to your Dashboard.\n2. Find the faculty member and click \"Evaluate\".\n3. Step 1: Select the faculty. Step 2: Rate them on 5 categories using stars, then write your review.\n4. Click Submit Review — it'll be pending until an admin approves it.";
     }
 
-    $user_message = trim($_POST['message'] ?? '');
-    if (empty($user_message)) {
-        echo json_encode(['error' => 'Empty message']);
-        exit();
+    // Anonymous / privacy
+    if (preg_match('/anon(ymous)?|private|identit|who.*(see|know)|track/i', $lower)) {
+        return "Yes — all reviews are 100% anonymous. Admins only see your username during moderation, never your real identity. Your review is never linked to your full name publicly.";
     }
 
-    $env_file = __DIR__ . '/.env';
-    if (!file_exists($env_file)) {
-        chatbot_log("Chatbot: .env file not found at $env_file");
-        echo json_encode(['reply' => provideFAQResponse($user_message)]);
-        exit();
+    // Pending status
+    if (preg_match('/pend(ing)?|still.*wait|not.*approved|how long/i', $lower)) {
+        return "Your review is pending because it needs admin approval before it goes public. This usually takes a short time. You'll receive an in-app notification and an email once it's approved or rejected.";
     }
 
-    $env = parse_ini_file($env_file);
-    if (!$env || !isset($env['GROQ_API_KEY'])) {
-        chatbot_log('Chatbot: GROQ_API_KEY not set or parse_ini_file failed');
-        echo json_encode(['reply' => provideFAQResponse($user_message)]);
-        exit();
+    // Approved status
+    if (preg_match('/approv(ed)?|publish(ed)?|visible|public/i', $lower)) {
+        return "Approved reviews are published and visible on the faculty's profile. You'll get a notification and email when your review is approved.";
     }
 
-    $api_key = trim($env['GROQ_API_KEY']);
-    if (empty($api_key)) {
-        chatbot_log('Chatbot: GROQ_API_KEY is empty');
-        echo json_encode(['reply' => provideFAQResponse($user_message)]);
-        exit();
+    // Rejected status / resubmit
+    if (preg_match('/reject(ed)?|resubmit|denied|not accept/i', $lower)) {
+        return "Rejected reviews didn't meet the guidelines — usually due to inappropriate language. You can resubmit by clicking \"Resubmit\" on the faculty card. Make sure your review is respectful and constructive.";
     }
 
-    $system_prompt = <<<'PROMPT'
-You are a helpful FAQ assistant for AnonymousReview, an Anonymous Online Faculty Performance Evaluation and Feedback System. Help users with the following topics:
-
-SUBMITTING A REVIEW:
-- Go to the Dashboard, find the faculty member you want to evaluate, and click "Evaluate".
-- A modal will appear. Step 1: select the faculty. Step 2: rate them on 5 categories (Teaching Effectiveness, Communication Skills, Punctuality & Availability, Fairness in Grading, Overall Satisfaction) using star ratings, then write your review text.
-- Click Submit Review. Your review will be submitted as pending until approved by admin.
-
-EDITING A REVIEW:
-- Users CAN edit their own review directly from the dashboard — NO need to contact admin.
-- You can only edit a review that has been APPROVED. Look for the "Edit Review" button on the faculty card or the edit icon in your My Reviews section.
-- After editing, the review goes back to PENDING status and must be re-approved by the admin before it is published again.
-- Pending or rejected reviews cannot be edited directly, but rejected reviews can be resubmitted.
-
-ANONYMITY:
-- All reviews are completely anonymous. Admins only see your username, not your full identity in the context of moderation.
-
-REVIEW STATUS:
-- Pending: submitted and waiting for admin approval.
-- Approved: published and visible.
-- Rejected: not approved. You can resubmit a rejected review by clicking "Resubmit" on the faculty card.
-
-STAR RATINGS:
-- You rate the faculty on 5 categories from 1 to 5 stars.
-- Categories: Teaching Effectiveness, Communication Skills, Punctuality & Availability, Fairness in Grading, Overall Satisfaction.
-
-NOTIFICATIONS:
-- You will receive an in-app notification AND an email when your review is approved or rejected.
-
-ACCOUNT & PROFILE:
-- You can update your profile info and upload a profile picture from the Profile page.
-- If you have login issues, try resetting your password or contact your administrator.
-
-CONTENT MODERATION:
-- Reviews are automatically scanned for toxic or hateful content using AI before submission.
-- If your review is flagged, it will not be submitted. Please keep feedback respectful and constructive.
-
-Keep answers short, friendly, and helpful. If you do not know something specific to this system, say so politely.
-PROMPT;
-
-    $payload = json_encode([
-        'model' => 'llama-3.3-70b-versatile',
-        'max_tokens' => 400,
-        'messages' => [
-            ['role' => 'system', 'content' => $system_prompt],
-            ['role' => 'user', 'content' => $user_message]
-        ]
-    ]);
-
-    if (!function_exists('curl_init')) {
-        chatbot_log('Chatbot: curl extension not available');
-        echo json_encode(['reply' => provideFAQResponse($user_message) . "\n\n(Chatbot running in FAQ mode)"]);
-        exit();
+    // Edit review
+    if (preg_match('/edit|update|change.*review|modify/i', $lower)) {
+        return "You can edit an approved review directly from your Dashboard — look for the edit icon next to the review. After editing, your review goes back to pending status and needs re-approval before it's published again.";
     }
 
-    $ch = curl_init('https://api.groq.com/openai/v1/chat/completions');
-    if (!$ch) {
-        chatbot_log('Chatbot: curl_init failed');
-        echo json_encode(['reply' => provideFAQResponse($user_message)]);
-        exit();
+    // Delete review
+    if (preg_match('/delet(e|ed)|remov(e|ed)|cancel.*review/i', $lower)) {
+        return "To delete a review, click the trash/delete icon on the review in your Dashboard. You can delete any of your own reviews at any time.";
     }
 
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_POST => true,
-        CURLOPT_POSTFIELDS => $payload,
-        CURLOPT_HTTPHEADER => [
-            'Content-Type: application/json',
-            'Authorization: Bearer ' . $api_key
-        ],
-        CURLOPT_TIMEOUT => 10,
-        CURLOPT_SSL_VERIFYPEER => false,
-        CURLOPT_SSL_VERIFYHOST => false,
-        CURLOPT_CONNECTTIMEOUT => 10
-    ]);
-
-    $response = curl_exec($ch);
-    $curl_errno = curl_errno($ch);
-    $curl_error = curl_error($ch);
-    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-    if ($curl_errno) {
-        chatbot_log("Chatbot Curl Error #$curl_errno: $curl_error (HTTP $http_code)");
-        curl_close($ch);
-        echo json_encode(['reply' => provideFAQResponse($user_message)]);
-        exit();
+    // Notifications / email
+    if (preg_match('/notif(ication)?|email|alert|message/i', $lower)) {
+        return "You'll receive both an in-app notification and an email when your review is approved or rejected. Make sure your email address is correct in your Profile settings.";
     }
 
-    curl_close($ch);
-
-    if ($response === false) {
-        chatbot_log('Chatbot: curl_exec returned false');
-        echo json_encode(['reply' => provideFAQResponse($user_message)]);
-        exit();
+    // Profile / account
+    if (preg_match('/profile|account|password|username|picture|photo|avatar/i', $lower)) {
+        return "Visit the Profile page (click your avatar in the sidebar) to:\n• Update your pseudonym, username, or email\n• Change your password\n• Upload a profile picture";
     }
 
-    if ($http_code !== 200) {
-        chatbot_log("Chatbot: API returned HTTP $http_code - Response: " . substr($response, 0, 200));
-        echo json_encode(['reply' => provideFAQResponse($user_message)]);
-        exit();
+    // Toxic / flagged
+    if (preg_match('/toxic|flag(ged)?|block(ed)?|not submit|cant submit|offensive|hate/i', $lower)) {
+        return "Reviews are automatically scanned for toxic or hateful content using AI. If your review was flagged, it means it contained language that violates our guidelines. Please keep feedback respectful and constructive — focus on the faculty's teaching, not personal attacks.";
     }
 
-    $data = json_decode($response, true);
-    if (!$data || !isset($data['choices'][0]['message']['content'])) {
-        chatbot_log('Chatbot: Invalid API response - Data: ' . substr($response, 0, 300));
-        echo json_encode(['reply' => provideFAQResponse($user_message)]);
-        exit();
+    // Rating / stars
+    if (preg_match('/rat(e|ing)|star(s)?|score|categor/i', $lower)) {
+        return "You rate each faculty member on 5 categories (1–5 stars each):\n1. Teaching Effectiveness\n2. Communication Skills\n3. Punctuality & Availability\n4. Fairness in Grading\n5. Overall Satisfaction\n\nAll 5 ratings are required to submit a review.";
     }
 
-    $reply = $data['choices'][0]['message']['content'];
-    echo json_encode(['reply' => $reply]);
+    // Multiple reviews / one per faculty
+    if (preg_match('/multiple|more than one|again|another review|twice|second/i', $lower)) {
+        return "You can only submit one review per faculty member. If your review was rejected, you can resubmit it. If it was approved, you can edit it. You cannot submit a brand-new review for the same faculty.";
+    }
 
-} catch (Exception $e) {
-    chatbot_log('Chatbot Exception: ' . $e->getMessage());
-    echo json_encode(['reply' => provideFAQResponse($user_message)]);
+    // Login / access
+    if (preg_match('/login|log in|sign in|access|cant.*log|forgot.*pass/i', $lower)) {
+        return "If you're having trouble logging in:\n• Double-check your username and password\n• Passwords are case-sensitive\n• Contact your administrator if you've forgotten your password — there's no self-service reset currently.";
+    }
+
+    // Greeting
+    if (preg_match('/^(hi|hello|hey|good\s*(morning|afternoon|evening)|sup|yo)\b/i', $lower)) {
+        return "Hi there! 👋 I'm the OlshcoReview FAQ Assistant. Ask me anything about submitting reviews, your review status, anonymity, editing, notifications, or your account!";
+    }
+
+    // Thank you
+    if (preg_match('/thank(s|you)|ty\b|appreciate/i', $lower)) {
+        return "You're welcome! 😊 Feel free to ask if you have more questions about OlshcoReview.";
+    }
+
+    // Default fallback
+    return "I'm the OlshcoReview FAQ Assistant. I can help with:\n• How to submit or edit a review\n• Review status (pending, approved, rejected)\n• Anonymity & privacy\n• Notifications & emails\n• Profile & account settings\n• Star ratings\n\nWhat would you like to know?";
 }

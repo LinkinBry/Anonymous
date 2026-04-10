@@ -13,10 +13,9 @@ if (isset($_SESSION['user_id'])) {
             session_unset();
             session_destroy();
 
-            // If this is an AJAX/JSON request, return JSON instead of redirect
-            $is_ajax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
+            $is_ajax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
                        strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
-            $wants_json = isset($_SERVER['HTTP_ACCEPT']) && 
+            $wants_json = isset($_SERVER['HTTP_ACCEPT']) &&
                           strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false;
 
             if ($is_ajax || $wants_json) {
@@ -25,7 +24,7 @@ if (isset($_SESSION['user_id'])) {
                 exit();
             }
 
-            header("Location: index.php?timeout=1");
+            header("Location: login.php?timeout=1");
             exit();
         }
     }

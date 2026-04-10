@@ -1,9 +1,8 @@
 <?php
 
-$uri = $_SERVER['REQUEST_URI'];
+$uri  = $_SERVER['REQUEST_URI'];
 $path = parse_url($uri, PHP_URL_PATH);
 
-// Remove trailing slash if present, except for root
 if ($path !== '/' && substr($path, -1) === '/') {
     $path = substr($path, 0, -1);
 }
@@ -11,7 +10,11 @@ if ($path !== '/' && substr($path, -1) === '/') {
 switch ($path) {
     case '/':
     case '/index':
+    case '/home':
         include 'index.php';
+        break;
+    case '/login':
+        include 'login.php';
         break;
     case '/register':
         include 'register.php';
@@ -20,6 +23,7 @@ switch ($path) {
         include 'dashboard.php';
         break;
     case '/admin_dashboard':
+    case '/admin':
         include 'admin_dashboard.php';
         break;
     case '/profile':
@@ -77,10 +81,9 @@ switch ($path) {
         include 'e.php';
         break;
     default:
-        // Handle static files or 404
         $file = __DIR__ . $path;
         if (file_exists($file) && !is_dir($file)) {
-            return false; // Serve the file as-is
+            return false;
         } else {
             http_response_code(404);
             echo '404 Not Found';

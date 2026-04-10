@@ -1,7 +1,5 @@
 <?php
 session_start();
-include "config.php";
-
 if (isset($_SESSION['user_id'])) {
     if ($_SESSION['role'] === 'admin') {
         header("Location: admin_dashboard.php");
@@ -10,100 +8,673 @@ if (isset($_SESSION['user_id'])) {
     }
     exit();
 }
-
-if (isset($_POST['login'])) {
-    $username = $_POST['username'];
-    $password = $_POST['password'];
-
-    $sql    = "SELECT * FROM users WHERE username='$username'";
-    $result = mysqli_query($conn, $sql);
-
-    if (!$result) {
-        die("Query failed: " . mysqli_error($conn));
-    }
-
-    $user = mysqli_fetch_assoc($result);
-
-    if ($user) {
-        if (password_verify($password, $user['password'])) {
-            $_SESSION['user_id']         = $user['id'];
-            $_SESSION['fullname']        = $user['fullname'];
-            $_SESSION['username']        = $user['username'];
-            $_SESSION['role']            = $user['role'];
-            $_SESSION['last_activity']   = time();
-            $_SESSION['session_expires'] = time() + 300;
-
-            if ($user['role'] == 'admin') {
-                header("Location: admin_dashboard.php");
-            } else {
-                header("Location: dashboard.php");
-            }
-            exit();
-        } else {
-            $error = "Incorrect password";
-        }
-    } else {
-        $error = "Username not found";
-    }
-}
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Login — AnonymousReview</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/style.css">
-<link rel="stylesheet" href="assets/css/auth.css">
+<title>OLSHCO — Faculty Evaluation Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+    --maroon:#8B0000;
+    --maroon-dark:#6B0000;
+    --gold:#F5A623;
+    --gold-light:#FFD700;
+    --white:#ffffff;
+}
+html{scroll-behavior:smooth;}
+body{font-family:'Inter',sans-serif;overflow-x:hidden;}
+
+/* ── NAVBAR ─────────────────────────────────────────────────── */
+.navbar{
+    position:fixed;top:0;left:0;right:0;z-index:1000;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 60px;
+    background:rgba(0,0,0,0.35);
+    backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px);
+    border-bottom:1px solid rgba(255,255,255,0.1);
+    transition:background 0.3s;
+}
+.navbar.scrolled{background:rgba(90,0,0,0.95);}
+.nav-brand{display:flex;align-items:center;gap:12px;text-decoration:none;}
+.nav-brand img{width:42px;height:42px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,0.4);}
+.nav-brand-name{color:#fff;font-size:18px;font-weight:700;letter-spacing:0.5px;}
+.nav-links{display:flex;align-items:center;gap:36px;}
+.nav-links a{color:rgba(255,255,255,0.88);text-decoration:none;font-size:14px;font-weight:500;transition:color 0.2s;}
+.nav-links a:hover{color:#FFD700;}
+.nav-actions{display:flex;align-items:center;gap:12px;}
+.btn-signin{
+    background:#8B0000;color:#fff;border:none;padding:9px 22px;
+    border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;
+    text-decoration:none;transition:background 0.2s;
+}
+.btn-signin:hover{background:#6B0000;}
+.btn-register{
+    background:transparent;color:#fff;border:2px solid rgba(255,255,255,0.6);
+    padding:7px 22px;border-radius:6px;font-size:14px;font-weight:600;
+    cursor:pointer;text-decoration:none;transition:all 0.2s;
+}
+.btn-register:hover{border-color:#fff;background:rgba(255,255,255,0.1);}
+
+/* ── HERO ────────────────────────────────────────────────────── */
+.hero{
+    min-height:100vh;
+    background:url('image/school_bg.jpg') center/cover no-repeat;
+    position:relative;
+    display:flex;align-items:center;
+    padding:0 60px;
+}
+/* Fallback gradient if image missing */
+.hero::before{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(135deg,rgba(0,0,0,0.62) 0%,rgba(90,0,0,0.45) 50%,rgba(0,0,0,0.5) 100%);
+}
+.hero-content{position:relative;z-index:1;max-width:680px;}
+.hero-eyebrow{
+    display:inline-flex;align-items:center;gap:8px;
+    background:rgba(245,166,35,0.18);border:1px solid rgba(245,166,35,0.4);
+    color:#FFD700;font-size:12px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;
+    padding:6px 14px;border-radius:20px;margin-bottom:22px;
+}
+.hero h1{
+    font-family:'Inter',sans-serif;
+    font-size:clamp(36px,5vw,62px);
+    font-weight:900;
+    color:#fff;
+    line-height:1.12;
+    margin-bottom:6px;
+}
+.hero h1 .highlight{color:#F5A623;}
+.hero-subtitle{
+    font-size:clamp(14px,2vw,17px);color:rgba(255,255,255,0.78);
+    line-height:1.7;margin-bottom:36px;max-width:540px;
+}
+.hero-actions{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.hero-btn-primary{
+    display:inline-flex;align-items:center;gap:9px;
+    background:#8B0000;color:#fff;text-decoration:none;
+    padding:14px 30px;border-radius:8px;font-size:15px;font-weight:700;
+    transition:all 0.22s;box-shadow:0 4px 20px rgba(139,0,0,0.45);
+}
+.hero-btn-primary:hover{background:#a30000;transform:translateY(-2px);box-shadow:0 8px 28px rgba(139,0,0,0.5);}
+.hero-btn-secondary{
+    display:inline-flex;align-items:center;gap:9px;
+    background:rgba(255,255,255,0.12);color:#fff;text-decoration:none;
+    padding:14px 30px;border-radius:8px;font-size:15px;font-weight:600;
+    border:2px solid rgba(255,255,255,0.35);transition:all 0.22s;
+    backdrop-filter:blur(4px);
+}
+.hero-btn-secondary:hover{background:rgba(255,255,255,0.22);border-color:#fff;}
+.hero-right{
+    position:absolute;right:80px;top:50%;transform:translateY(-50%);
+    z-index:1;
+}
+.hero-logo-circle{
+    width:220px;height:220px;border-radius:50%;
+    border:5px solid rgba(255,255,255,0.35);
+    box-shadow:0 8px 40px rgba(0,0,0,0.4),0 0 0 15px rgba(255,255,255,0.06);
+    object-fit:cover;
+    animation:floatLogo 4s ease-in-out infinite;
+}
+@keyframes floatLogo{0%,100%{transform:translateY(0);}50%{transform:translateY(-12px);}}
+
+/* ── STATS BAR ───────────────────────────────────────────────── */
+.stats-bar{
+    background:linear-gradient(135deg,#8B0000 0%,#6B0000 100%);
+    padding:32px 60px;
+    display:grid;grid-template-columns:repeat(4,1fr);
+    gap:20px;
+}
+.stat-item{text-align:center;}
+.stat-num{font-size:38px;font-weight:800;color:#FFD700;line-height:1;}
+.stat-lbl{font-size:13px;color:rgba(255,255,255,0.75);margin-top:4px;font-weight:500;}
+
+/* ── SECTION COMMONS ─────────────────────────────────────────── */
+.section{padding:90px 60px;}
+.section-tag{
+    display:inline-block;background:#fff0f0;color:#8B0000;
+    font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
+    padding:5px 14px;border-radius:20px;margin-bottom:12px;border:1px solid rgba(139,0,0,0.15);
+}
+.section-title{
+    font-family:'Playfair Display',serif;font-size:clamp(28px,4vw,42px);
+    color:#1a1a2e;font-weight:700;margin-bottom:14px;line-height:1.2;
+}
+.section-title span{color:#8B0000;}
+.section-desc{font-size:16px;color:#555;line-height:1.75;max-width:600px;}
+
+/* ── ABOUT SYSTEM ────────────────────────────────────────────── */
+.about-section{background:#fff;}
+.about-grid{display:grid;grid-template-columns:1fr 1fr;gap:70px;align-items:center;}
+.about-visual{position:relative;}
+.about-img-card{
+    background:linear-gradient(135deg,#8B0000 0%,#5a0000 100%);
+    border-radius:20px;padding:36px;color:#fff;
+    box-shadow:0 20px 60px rgba(139,0,0,0.28);
+}
+.about-img-icon{font-size:52px;margin-bottom:16px;}
+.about-img-card h3{font-size:22px;font-weight:700;margin-bottom:8px;}
+.about-img-card p{font-size:14px;opacity:0.82;line-height:1.65;}
+.about-badge{
+    position:absolute;bottom:-18px;right:-18px;
+    background:#FFD700;color:#1a1a2e;
+    width:90px;height:90px;border-radius:50%;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    font-weight:800;font-size:13px;text-align:center;line-height:1.2;
+    box-shadow:0 8px 24px rgba(245,166,35,0.4);
+}
+.about-badge strong{font-size:22px;display:block;}
+.features-list{display:flex;flex-direction:column;gap:20px;margin-top:28px;}
+.feature-item{display:flex;gap:16px;align-items:flex-start;}
+.feature-icon{
+    width:46px;height:46px;border-radius:12px;
+    background:#fff0f0;display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;color:#8B0000;
+}
+.feature-text h4{font-size:15px;font-weight:700;color:#1a1a2e;margin-bottom:4px;}
+.feature-text p{font-size:13px;color:#666;line-height:1.6;}
+
+/* ── HOW IT WORKS ────────────────────────────────────────────── */
+.how-section{background:#fafafa;}
+.steps-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:28px;margin-top:52px;}
+.step-card{
+    background:#fff;border-radius:16px;padding:28px 22px;text-align:center;
+    border:1px solid #eee;box-shadow:0 2px 16px rgba(0,0,0,0.05);
+    transition:all 0.25s;position:relative;overflow:hidden;
+}
+.step-card:hover{transform:translateY(-6px);box-shadow:0 12px 40px rgba(139,0,0,0.12);border-color:rgba(139,0,0,0.2);}
+.step-card::before{
+    content:'';position:absolute;top:0;left:0;right:0;height:4px;
+    background:linear-gradient(90deg,#8B0000,#F5A623);
+}
+.step-num{
+    width:48px;height:48px;border-radius:50%;
+    background:linear-gradient(135deg,#8B0000,#6B0000);
+    color:#fff;font-size:18px;font-weight:800;
+    display:flex;align-items:center;justify-content:center;
+    margin:0 auto 16px;box-shadow:0 4px 14px rgba(139,0,0,0.35);
+}
+.step-icon{font-size:32px;margin-bottom:12px;}
+.step-card h4{font-size:15px;font-weight:700;color:#1a1a2e;margin-bottom:8px;}
+.step-card p{font-size:13px;color:#666;line-height:1.6;}
+
+/* ── FEATURES HIGHLIGHT ──────────────────────────────────────── */
+.features-section{
+    background:linear-gradient(135deg,#8B0000 0%,#5a0000 100%);
+    position:relative;overflow:hidden;
+}
+.features-section::before{
+    content:'';position:absolute;inset:0;
+    background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Ccircle cx='30' cy='30' r='20'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+.features-inner{position:relative;z-index:1;}
+.features-section .section-title{color:#fff;}
+.features-section .section-desc{color:rgba(255,255,255,0.75);}
+.features-section .section-tag{background:rgba(255,215,0,0.15);color:#FFD700;border-color:rgba(255,215,0,0.3);}
+.feat-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:52px;}
+.feat-card{
+    background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);
+    border-radius:16px;padding:28px;backdrop-filter:blur(6px);
+    transition:all 0.25s;
+}
+.feat-card:hover{background:rgba(255,255,255,0.12);transform:translateY(-4px);}
+.feat-card-icon{
+    width:52px;height:52px;border-radius:12px;
+    background:rgba(245,166,35,0.2);display:flex;align-items:center;justify-content:center;
+    margin-bottom:16px;color:#FFD700;
+}
+.feat-card h4{font-size:16px;font-weight:700;color:#fff;margin-bottom:8px;}
+.feat-card p{font-size:13px;color:rgba(255,255,255,0.68);line-height:1.65;}
+
+/* ── TEAM ────────────────────────────────────────────────────── */
+.team-section{background:#fff;}
+.team-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:28px;margin-top:52px;}
+.team-card{text-align:center;}
+.team-avatar{
+    width:90px;height:90px;border-radius:50%;margin:0 auto 14px;
+    background:linear-gradient(135deg,#8B0000,#6B0000);
+    display:flex;align-items:center;justify-content:center;
+    font-size:30px;font-weight:700;color:#fff;
+    border:3px solid #f0f0f0;box-shadow:0 4px 16px rgba(139,0,0,0.2);
+}
+.team-name{font-size:15px;font-weight:700;color:#1a1a2e;margin-bottom:3px;}
+.team-role{font-size:12px;color:#8B0000;font-weight:600;margin-bottom:6px;}
+.team-desc{font-size:12px;color:#777;line-height:1.55;}
+
+/* ── CONTACT ─────────────────────────────────────────────────── */
+.contact-section{background:#fafafa;}
+.contact-grid{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:start;margin-top:52px;}
+.contact-info{display:flex;flex-direction:column;gap:22px;}
+.contact-item{display:flex;gap:16px;align-items:flex-start;}
+.contact-icon{
+    width:46px;height:46px;border-radius:12px;
+    background:#fff0f0;display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;color:#8B0000;
+}
+.contact-item-text h4{font-size:14px;font-weight:700;color:#1a1a2e;margin-bottom:3px;}
+.contact-item-text p{font-size:13px;color:#666;line-height:1.6;}
+.contact-form{background:#fff;border-radius:16px;padding:32px;box-shadow:0 4px 24px rgba(0,0,0,0.07);}
+.cf-group{margin-bottom:16px;}
+.cf-group label{display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px;}
+.cf-group input,.cf-group textarea{
+    width:100%;padding:11px 14px;border:1.5px solid #e5e7eb;border-radius:9px;
+    font-family:'Inter',sans-serif;font-size:14px;color:#1a1a2e;outline:none;
+    transition:border-color 0.2s;background:#fafafa;
+}
+.cf-group input:focus,.cf-group textarea:focus{border-color:#8B0000;background:#fff;box-shadow:0 0 0 3px rgba(139,0,0,0.08);}
+.cf-group textarea{min-height:110px;resize:vertical;}
+.cf-submit{
+    width:100%;padding:12px;background:#8B0000;color:#fff;border:none;
+    border-radius:9px;font-size:15px;font-weight:700;cursor:pointer;
+    font-family:'Inter',sans-serif;transition:background 0.2s;
+}
+.cf-submit:hover{background:#a30000;}
+
+/* ── FOOTER ─────────────────────────────────────────────────── */
+footer{
+    background:#1a1a2e;padding:40px 60px;
+    display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px;
+}
+.footer-brand{display:flex;align-items:center;gap:12px;}
+.footer-brand img{width:38px;height:38px;border-radius:50%;border:2px solid rgba(255,255,255,0.2);}
+.footer-brand-name{color:#fff;font-size:15px;font-weight:700;}
+.footer-brand-sub{color:rgba(255,255,255,0.45);font-size:11px;}
+.footer-copy{color:rgba(255,255,255,0.45);font-size:12px;}
+.footer-links{display:flex;gap:20px;}
+.footer-links a{color:rgba(255,255,255,0.55);font-size:12px;text-decoration:none;transition:color 0.2s;}
+.footer-links a:hover{color:#FFD700;}
+
+/* ── SCROLL REVEAL ───────────────────────────────────────────── */
+.reveal{opacity:0;transform:translateY(32px);transition:opacity 0.65s ease,transform 0.65s ease;}
+.reveal.visible{opacity:1;transform:translateY(0);}
+
+/* ── RESPONSIVE ──────────────────────────────────────────────── */
+@media(max-width:900px){
+    .navbar{padding:12px 24px;}
+    .hero{padding:0 24px;min-height:100vh;}
+    .hero-right{display:none;}
+    .stats-bar{grid-template-columns:repeat(2,1fr);padding:28px 24px;}
+    .section{padding:60px 24px;}
+    .about-grid,.contact-grid{grid-template-columns:1fr;}
+    .steps-grid,.feat-cards{grid-template-columns:repeat(2,1fr);}
+    footer{flex-direction:column;text-align:center;padding:28px 24px;}
+}
+@media(max-width:560px){
+    .nav-links{display:none;}
+    .steps-grid,.feat-cards,.team-grid{grid-template-columns:1fr;}
+}
+</style>
 </head>
-<body class="auth-page">
+<body>
 
-<div class="left-panel">
-    <div>
+<!-- ══ NAVBAR ════════════════════════════════════════════════════════════ -->
+<nav class="navbar" id="navbar">
+    <a href="#" class="nav-brand">
+        <img src="image/logo.png" alt="OLSHCO Logo" onerror="this.style.display='none'">
+        <span class="nav-brand-name">OLSHCO</span>
+    </a>
+    <div class="nav-links">
+        <a href="#home">Home</a>
+        <a href="#about">About us</a>
+        <a href="#how">How it Works</a>
+        <a href="#team">Team</a>
+        <a href="#contact">Contact</a>
+    </div>
+    <div class="nav-actions">
+        <a href="login.php" class="btn-signin">SIGN IN</a>
+        <a href="register.php" class="btn-register">REGISTER</a>
+    </div>
+</nav>
+
+<!-- ══ HERO ══════════════════════════════════════════════════════════════ -->
+<section class="hero" id="home">
+    <div class="hero-content">
+        <div class="hero-eyebrow">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            OLSHCO Faculty Evaluation Portal
+        </div>
         <h1>
-            Anonymous Online<br>
-            <span class="highlight">Faculty Performance</span><br>
-            Evaluation and Feedback System
+            Welcome to <span class="highlight">OLSHCO</span><br>
+            <span class="highlight">Faculty Evaluation</span><br>
+            Portal.
         </h1>
-        <p>Share honest, anonymous feedback about your faculty members to help improve education quality.</p>
-    </div>
-</div>
-
-<div class="right-panel">
-    <div class="form-box">
-        <h2>Log in</h2>
-        <p class="subtitle">Welcome back. Enter your credentials to continue.</p>
-
-        <?php if (isset($_GET['timeout'])): ?>
-        <div class="auth-alert auth-alert-warning">
-            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            You were logged out due to inactivity.
-        </div>
-        <?php endif; ?>
-
-        <?php if (isset($error)): ?>
-        <div class="auth-alert auth-alert-error">
-            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            <?php echo htmlspecialchars($error); ?>
-        </div>
-        <?php endif; ?>
-
-        <form method="POST">
-            <div class="input-group">
-                <input type="text" name="username" placeholder="Username" required autocomplete="username">
-            </div>
-            <div class="input-group">
-                <input type="password" name="password" placeholder="Password" required autocomplete="current-password">
-            </div>
-            <button type="submit" name="login">Login</button>
-        </form>
-
-        <p class="link-text">
-            Don't have an account? <a href="register.php">Register</a>
+        <p class="hero-subtitle">
+            Bridging the gap between feedback and academic growth.
+            Share honest, anonymous evaluations to help our faculty deliver better education.
         </p>
+        <div class="hero-actions">
+            <a href="login.php" class="hero-btn-primary">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
+                Get Started
+            </a>
+            <a href="#about" class="hero-btn-secondary">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                Learn More
+            </a>
+        </div>
+    </div>
+    <div class="hero-right">
+        <img src="image/logo.png" alt="OLSHCO Seal" class="hero-logo-circle"
+             onerror="this.style.display='none'">
+    </div>
+</section>
+
+<!-- ══ STATS BAR ══════════════════════════════════════════════════════════ -->
+<div class="stats-bar">
+    <div class="stat-item">
+        <div class="stat-num">500+</div>
+        <div class="stat-lbl">Student Reviews</div>
+    </div>
+    <div class="stat-item">
+        <div class="stat-num">50+</div>
+        <div class="stat-lbl">Faculty Members</div>
+    </div>
+    <div class="stat-item">
+        <div class="stat-num">100%</div>
+        <div class="stat-lbl">Anonymous</div>
+    </div>
+    <div class="stat-item">
+        <div class="stat-num">1947</div>
+        <div class="stat-lbl">Established</div>
     </div>
 </div>
 
+<!-- ══ ABOUT SECTION ══════════════════════════════════════════════════════ -->
+<section class="section about-section" id="about">
+    <div class="about-grid">
+        <div class="about-visual reveal">
+            <div class="about-img-card">
+                <div class="about-img-icon">🎓</div>
+                <h3>Our Lady of the Sacred Heart College of Guimba, Inc.</h3>
+                <p>Established in 1947, OLSHCO has been a pillar of academic excellence in Guimba, Nueva Ecija. Our Faculty Evaluation Portal empowers students to contribute meaningfully to the institution's continuous improvement.</p>
+            </div>
+            <div class="about-badge"><strong>1947</strong>Est.</div>
+        </div>
+        <div class="about-text reveal">
+            <div class="section-tag">About the System</div>
+            <h2 class="section-title">Anonymous Online<br><span>Faculty Performance</span><br>Evaluation System</h2>
+            <p class="section-desc">A secure, AI-powered platform where students can submit anonymous, honest evaluations of their faculty members — fostering accountability and driving academic excellence.</p>
+            <div class="features-list">
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    </div>
+                    <div class="feature-text">
+                        <h4>Complete Anonymity</h4>
+                        <p>Your identity is never revealed. Submit reviews with full confidence and honesty.</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    </div>
+                    <div class="feature-text">
+                        <h4>AI-Powered Moderation</h4>
+                        <p>Groq AI ensures all reviews are constructive, respectful, and free from toxic content.</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                    </div>
+                    <div class="feature-text">
+                        <h4>Insightful Analytics</h4>
+                        <p>Administrators access detailed performance reports to support data-driven academic decisions.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ══ HOW IT WORKS ════════════════════════════════════════════════════════ -->
+<section class="section how-section" id="how">
+    <div style="text-align:center;" class="reveal">
+        <div class="section-tag">How It Works</div>
+        <h2 class="section-title">Simple. Secure. <span>Impactful.</span></h2>
+        <p class="section-desc" style="margin:0 auto;">Four easy steps to make your voice heard and help shape the future of education at OLSHCO.</p>
+    </div>
+    <div class="steps-grid">
+        <div class="step-card reveal">
+            <div class="step-num">1</div>
+            <div class="step-icon">📝</div>
+            <h4>Create Account</h4>
+            <p>Register with a pseudonym to keep your identity completely anonymous throughout the process.</p>
+        </div>
+        <div class="step-card reveal">
+            <div class="step-num">2</div>
+            <div class="step-icon">🔍</div>
+            <h4>Select Faculty</h4>
+            <p>Browse the list of faculty members and choose the ones you want to evaluate based on your experience.</p>
+        </div>
+        <div class="step-card reveal">
+            <div class="step-num">3</div>
+            <div class="step-icon">⭐</div>
+            <h4>Rate & Review</h4>
+            <p>Give star ratings across 5 categories and write your honest, constructive feedback.</p>
+        </div>
+        <div class="step-card reveal">
+            <div class="step-num">4</div>
+            <div class="step-icon">✅</div>
+            <h4>Admin Reviews</h4>
+            <p>Admins moderate submissions for quality, then publish approved reviews to the platform.</p>
+        </div>
+    </div>
+</section>
+
+<!-- ══ FEATURES ════════════════════════════════════════════════════════════ -->
+<section class="section features-section">
+    <div class="features-inner">
+        <div class="reveal" style="text-align:center;">
+            <div class="section-tag">Key Features</div>
+            <h2 class="section-title">Everything You Need for <span style="color:#FFD700;">Better Evaluation</span></h2>
+            <p class="section-desc" style="margin:0 auto;">Built with modern technology to ensure a seamless, secure, and meaningful evaluation experience for every student and administrator.</p>
+        </div>
+        <div class="feat-cards">
+            <div class="feat-card reveal">
+                <div class="feat-card-icon">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                <h4>100% Anonymous Reviews</h4>
+                <p>Pseudonym-based system ensures your real identity is never linked to your feedback — ever.</p>
+            </div>
+            <div class="feat-card reveal">
+                <div class="feat-card-icon">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+                </div>
+                <h4>AI Sentiment Analysis</h4>
+                <p>Groq AI automatically analyzes sentiment and flags inappropriate content before it reaches admins.</p>
+            </div>
+            <div class="feat-card reveal">
+                <div class="feat-card-icon">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                </div>
+                <h4>Multi-Dimension Ratings</h4>
+                <p>Rate faculty across Teaching, Communication, Punctuality, Fairness, and Overall Satisfaction.</p>
+            </div>
+            <div class="feat-card reveal">
+                <div class="feat-card-icon">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                </div>
+                <h4>Instant Email Notifications</h4>
+                <p>Get notified by email the moment your review is approved or rejected by the administrator.</p>
+            </div>
+            <div class="feat-card reveal">
+                <div class="feat-card-icon">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+                </div>
+                <h4>Admin Dashboard</h4>
+                <p>Comprehensive admin panel with faculty leaderboards, weekly charts, and AI-generated monthly reports.</p>
+            </div>
+            <div class="feat-card reveal">
+                <div class="feat-card-icon">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                </div>
+                <h4>FAQ AI Chatbot</h4>
+                <p>Built-in Groq-powered chatbot answers student questions about the system 24/7.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ══ TEAM SECTION ════════════════════════════════════════════════════════ -->
+<section class="section team-section" id="team">
+    <div style="text-align:center;" class="reveal">
+        <div class="section-tag">Meet the Team</div>
+        <h2 class="section-title">The People Behind <span>OlshcoReview</span></h2>
+        <p class="section-desc" style="margin:0 auto;">A dedicated group of students and developers who built this platform to improve academic quality at OLSHCO.</p>
+    </div>
+    <div class="team-grid">
+        <div class="team-card reveal">
+            <div class="team-avatar">👨‍💻</div>
+            <div class="team-name">Lead Developer</div>
+            <div class="team-role">Full Stack Developer</div>
+            <div class="team-desc">Architected and built the entire evaluation platform from the ground up.</div>
+        </div>
+        <div class="team-card reveal">
+            <div class="team-avatar">🎨</div>
+            <div class="team-name">UI/UX Designer</div>
+            <div class="team-role">Interface Designer</div>
+            <div class="team-desc">Crafted the visual identity and user experience for a seamless journey.</div>
+        </div>
+        <div class="team-card reveal">
+            <div class="team-avatar">🤖</div>
+            <div class="team-name">AI Integration</div>
+            <div class="team-role">AI/ML Engineer</div>
+            <div class="team-desc">Integrated Groq AI for sentiment analysis, moderation, and chatbot features.</div>
+        </div>
+        <div class="team-card reveal">
+            <div class="team-avatar">📊</div>
+            <div class="team-name">Data Analyst</div>
+            <div class="team-role">Systems Analyst</div>
+            <div class="team-desc">Designed the database schema and reporting analytics pipeline.</div>
+        </div>
+        <div class="team-card reveal">
+            <div class="team-avatar">🔒</div>
+            <div class="team-name">Security Lead</div>
+            <div class="team-role">Security & QA</div>
+            <div class="team-desc">Ensured platform security, anonymity protocols, and quality assurance.</div>
+        </div>
+    </div>
+</section>
+
+<!-- ══ CONTACT SECTION ════════════════════════════════════════════════════ -->
+<section class="section contact-section" id="contact">
+    <div class="reveal" style="text-align:center;">
+        <div class="section-tag">Contact Us</div>
+        <h2 class="section-title">Get in <span>Touch</span></h2>
+        <p class="section-desc" style="margin:0 auto;">Have questions about the evaluation system? Reach out to the OlshcoReview team or the school administration.</p>
+    </div>
+    <div class="contact-grid">
+        <div class="contact-info reveal">
+            <div class="contact-item">
+                <div class="contact-icon">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                </div>
+                <div class="contact-item-text">
+                    <h4>Address</h4>
+                    <p>Our Lady of the Sacred Heart College of Guimba, Inc.<br>Guimba, Nueva Ecija, Philippines</p>
+                </div>
+            </div>
+            <div class="contact-item">
+                <div class="contact-icon">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                </div>
+                <div class="contact-item-text">
+                    <h4>Email</h4>
+                    <p>olshco@example.com<br>support@olshcoreview.edu.ph</p>
+                </div>
+            </div>
+            <div class="contact-item">
+                <div class="contact-icon">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.022 1.18 2 2 0 012 .022h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/></svg>
+                </div>
+                <div class="contact-item-text">
+                    <h4>Phone</h4>
+                    <p>+63 (044) 000-0000<br>Monday – Friday, 8AM – 5PM</p>
+                </div>
+            </div>
+            <div class="contact-item">
+                <div class="contact-icon">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                <div class="contact-item-text">
+                    <h4>About the System</h4>
+                    <p>For technical issues or feedback about the evaluation portal, use the form or contact the IT department directly.</p>
+                </div>
+            </div>
+        </div>
+        <div class="contact-form reveal">
+            <h3 style="font-size:18px;font-weight:700;color:#1a1a2e;margin-bottom:20px;">Send a Message</h3>
+            <form onsubmit="event.preventDefault(); alert('Message sent! We\'ll get back to you soon.');">
+                <div class="cf-group">
+                    <label>Full Name</label>
+                    <input type="text" placeholder="Your full name" required>
+                </div>
+                <div class="cf-group">
+                    <label>Email Address</label>
+                    <input type="email" placeholder="your@email.com" required>
+                </div>
+                <div class="cf-group">
+                    <label>Subject</label>
+                    <input type="text" placeholder="How can we help?">
+                </div>
+                <div class="cf-group">
+                    <label>Message</label>
+                    <textarea placeholder="Write your message here..."></textarea>
+                </div>
+                <button type="submit" class="cf-submit">
+                    Send Message
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="display:inline;margin-left:8px;vertical-align:middle;"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                </button>
+            </form>
+        </div>
+    </div>
+</section>
+
+<!-- ══ FOOTER ═════════════════════════════════════════════════════════════ -->
+<footer>
+    <div class="footer-brand">
+        <img src="image/logo.png" alt="OLSHCO" onerror="this.style.display='none'">
+        <div>
+            <div class="footer-brand-name">OlshcoReview</div>
+            <div class="footer-brand-sub">Anonymous Faculty Evaluation System</div>
+        </div>
+    </div>
+    <div class="footer-copy">© <?php echo date('Y'); ?> OLSHCO — All rights reserved.</div>
+    <div class="footer-links">
+        <a href="login.php">Sign In</a>
+        <a href="register.php">Register</a>
+        <a href="#about">About</a>
+        <a href="#contact">Contact</a>
+    </div>
+</footer>
+
+<script>
+// Navbar scroll effect
+window.addEventListener('scroll', () => {
+    document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 60);
+});
+
+// Scroll reveal
+const reveals = document.querySelectorAll('.reveal');
+const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });
+}, { threshold: 0.12 });
+reveals.forEach(r => io.observe(r));
+
+// Smooth scroll for nav links
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+        e.preventDefault();
+        const t = document.querySelector(a.getAttribute('href'));
+        if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+});
+</script>
 </body>
 </html>

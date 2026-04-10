@@ -1,5 +1,19 @@
 <?php
-include "config.php";
+date_default_timezone_set('Asia/Manila');
+if (session_status() === PHP_SESSION_NONE) session_start();
+
+// Config inline to avoid circular dependency before config.php is ready
+$env_path = __DIR__ . '/.env';
+if (file_exists($env_path)) {
+    $env = parse_ini_file($env_path);
+    $conn = mysqli_connect($env['DB_HOST'], $env['DB_USER'], $env['DB_PASS'], $env['DB_NAME']);
+    mysqli_query($conn, "SET time_zone = '+8:00'");
+}
+
+if (isset($_SESSION['user_id'])) {
+    header("Location: dashboard.php"); exit();
+}
+
 include "email_helper.php";
 
 if (isset($_POST['register'])) {
@@ -8,29 +22,26 @@ if (isset($_POST['register'])) {
     $email            = trim($_POST['email']            ?? '');
     $password         = $_POST['password']              ?? '';
     $confirm_password = $_POST['confirm_password']      ?? '';
-
     $error = '';
 
-    if (empty($pseudo_name))            $error = "Pseudo-name is required.";
-    elseif (empty($username))           $error = "Username is required.";
-    elseif (empty($email))              $error = "Email is required.";
-    elseif (strlen($password) < 6)      $error = "Password must be at least 6 characters.";
+    if (empty($pseudo_name))              $error = "Pseudonym is required.";
+    elseif (empty($username))             $error = "Username is required.";
+    elseif (empty($email))                $error = "Email is required.";
+    elseif (strlen($password) < 6)        $error = "Password must be at least 6 characters.";
     elseif ($password !== $confirm_password) $error = "Passwords do not match.";
     else {
         $pseudo_safe = mysqli_real_escape_string($conn, $pseudo_name);
         $user_safe   = mysqli_real_escape_string($conn, $username);
         $email_safe  = mysqli_real_escape_string($conn, $email);
-
         $check = mysqli_query($conn, "SELECT id FROM users WHERE username='$user_safe' OR email='$email_safe' LIMIT 1");
         if (mysqli_num_rows($check) > 0) {
             $error = "Username or Email already exists.";
         } else {
             $hashed      = password_hash($password, PASSWORD_DEFAULT);
             $hashed_safe = mysqli_real_escape_string($conn, $hashed);
-            mysqli_query($conn, "INSERT INTO users (fullname, username, email, password)
-                                  VALUES ('$pseudo_safe','$user_safe','$email_safe','$hashed_safe')");
+            mysqli_query($conn, "INSERT INTO users (fullname, username, email, password) VALUES ('$pseudo_safe','$user_safe','$email_safe','$hashed_safe')");
             sendBrevoEmail($email, $pseudo_name, 'Welcome to AnonymousReview!', welcomeEmailHtml($pseudo_name));
-            header("Location: index.php");
+            header("Location: login.php");
             exit();
         }
     }
@@ -41,182 +52,191 @@ if (isset($_POST['register'])) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Register — AnonymousReview</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/style.css">
-<link rel="stylesheet" href="assets/css/auth.css">
+<title>Register — OlshcoReview</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+    font-family:'Inter',sans-serif;min-height:100vh;
+    background:url('image/school_bg.jpg') center/cover no-repeat fixed;
+    position:relative;display:flex;align-items:stretch;
+}
+body::before{
+    content:'';position:fixed;inset:0;
+    background:rgba(0,0,0,0.48);z-index:0;
+}
+.page-wrap{position:relative;z-index:1;display:flex;width:100%;min-height:100vh;}
+
+/* ── LEFT PANEL ─────────────────────────────── */
+.left-panel{
+    flex:1;display:flex;flex-direction:column;
+    align-items:flex-start;justify-content:center;
+    padding:60px 50px;
+}
+.logo-card{
+    background:rgba(255,255,255,0.1);
+    border:1px solid rgba(255,255,255,0.2);
+    border-radius:20px;padding:30px;
+    backdrop-filter:blur(8px);
+    margin-bottom:36px;
+    display:flex;align-items:center;justify-content:center;
+}
+.logo-card img{width:170px;height:170px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,0.3);}
+.left-title{
+    font-size:clamp(24px,3vw,38px);font-weight:700;
+    color:#fff;line-height:1.18;
+}
+.left-title .gold{color:#F5A623;}
+
+/* ── RIGHT PANEL ────────────────────────────── */
+.right-panel{
+    width:520px;flex-shrink:0;
+    display:flex;flex-direction:column;
+    align-items:center;justify-content:center;
+    padding:50px 56px;
+}
+.form-card{width:100%;max-width:420px;}
+.form-card h2{
+    font-size:clamp(30px,4vw,46px);font-weight:900;
+    color:#fff;margin-bottom:24px;
+    text-shadow:0 2px 12px rgba(0,0,0,0.3);
+}
+.field-label{
+    font-size:14px;font-weight:600;color:#fff;
+    margin-bottom:7px;display:block;
+    text-shadow:0 1px 4px rgba(0,0,0,0.3);
+}
+.input-wrap{position:relative;margin-bottom:16px;}
+.input-wrap svg{
+    position:absolute;left:16px;top:50%;transform:translateY(-50%);
+    color:#555;width:20px;height:20px;pointer-events:none;
+}
+.input-wrap input{
+    width:100%;padding:13px 16px 13px 48px;
+    background:rgba(255,255,255,0.95);
+    border:none;border-radius:30px;
+    font-family:'Inter',sans-serif;font-size:14px;color:#1a1a2e;
+    outline:none;transition:box-shadow 0.2s;
+}
+.input-wrap input:focus{box-shadow:0 0 0 3px rgba(139,0,0,0.35);}
+.input-wrap input::placeholder{color:#aaa;}
+.btn-register{
+    width:100%;padding:13px;
+    background:#8B0000;color:#fff;border:none;
+    border-radius:30px;font-size:16px;font-weight:700;
+    cursor:pointer;font-family:'Inter',sans-serif;
+    transition:background 0.2s,transform 0.15s;
+    margin-top:6px;margin-bottom:16px;
+    box-shadow:0 4px 18px rgba(139,0,0,0.45);
+}
+.btn-register:hover{background:#a30000;transform:translateY(-2px);}
+.bottom-link{
+    font-size:14px;font-weight:600;color:#fff;text-align:center;
+    text-shadow:0 1px 4px rgba(0,0,0,0.3);
+}
+.bottom-link a{color:#F5A623;text-decoration:none;font-weight:700;}
+.bottom-link a:hover{text-decoration:underline;}
+.alert-error{
+    background:rgba(220,38,38,0.18);border:1px solid rgba(220,38,38,0.45);
+    color:#fff;border-radius:12px;padding:11px 16px;
+    font-size:13px;margin-bottom:16px;display:flex;align-items:center;gap:8px;
+    backdrop-filter:blur(4px);
+}
+.pw-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.back-home{
+    position:fixed;top:22px;left:26px;z-index:100;
+    display:inline-flex;align-items:center;gap:7px;
+    color:rgba(255,255,255,0.8);text-decoration:none;font-size:13px;font-weight:500;
+    background:rgba(0,0,0,0.3);padding:7px 14px;border-radius:20px;
+    border:1px solid rgba(255,255,255,0.2);transition:all 0.2s;backdrop-filter:blur(4px);
+}
+.back-home:hover{color:#fff;background:rgba(0,0,0,0.5);}
+@media(max-width:768px){
+    .left-panel{display:none;}
+    .right-panel{width:100%;padding:40px 24px;}
+    .pw-row{grid-template-columns:1fr;}
+}
+</style>
 </head>
-<body class="auth-page">
-
-<div class="left-panel">
-    <div>
-        <h1>
-            Anonymous Online<br>
-            <span class="highlight">Faculty Performance</span><br>
-            Evaluation System
-        </h1>
-        <p>Share honest, anonymous feedback about your faculty members to help improve education quality.</p>
-    </div>
-</div>
-
-<div class="right-panel">
-    <div class="form-box">
-        <h2>Create Account</h2>
-        <p class="subtitle">Join anonymously — your identity stays private.</p>
-
-        <?php if (!empty($error)): ?>
-        <div class="auth-alert auth-alert-error">
-            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            <?php echo htmlspecialchars($error); ?>
+<body>
+<a href="index.php" class="back-home">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+    Back to Home
+</a>
+<div class="page-wrap">
+    <!-- Left -->
+    <div class="left-panel">
+        <div class="logo-card">
+            <img src="image/logo.png" alt="OLSHCO" onerror="this.style.display='none'">
         </div>
-        <?php endif; ?>
+        <div class="left-title">
+            Anonymous Online<br>
+            <span class="gold">Faculty Performance</span><br>
+            <span class="gold">Evaluation and</span><br>
+            <span class="gold">Feedback System</span>
+        </div>
+    </div>
 
-        <form method="POST" id="regForm" novalidate>
+    <!-- Right -->
+    <div class="right-panel">
+        <div class="form-card">
+            <h2>Register</h2>
 
-            <div class="form-group">
-                <label>Pseudo-Name <span class="req">*</span></label>
+            <?php if (!empty($error)): ?>
+            <div class="alert-error">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <?php echo htmlspecialchars($error); ?>
+            </div>
+            <?php endif; ?>
+
+            <form method="POST" id="regForm" novalidate>
+
+                <label class="field-label">Pseudonym:</label>
                 <div class="input-wrap">
-                    <input type="text" name="pseudo_name" id="pseudoInput"
-                           placeholder="e.g. SwiftFalcon042"
-                           value="<?php echo htmlspecialchars($_POST['pseudo_name'] ?? ''); ?>"
-                           required autocomplete="off"
-                           oninput="updatePseudoPreview(this.value)">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M7 15h2M11 15h6"/></svg>
+                    <input type="text" name="pseudo_name" placeholder="Enter your Pseudoname"
+                           value="<?php echo htmlspecialchars($_POST['pseudo_name'] ?? ''); ?>" required autocomplete="off">
                 </div>
-                <div class="hint">Your display name in the system — choose anything you like.</div>
-                <div id="pseudoPreview" class="pseudo-preview">
-                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-                    <span id="pseudoPreviewText"></span>
-                </div>
-            </div>
 
-            <hr class="divider">
-
-            <div class="form-group">
-                <label>Username <span class="req">*</span></label>
-                <input type="text" name="username"
-                       placeholder="Used for login only"
-                       value="<?php echo htmlspecialchars($_POST['username'] ?? ''); ?>"
-                       required autocomplete="username">
-                <div class="hint">Not shown publicly on reviews.</div>
-            </div>
-
-            <div class="form-group">
-                <label>Email Address <span class="req">*</span></label>
-                <input type="email" name="email"
-                       placeholder="you@example.com"
-                       value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>"
-                       required autocomplete="email">
-            </div>
-
-            <div class="form-group">
-                <label>Password <span class="req">*</span></label>
+                <label class="field-label">User Name:</label>
                 <div class="input-wrap">
-                    <input type="password" name="password" id="pw1"
-                           placeholder="Min. 6 characters"
-                           required autocomplete="new-password"
-                           oninput="checkStrength(this.value); checkMatch()">
-                    <button type="button" class="eye-btn" onclick="toggleEye('pw1','eye1')" tabindex="-1">
-                        <svg id="eye1" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                    </button>
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <input type="text" name="username" placeholder="Enter your Username"
+                           value="<?php echo htmlspecialchars($_POST['username'] ?? ''); ?>" required autocomplete="username">
                 </div>
-                <div class="pw-strength"><div class="pw-strength-bar" id="pwBar"></div></div>
-                <div class="pw-strength-label" id="pwLabel" style="color:var(--gray-400);"></div>
-            </div>
 
-            <div class="form-group">
-                <label>Confirm Password <span class="req">*</span></label>
+                <label class="field-label">Email:</label>
                 <div class="input-wrap">
-                    <input type="password" name="confirm_password" id="pw2"
-                           placeholder="Re-enter password"
-                           required autocomplete="new-password"
-                           oninput="checkMatch()">
-                    <button type="button" class="eye-btn" onclick="toggleEye('pw2','eye2')" tabindex="-1">
-                        <svg id="eye2" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                    </button>
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                    <input type="email" name="email" placeholder="example@gmail.com"
+                           value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>" required autocomplete="email">
                 </div>
-                <div class="hint" id="matchMsg"></div>
-            </div>
 
-            <button type="submit" name="register" class="btn-register">Create Account</button>
-        </form>
+                <label class="field-label">Password:</label>
+                <div class="input-wrap">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                    <input type="password" name="password" id="pw1" placeholder="Enter your Password" required autocomplete="new-password">
+                </div>
 
-        <p class="link-text">Already have an account? <a href="index.php">Log in</a></p>
+                <label class="field-label">Confirm Password:</label>
+                <div class="input-wrap">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                    <input type="password" name="confirm_password" id="pw2" placeholder="Re-enter Password" required autocomplete="new-password">
+                </div>
+
+                <button type="submit" name="register" class="btn-register">Register</button>
+            </form>
+            <p class="bottom-link">Already have an account? <a href="login.php">Log in</a></p>
+        </div>
     </div>
 </div>
-
 <script>
-const EYE_OPEN  = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
-const EYE_SLASH = '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
-
-function toggleEye(inputId, iconId) {
-    const input = document.getElementById(inputId);
-    const icon  = document.getElementById(iconId);
-    const show  = input.type === 'password';
-    input.type     = show ? 'text' : 'password';
-    icon.innerHTML = show ? EYE_SLASH : EYE_OPEN;
-}
-
-function checkStrength(val) {
-    const bar   = document.getElementById('pwBar');
-    const label = document.getElementById('pwLabel');
-    if (!val) { bar.style.width = '0%'; label.textContent = ''; return; }
-    let score = 0;
-    if (val.length >= 6)  score++;
-    if (val.length >= 10) score++;
-    if (/[A-Z]/.test(val) && /[a-z]/.test(val)) score++;
-    if (/[0-9]/.test(val)) score++;
-    if (/[^A-Za-z0-9]/.test(val)) score++;
-    const levels = [
-        { w: '20%', bg: '#ef4444', txt: 'Too short' },
-        { w: '40%', bg: '#f97316', txt: 'Weak'      },
-        { w: '60%', bg: '#f59e0b', txt: 'Fair'      },
-        { w: '80%', bg: '#3b82f6', txt: 'Good'      },
-        { w: '100%',bg: '#10b981', txt: 'Strong'    }
-    ];
-    const l = levels[Math.min(score, 4)];
-    bar.style.width      = l.w;
-    bar.style.background = l.bg;
-    label.style.color    = l.bg;
-    label.textContent    = l.txt;
-}
-
-function checkMatch() {
-    const p1  = document.getElementById('pw1').value;
-    const p2  = document.getElementById('pw2').value;
-    const msg = document.getElementById('matchMsg');
-    if (!p2) { msg.textContent = ''; return; }
-    if (p1 === p2) { msg.style.color = '#065f46'; msg.textContent = '✓ Passwords match'; }
-    else           { msg.style.color = '#991b1b'; msg.textContent = '✗ Passwords do not match'; }
-}
-
-function updatePseudoPreview(val) {
-    const p = document.getElementById('pseudoPreview');
-    const t = document.getElementById('pseudoPreviewText');
-    if (val.trim()) { p.style.display = 'flex'; t.textContent = val.trim(); }
-    else              p.style.display = 'none';
-}
-
-window.addEventListener('DOMContentLoaded', () => {
-    const v = document.getElementById('pseudoInput').value;
-    if (v) updatePseudoPreview(v);
-});
-
 document.getElementById('regForm').addEventListener('submit', function(e) {
     const pw1 = document.getElementById('pw1').value;
     const pw2 = document.getElementById('pw2').value;
-    if (pw1.length < 6) {
-        e.preventDefault();
-        document.getElementById('pwLabel').textContent  = '✗ Must be at least 6 characters';
-        document.getElementById('pwLabel').style.color  = '#991b1b';
-        return;
-    }
-    if (pw1 !== pw2) {
-        e.preventDefault();
-        document.getElementById('matchMsg').style.color = '#991b1b';
-        document.getElementById('matchMsg').textContent = '✗ Passwords do not match';
-    }
+    if (pw1.length < 6) { e.preventDefault(); alert('Password must be at least 6 characters.'); return; }
+    if (pw1 !== pw2) { e.preventDefault(); alert('Passwords do not match.'); }
 });
 </script>
-
 </body>
 </html>

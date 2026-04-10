@@ -89,7 +89,6 @@ function paginateSection(wrapId, paginationId, rows) {
 function repaginate(wrapId, paginationId, selector) {
     const wrap = document.getElementById(wrapId);
     if (!wrap) return;
-    // All rows that haven't been hidden by filter
     const rows = [...wrap.querySelectorAll(selector || '.admin-pageable-row')].filter(r => !r.classList.contains('filter-hidden'));
     sectionPages[wrapId] = 1;
     paginateSection(wrapId, paginationId, rows);
@@ -193,7 +192,6 @@ function filterPendingRows() {
         if (show) any = true;
     });
     document.getElementById('no-pending-results').style.display = any ? 'none' : '';
-    // Re-paginate visible rows
     const visible = rows.filter(r => !r.classList.contains('filter-hidden'));
     sectionPages['pending-rows-wrap'] = 1;
     paginateSection('pending-rows-wrap', 'pending-pagination', visible);
@@ -289,6 +287,7 @@ function loadUserReviews(uid, page = 1) {
     fetch('get_user_reviews.php?user_id=' + uid + '&page=' + page, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
         .then(r => r.json())
         .then(data => {
+            if (data.error === 'session_expired') { window.location.href = 'login.php?timeout=1'; return; }
             if (!data.reviews || data.reviews.length === 0) {
                 list.innerHTML = '<div style="color:var(--gray-400);font-size:13px;padding:8px 0;">No reviews made yet.</div>';
                 return;
@@ -414,7 +413,7 @@ function loadFacultyReviews(fid) {
     fetch('get_faculty_reviews.php?faculty_id=' + fid, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
         .then(r => r.json())
         .then(data => {
-            if (data.error === 'session_expired') { window.location.href = 'index.php?timeout=1'; return; }
+            if (data.error === 'session_expired') { window.location.href = 'login.php?timeout=1'; return; }
             if (data.error) { document.getElementById('facModalContent').innerHTML = '<div style="text-align:center;padding:30px;color:#ef4444;">' + esc(data.error) + '</div>'; return; }
             renderFacultyReviews(data);
         })
@@ -429,7 +428,7 @@ function loadFacultySummary(fid) {
         .then(text => {
             try {
                 const d = JSON.parse(text);
-                if (d.error === 'session_expired') { window.location.href = 'index.php?timeout=1'; return; }
+                if (d.error === 'session_expired') { window.location.href = 'login.php?timeout=1'; return; }
                 if (d.error) { el.innerHTML = '<div style="padding:20px;color:#ef4444;">Error: ' + esc(d.error) + '</div>'; return; }
                 el.innerHTML = `<div style="padding:4px 0 16px;"><div style="background:var(--gray-100);border-radius:10px;padding:18px;font-size:13px;line-height:1.85;color:var(--gray-700);white-space:pre-wrap;border:1px solid var(--gray-200);">${esc(d.summary)}</div></div>`;
             } catch (e) { el.innerHTML = '<div style="padding:20px;color:#ef4444;">Server error.</div>'; }
@@ -541,7 +540,7 @@ function generateFacultySummary() {
         .then(text => {
             try {
                 const d = JSON.parse(text);
-                if (d.error === 'session_expired') { window.location.href = 'index.php?timeout=1'; return; }
+                if (d.error === 'session_expired') { window.location.href = 'login.php?timeout=1'; return; }
                 if (d.error) { el.innerHTML = '<span style="color:#ef4444;">Error: ' + esc(d.error) + '</span>'; }
                 else { el.style.whiteSpace = 'pre-wrap'; el.textContent = d.summary || 'No summary available.'; }
             } catch (e) { el.innerHTML = '<span style="color:#ef4444;">Server error. Please try again.</span>'; }

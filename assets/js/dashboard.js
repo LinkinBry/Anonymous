@@ -582,4 +582,4 @@ document.addEventListener('DOMContentLoaded', () => {
     if (myReviewsLink) {
         myReviewsLink.addEventListener('click', scrollToReviews);
     }
-});
+}); tite

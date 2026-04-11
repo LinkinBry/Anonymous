@@ -2,7 +2,6 @@
 date_default_timezone_set('Asia/Manila');
 if (session_status() === PHP_SESSION_NONE) session_start();
 
-// Config inline to avoid circular dependency before config.php is ready
 $env_path = __DIR__ . '/.env';
 if (file_exists($env_path)) {
     $env = parse_ini_file($env_path);
@@ -73,18 +72,18 @@ body::before{
     align-items:flex-start;justify-content:center;
     padding:60px 50px;
 }
-.logo-card{
-    background:rgba(255,255,255,0.1);
-    border:1px solid rgba(255,255,255,0.2);
-    border-radius:20px;padding:30px;
-    backdrop-filter:blur(8px);
-    margin-bottom:36px;
-    display:flex;align-items:center;justify-content:center;
+/* Logo sits freely at left-center without any card wrapper */
+.left-logo{
+    width:180px;height:180px;border-radius:50%;
+    object-fit:cover;
+    border:4px solid rgba(255,255,255,0.35);
+    margin-bottom:32px;
+    box-shadow:0 8px 40px rgba(0,0,0,0.35);
+    display:block;
 }
-.logo-card img{width:170px;height:170px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,0.3);}
 .left-title{
-    font-size:clamp(24px,3vw,38px);font-weight:700;
-    color:#fff;line-height:1.18;
+    font-size:clamp(22px,2.8vw,36px);font-weight:700;
+    color:#fff;line-height:1.2;
 }
 .left-title .gold{color:#F5A623;}
 
@@ -94,6 +93,7 @@ body::before{
     display:flex;flex-direction:column;
     align-items:center;justify-content:center;
     padding:50px 56px;
+    overflow-y:auto;
 }
 .form-card{width:100%;max-width:420px;}
 .form-card h2{
@@ -142,7 +142,6 @@ body::before{
     font-size:13px;margin-bottom:16px;display:flex;align-items:center;gap:8px;
     backdrop-filter:blur(4px);
 }
-.pw-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 .back-home{
     position:fixed;top:22px;left:26px;z-index:100;
     display:inline-flex;align-items:center;gap:7px;
@@ -154,7 +153,6 @@ body::before{
 @media(max-width:768px){
     .left-panel{display:none;}
     .right-panel{width:100%;padding:40px 24px;}
-    .pw-row{grid-template-columns:1fr;}
 }
 </style>
 </head>
@@ -164,11 +162,14 @@ body::before{
     Back to Home
 </a>
 <div class="page-wrap">
-    <!-- Left -->
+    <!-- Left — logo + title, no container card -->
     <div class="left-panel">
-        <div class="logo-card">
-            <img src="image/logo.png" alt="OLSHCO" onerror="this.style.display='none'">
-        </div>
+        <img
+            src="image/logo.png"
+            alt="OLSHCO"
+            class="left-logo"
+            onerror="this.style.display='none'"
+        >
         <div class="left-title">
             Anonymous Online<br>
             <span class="gold">Faculty Performance</span><br>
@@ -177,7 +178,7 @@ body::before{
         </div>
     </div>
 
-    <!-- Right -->
+    <!-- Right — register form -->
     <div class="right-panel">
         <div class="form-card">
             <h2>Register</h2>
@@ -190,7 +191,6 @@ body::before{
             <?php endif; ?>
 
             <form method="POST" id="regForm" novalidate>
-
                 <label class="field-label">Pseudonym:</label>
                 <div class="input-wrap">
                     <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M7 15h2M11 15h6"/></svg>

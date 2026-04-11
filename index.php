@@ -69,86 +69,61 @@ body{font-family:'Inter',sans-serif;overflow-x:hidden;}
     padding:0 60px;
     overflow:hidden;
 }
-/* Fallback gradient if image missing */
 .hero::before{
     content:'';position:absolute;inset:0;
     background:linear-gradient(150deg,rgba(0,0,0,0.62) -60%,rgba(10,0,0,0.45) 30%,rgba(0,0,0,0.5) 100%);
 }
-.hero-content{position:relative;z-index:1;max-width:680px; margin-top:60px; margin-left:-25px;}
-
+.hero-content{position:relative;z-index:1;max-width:680px;margin-top:60px;margin-left:-25px;}
 .hero h1{
     font-family:'Inter',sans-serif;
     font-size:clamp(36px,5vw,62px);
-    font-weight:900;
-    color:#fff;
-    line-height:1.12;
-    margin-bottom:6px;
-    margin-left:40px;
+    font-weight:900;color:#fff;line-height:1.12;
+    margin-bottom:6px;margin-left:40px;
 }
 .hero h1 .highlight{color:#F5A623;}
 .hero-subtitle{
- 
     font-size:clamp(14px,2vw,17px);color:rgba(255,255,255,0.78);
-    line-height:1.7;margin-bottom:36px;max-width:540px;
-    margin-left:40px;
+    line-height:1.7;margin-bottom:36px;max-width:540px;margin-left:40px;
 }
 .hero-actions{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
 .hero-btn-primary{
     display:inline-flex;align-items:center;gap:9px;
     background:#8B0000;color:#fff;text-decoration:none;
     padding:14px 30px;border-radius:8px;font-size:15px;font-weight:700;
-    transition:all 0.22s;box-shadow:0 4px 20px rgba(139,0,0,0.45);
-    margin-left:40px;
+    transition:all 0.22s;box-shadow:0 4px 20px rgba(139,0,0,0.45);margin-left:40px;
 }
 .hero-btn-primary:hover{background:#a30000;transform:translateY(-2px);box-shadow:0 8px 28px rgba(139,0,0,0.5);}
 .hero-btn-secondary{
     display:inline-flex;align-items:center;gap:9px;
     background:rgba(255,255,255,0.12);color:#fff;text-decoration:none;
     padding:14px 30px;border-radius:8px;font-size:15px;font-weight:600;
-    border:2px solid rgba(255,255,255,0.35);transition:all 0.22s;
-    backdrop-filter:blur(4px);
+    border:2px solid rgba(255,255,255,0.35);transition:all 0.22s;backdrop-filter:blur(4px);
 }
 .hero-btn-secondary:hover{background:rgba(255,255,255,0.22);border-color:#fff;}
-.hero-right{
-    position:absolute;right:-140px;top:68%;transform:translateY(-50%);
-    z-index:1;
-}
+.hero-right{position:absolute;right:-140px;top:68%;transform:translateY(-50%);z-index:1;}
 .hero-logo-container{
-    position:relative;
-    width:650px;height:600px;border-radius:50%;
-    border:8px solid rgba(255,255,255,0.18);
-    background:transparent;
-    backdrop-filter:blur(18px);
-    -webkit-backdrop-filter:blur(18px);
-    box-shadow:0 24px 64px rgba(0,0,0,0.65),
-               inset 0 0 40px rgba(255,255,255,0.08);
-    display:flex;align-items:center;justify-content:center;
-    overflow:hidden;
+    position:relative;width:650px;height:600px;border-radius:50%;
+    border:8px solid rgba(255,255,255,0.18);background:transparent;
+    backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+    box-shadow:0 24px 64px rgba(0,0,0,0.65),inset 0 0 40px rgba(255,255,255,0.08);
+    display:flex;align-items:center;justify-content:center;overflow:hidden;
 }
 .hero-logo-container::before{
-    content:'';
-    position:absolute;
-    inset:0;
+    content:'';position:absolute;inset:0;
     background:linear-gradient(180deg,rgba(255,255,255,0.06) 0%,rgba(255,255,255,0.01) 50%,rgba(255,255,255,0.06) 100%);
     pointer-events:none;
 }
 .hero-logo-img{
-    position:relative;
-    width:450px;height:450px;border-radius:50%;
-    object-fit:cover;
-    margin-right:90px;
-    margin-bottom:50px;
-    box-shadow:0 0 0 1px rgba(255,255,255,0.05),
-                0 18px 40px rgba(0,0,0,0.32);
+    position:relative;width:450px;height:450px;border-radius:50%;
+    object-fit:cover;margin-right:90px;margin-bottom:50px;
+    box-shadow:0 0 0 1px rgba(255,255,255,0.05),0 18px 40px rgba(0,0,0,0.32);
 }
-@keyframes floatLogo{0%,100%{transform:translateY(0);}50%{transform:translateY(-12px);}}
 
 /* ── STATS BAR ───────────────────────────────────────────────── */
 .stats-bar{
     background:linear-gradient(135deg,#8B0000 0%,#6B0000 100%);
     padding:32px 60px;
-    display:grid;grid-template-columns:repeat(4,1fr);
-    gap:20px;
+    display:grid;grid-template-columns:repeat(4,1fr);gap:20px;
 }
 .stat-item{text-align:center;}
 .stat-num{font-size:38px;font-weight:800;color:#FFD700;line-height:1;}
@@ -176,9 +151,14 @@ body{font-family:'Inter',sans-serif;overflow-x:hidden;}
     background:linear-gradient(135deg,#8B0000 0%,#5a0000 100%);
     border-radius:20px;padding:36px;color:#fff;
     box-shadow:0 20px 60px rgba(139,0,0,0.28);
+    display:flex;flex-direction:column;align-items:center;text-align:center;
 }
-.about-img-icon{font-size:52px;margin-bottom:16px;}
-.about-img-card h3{font-size:22px;font-weight:700;margin-bottom:8px;}
+.about-logo-img{
+    width:120px;height:120px;border-radius:50%;object-fit:cover;
+    border:3px solid rgba(255,255,255,0.35);margin-bottom:20px;
+    box-shadow:0 8px 24px rgba(0,0,0,0.3);
+}
+.about-img-card h3{font-size:20px;font-weight:700;margin-bottom:8px;}
 .about-img-card p{font-size:14px;opacity:0.82;line-height:1.65;}
 .about-badge{
     position:absolute;bottom:-18px;right:-18px;
@@ -219,7 +199,7 @@ body{font-family:'Inter',sans-serif;overflow-x:hidden;}
     display:flex;align-items:center;justify-content:center;
     margin:0 auto 16px;box-shadow:0 4px 14px rgba(139,0,0,0.35);
 }
-.step-icon{font-size:32px;margin-bottom:12px;}
+.step-icon-svg{display:flex;justify-content:center;margin-bottom:14px;color:#8B0000;}
 .step-card h4{font-size:15px;font-weight:700;color:#1a1a2e;margin-bottom:8px;}
 .step-card p{font-size:13px;color:#666;line-height:1.6;}
 
@@ -228,9 +208,17 @@ body{font-family:'Inter',sans-serif;overflow-x:hidden;}
     background:linear-gradient(135deg,#8B0000 0%,#5a0000 100%);
     position:relative;overflow:hidden;
 }
+/* Modern diagonal line pattern instead of polkadots */
 .features-section::before{
     content:'';position:absolute;inset:0;
-    background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Ccircle cx='30' cy='30' r='20'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    background-image:repeating-linear-gradient(
+        -45deg,
+        transparent,
+        transparent 18px,
+        rgba(255,255,255,0.03) 18px,
+        rgba(255,255,255,0.03) 19px
+    );
+    pointer-events:none;
 }
 .features-inner{position:relative;z-index:1;}
 .features-section .section-title{color:#fff;}
@@ -239,8 +227,7 @@ body{font-family:'Inter',sans-serif;overflow-x:hidden;}
 .feat-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:52px;}
 .feat-card{
     background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);
-    border-radius:16px;padding:28px;backdrop-filter:blur(6px);
-    transition:all 0.25s;
+    border-radius:16px;padding:28px;backdrop-filter:blur(6px);transition:all 0.25s;
 }
 .feat-card:hover{background:rgba(255,255,255,0.12);transform:translateY(-4px);}
 .feat-card-icon{
@@ -255,12 +242,21 @@ body{font-family:'Inter',sans-serif;overflow-x:hidden;}
 .team-section{background:#fff;}
 .team-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:28px;margin-top:52px;}
 .team-card{text-align:center;}
-.team-avatar{
-    width:90px;height:90px;border-radius:50%;margin:0 auto 14px;
+.team-avatar-wrap{
+    width:100px;height:100px;border-radius:50%;margin:0 auto 14px;
+    overflow:hidden;
+    border:3px solid #f0f0f0;
+    box-shadow:0 4px 16px rgba(139,0,0,0.2);
+    background:#f9f0f0;
+}
+.team-avatar-wrap img{
+    width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;
+}
+/* Fallback avatar shown when no image provided */
+.team-avatar-fallback{
+    width:100%;height:100%;
     background:linear-gradient(135deg,#8B0000,#6B0000);
     display:flex;align-items:center;justify-content:center;
-    font-size:30px;font-weight:700;color:#fff;
-    border:3px solid #f0f0f0;box-shadow:0 4px 16px rgba(139,0,0,0.2);
 }
 .team-name{font-size:15px;font-weight:700;color:#1a1a2e;margin-bottom:3px;}
 .team-role{font-size:12px;color:#8B0000;font-weight:600;margin-bottom:6px;}
@@ -365,10 +361,12 @@ footer{
         </p>
         <div class="hero-actions">
             <a href="login.php" class="hero-btn-primary">
+                <!-- Login / arrow-right SVG -->
                 <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
                 Get Started
             </a>
             <a href="#about" class="hero-btn-secondary">
+                <!-- Clock / learn more SVG -->
                 <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                 Learn More
             </a>
@@ -376,8 +374,7 @@ footer{
     </div>
     <div class="hero-right">
         <div class="hero-logo-container">
-            <img src="image/logo.png" alt="OLSHCO Seal" class="hero-logo-img"
-                 onerror="this.style.display='none'">
+            <img src="image/logo.png" alt="OLSHCO Seal" class="hero-logo-img" onerror="this.style.display='none'">
         </div>
     </div>
 </section>
@@ -407,7 +404,13 @@ footer{
     <div class="about-grid">
         <div class="about-visual reveal">
             <div class="about-img-card">
-                <div class="about-img-icon">🎓</div>
+                <!-- School logo instead of graduation hat -->
+                <img
+                    src="image/logo.png"
+                    alt="OLSHCO Logo"
+                    class="about-logo-img"
+                    onerror="this.style.display='none'"
+                >
                 <h3>Our Lady of the Sacred Heart College of Guimba, Inc.</h3>
                 <p>Established in 1947, OLSHCO has been a pillar of academic excellence in Guimba, Nueva Ecija. Our Faculty Evaluation Portal empowers students to contribute meaningfully to the institution's continuous improvement.</p>
             </div>
@@ -420,6 +423,7 @@ footer{
             <div class="features-list">
                 <div class="feature-item">
                     <div class="feature-icon">
+                        <!-- Shield check -->
                         <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                     </div>
                     <div class="feature-text">
@@ -429,7 +433,8 @@ footer{
                 </div>
                 <div class="feature-item">
                     <div class="feature-icon">
-                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        <!-- CPU / AI -->
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2"/></svg>
                     </div>
                     <div class="feature-text">
                         <h4>AI-Powered Moderation</h4>
@@ -438,6 +443,7 @@ footer{
                 </div>
                 <div class="feature-item">
                     <div class="feature-icon">
+                        <!-- Bar chart -->
                         <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
                     </div>
                     <div class="feature-text">
@@ -460,25 +466,37 @@ footer{
     <div class="steps-grid">
         <div class="step-card reveal">
             <div class="step-num">1</div>
-            <div class="step-icon">📝</div>
+            <div class="step-icon-svg">
+                <!-- User plus -->
+                <svg width="36" height="36" fill="none" stroke="#8B0000" stroke-width="1.8" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg>
+            </div>
             <h4>Create Account</h4>
             <p>Register with a pseudonym to keep your identity completely anonymous throughout the process.</p>
         </div>
         <div class="step-card reveal">
             <div class="step-num">2</div>
-            <div class="step-icon">🔍</div>
+            <div class="step-icon-svg">
+                <!-- Search / magnify -->
+                <svg width="36" height="36" fill="none" stroke="#8B0000" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </div>
             <h4>Select Faculty</h4>
             <p>Browse the list of faculty members and choose the ones you want to evaluate based on your experience.</p>
         </div>
         <div class="step-card reveal">
             <div class="step-num">3</div>
-            <div class="step-icon">⭐</div>
-            <h4>Rate & Review</h4>
+            <div class="step-icon-svg">
+                <!-- Star -->
+                <svg width="36" height="36" fill="none" stroke="#8B0000" stroke-width="1.8" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </div>
+            <h4>Rate &amp; Review</h4>
             <p>Give star ratings across 5 categories and write your honest, constructive feedback.</p>
         </div>
         <div class="step-card reveal">
             <div class="step-num">4</div>
-            <div class="step-icon">✅</div>
+            <div class="step-icon-svg">
+                <!-- Check circle -->
+                <svg width="36" height="36" fill="none" stroke="#8B0000" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            </div>
             <h4>Admin Reviews</h4>
             <p>Admins moderate submissions for quality, then publish approved reviews to the platform.</p>
         </div>
@@ -496,27 +514,31 @@ footer{
         <div class="feat-cards">
             <div class="feat-card reveal">
                 <div class="feat-card-icon">
-                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    <!-- Lock / anonymity -->
+                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
                 </div>
                 <h4>100% Anonymous Reviews</h4>
                 <p>Pseudonym-based system ensures your real identity is never linked to your feedback — ever.</p>
             </div>
             <div class="feat-card reveal">
                 <div class="feat-card-icon">
-                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+                    <!-- Sparkle / AI -->
+                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>
                 </div>
                 <h4>AI Sentiment Analysis</h4>
                 <p>Groq AI automatically analyzes sentiment and flags inappropriate content before it reaches admins.</p>
             </div>
             <div class="feat-card reveal">
                 <div class="feat-card-icon">
-                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    <!-- Sliders / multi-dimension -->
+                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="8" cy="6" r="2" fill="currentColor" stroke="none"/><circle cx="16" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="10" cy="18" r="2" fill="currentColor" stroke="none"/></svg>
                 </div>
                 <h4>Multi-Dimension Ratings</h4>
                 <p>Rate faculty across Teaching, Communication, Punctuality, Fairness, and Overall Satisfaction.</p>
             </div>
             <div class="feat-card reveal">
                 <div class="feat-card-icon">
+                    <!-- Mail / notification -->
                     <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
                 </div>
                 <h4>Instant Email Notifications</h4>
@@ -524,13 +546,15 @@ footer{
             </div>
             <div class="feat-card reveal">
                 <div class="feat-card-icon">
-                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+                    <!-- Layout / dashboard -->
+                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
                 </div>
                 <h4>Admin Dashboard</h4>
                 <p>Comprehensive admin panel with faculty leaderboards, weekly charts, and AI-generated monthly reports.</p>
             </div>
             <div class="feat-card reveal">
                 <div class="feat-card-icon">
+                    <!-- Chat bubble -->
                     <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
                 </div>
                 <h4>FAQ AI Chatbot</h4>
@@ -548,37 +572,88 @@ footer{
         <p class="section-desc" style="margin:0 auto;">A dedicated group of students and developers who built this platform to improve academic quality at OLSHCO.</p>
     </div>
     <div class="team-grid">
+        <!--
+            INSTRUCTIONS: Replace src="" with the actual image path for each member.
+            Example: src="image/team/member1.jpg"
+            If no image is available, a maroon fallback silhouette will be displayed.
+        -->
         <div class="team-card reveal">
-            <div class="team-avatar">👨‍💻</div>
+            <div class="team-avatar-wrap">
+                <img
+                    src="image/member1.jpg"
+                    alt="Lead Developer"
+                    onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
+                >
+                <div class="team-avatar-fallback" style="display:none;">
+                    <svg width="44" height="44" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </div>
+            </div>
             <div class="team-name">Lead Developer</div>
             <div class="team-role">Full Stack Developer</div>
             <div class="team-desc">Architected and built the entire evaluation platform from the ground up.</div>
         </div>
         <div class="team-card reveal">
-            <div class="team-avatar">🎨</div>
+            <div class="team-avatar-wrap">
+                <img
+                    src="image/member2.jpg"
+                    alt="UI/UX Designer"
+                    onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
+                >
+                <div class="team-avatar-fallback" style="display:none;">
+                    <svg width="44" height="44" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </div>
+            </div>
             <div class="team-name">UI/UX Designer</div>
             <div class="team-role">Interface Designer</div>
             <div class="team-desc">Crafted the visual identity and user experience for a seamless journey.</div>
         </div>
         <div class="team-card reveal">
-            <div class="team-avatar">🤖</div>
+            <div class="team-avatar-wrap">
+                <img
+                    src="image/member3.jpg"
+                    alt="AI Integration"
+                    onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
+                >
+                <div class="team-avatar-fallback" style="display:none;">
+                    <svg width="44" height="44" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </div>
+            </div>
             <div class="team-name">AI Integration</div>
             <div class="team-role">AI/ML Engineer</div>
             <div class="team-desc">Integrated Groq AI for sentiment analysis, moderation, and chatbot features.</div>
         </div>
         <div class="team-card reveal">
-            <div class="team-avatar">📊</div>
+            <div class="team-avatar-wrap">
+                <img
+                    src="image/member4.jpg"
+                    alt="Data Analyst"
+                    onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
+                >
+                <div class="team-avatar-fallback" style="display:none;">
+                    <svg width="44" height="44" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </div>
+            </div>
             <div class="team-name">Data Analyst</div>
             <div class="team-role">Systems Analyst</div>
             <div class="team-desc">Designed the database schema and reporting analytics pipeline.</div>
         </div>
         <div class="team-card reveal">
-            <div class="team-avatar">🔒</div>
+            <div class="team-avatar-wrap">
+                <img
+                    src="image/member5.jpg"
+                    alt="Security Lead"
+                    onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
+                >
+                <div class="team-avatar-fallback" style="display:none;">
+                    <svg width="44" height="44" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </div>
+            </div>
             <div class="team-name">Security Lead</div>
-            <div class="team-role">Security & QA</div>
+            <div class="team-role">Security &amp; QA</div>
             <div class="team-desc">Ensured platform security, anonymity protocols, and quality assurance.</div>
         </div>
     </div>
+    
 </section>
 
 <!-- ══ CONTACT SECTION ════════════════════════════════════════════════════ -->
@@ -592,6 +667,7 @@ footer{
         <div class="contact-info reveal">
             <div class="contact-item">
                 <div class="contact-icon">
+                    <!-- Map pin -->
                     <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
                 </div>
                 <div class="contact-item-text">
@@ -601,6 +677,7 @@ footer{
             </div>
             <div class="contact-item">
                 <div class="contact-icon">
+                    <!-- Mail -->
                     <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
                 </div>
                 <div class="contact-item-text">
@@ -610,6 +687,7 @@ footer{
             </div>
             <div class="contact-item">
                 <div class="contact-icon">
+                    <!-- Phone -->
                     <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.022 1.18 2 2 0 012 .022h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/></svg>
                 </div>
                 <div class="contact-item-text">
@@ -619,7 +697,8 @@ footer{
             </div>
             <div class="contact-item">
                 <div class="contact-icon">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    <!-- Info circle -->
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                 </div>
                 <div class="contact-item-text">
                     <h4>About the System</h4>

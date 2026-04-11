@@ -26,7 +26,7 @@ function createWarningModal() {
             <div id="sessionCountdown" style="font-size:40px;font-weight:800;color:#8B0000;margin:12px 0 20px;letter-spacing:2px;">${WARNING_AT}</div>
             <p style="font-size:13px;color:#9ca3af;margin-bottom:24px;">Click below to stay logged in.</p>
             <div style="display:flex;gap:10px;justify-content:center;">
-                <button onclick="logoutNow()" style="padding:10px 22px;border-radius:20px;background:white;color:#6b7280;border:1px solid #e5e7eb;font-size:14px;cursor:pointer;font-family:inherit;">Logout</button>
+                <button onclick="logoutManual()" style="padding:10px 22px;border-radius:20px;background:white;color:#6b7280;border:1px solid #e5e7eb;font-size:14px;cursor:pointer;font-family:inherit;">Logout</button>
                 <button onclick="extendSession()" style="padding:10px 24px;border-radius:20px;background:#8B0000;color:white;border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">Stay Logged In</button>
             </div>
         </div>`;
@@ -44,7 +44,7 @@ function showWarning() {
         const el = document.getElementById('sessionCountdown');
         if (el) el.textContent = secs;
         if (secs <= 5 && el) el.style.color = '#ef4444';
-        if (secs <= 0) { clearInterval(countdownInterval); logoutNow(); }
+        if (secs <= 0) { clearInterval(countdownInterval); logoutTimeout(); }
     }, 1000);
 }
 
@@ -61,25 +61,38 @@ function extendSession() {
     hideWarning();
     fetch('session_refresh.php', { method: 'POST' })
         .then(r => r.json())
-        .then(data => { if (data.status === 'expired') logoutNow(); else resetTimers(); })
+        .then(data => { if (data.status === 'expired') logoutTimeout(); else resetTimers(); })
         .catch(() => {});
 }
 
-function logoutNow() {
+/**
+ * Called when the countdown reaches 0 — this is a genuine session expiry,
+ * so we show the "inactivity" banner on the login page.
+ */
+function logoutTimeout() {
     window.location.href = 'logout.php?timeout=1';
+}
+
+/**
+ * Called when the user explicitly clicks the "Logout" button in the
+ * warning modal — treat it the same as a manual sidebar logout,
+ * so NO ?timeout=1 and NO banner is shown.
+ */
+function logoutManual() {
+    window.location.href = 'logout.php';
 }
 
 function resetTimers() {
     clearTimeout(inactivityTimer);
     clearTimeout(warningTimer);
-    warningTimer    = setTimeout(showWarning, (SESSION_DURATION - WARNING_AT) * 1000);
-    inactivityTimer = setTimeout(logoutNow,   SESSION_DURATION * 1000);
+    warningTimer    = setTimeout(showWarning,     (SESSION_DURATION - WARNING_AT) * 1000);
+    inactivityTimer = setTimeout(logoutTimeout,    SESSION_DURATION * 1000);
 }
 
 function checkServerSession() {
     fetch('session_refresh.php', { method: 'POST' })
         .then(r => r.json())
-        .then(data => { if (data.status === 'expired') logoutNow(); })
+        .then(data => { if (data.status === 'expired') logoutTimeout(); })
         .catch(() => {});
 }
 setInterval(checkServerSession, 10000);

@@ -45,8 +45,7 @@ body{
 }
 body::before{
     content:'';position:fixed;inset:0;
-    background:rgba(0,0,0,0.48);
-    z-index:0;
+    background:rgba(0,0,0,0.48);z-index:0;
 }
 .page-wrap{position:relative;z-index:1;display:flex;width:100%;min-height:100vh;}
 
@@ -56,22 +55,17 @@ body::before{
     align-items:flex-start;justify-content:center;
     padding:60px 50px;
 }
-.logo-wrap{
+/* Logo sits freely at left-center — no box/card wrapper */
+.left-logo{
     width:200px;height:200px;border-radius:50%;
-    background:rgba(255,255,255,0.12);
-    border:4px solid rgba(255,255,255,0.3);
-    display:flex;align-items:center;justify-content:center;
-    overflow:hidden;margin-bottom:42px;
+    object-fit:cover;
+    border:4px solid rgba(255,255,255,0.35);
+    margin-bottom:36px;
     box-shadow:0 8px 40px rgba(0,0,0,0.35);
-    backdrop-filter:blur(4px);
-}
-.logo-wrap img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
-.logo-fallback{
-    font-size:60px;font-weight:900;color:#fff;
-    font-family:'Inter',sans-serif;
+    display:block;
 }
 .left-title{
-    font-size:clamp(26px,3.5vw,40px);font-weight:700;
+    font-size:clamp(24px,3vw,38px);font-weight:700;
     color:#fff;line-height:1.18;
 }
 .left-title .gold{color:#F5A623;}
@@ -132,6 +126,7 @@ body::before{
     font-size:13px;margin-bottom:18px;display:flex;align-items:center;gap:8px;
     backdrop-filter:blur(4px);
 }
+/* Only shown when redirected by SESSION TIMEOUT (not manual logout) */
 .alert-timeout{
     background:rgba(245,158,11,0.18);border:1px solid rgba(245,158,11,0.4);
     color:#fff;border-radius:12px;padding:12px 16px;
@@ -158,11 +153,14 @@ body::before{
     Back to Home
 </a>
 <div class="page-wrap">
-    <!-- Left: Logo + Title -->
+    <!-- Left: Logo + Title — freely positioned, no card wrapper -->
     <div class="left-panel">
-        <div class="logo-wrap">
-            <img src="image/logo.png" alt="OLSHCO" onerror="this.outerHTML='<div class=logo-fallback>🏫</div>'">
-        </div>
+        <img
+            src="image/logo.png"
+            alt="OLSHCO"
+            class="left-logo"
+            onerror="this.style.display='none'"
+        >
         <div class="left-title">
             Anonymous Online<br>
             <span class="gold">Faculty Performance</span><br>
@@ -176,7 +174,10 @@ body::before{
         <div class="form-card">
             <h2>Log in</h2>
 
-            <?php if (isset($_GET['timeout'])): ?>
+            <?php
+            // Only show timeout alert when redirected by automatic session expiry.
+            // Manual logout via logout.php does NOT pass ?timeout=1, so this won't appear.
+            if (isset($_GET['timeout'])): ?>
             <div class="alert-timeout">
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                 You were logged out due to inactivity.
@@ -196,7 +197,6 @@ body::before{
                     <input type="text" name="username" placeholder="Enter your Username" required autocomplete="username">
                 </div>
 
-
                 <label class="field-label">Password:</label>
                 <div class="input-wrap">
                     <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
@@ -205,7 +205,7 @@ body::before{
 
                 <button type="submit" name="login" class="btn-login">Log in</button>
             </form>
-            <p class="bottom-link">Dont have an account? <a href="register.php">Register</a></p>
+            <p class="bottom-link">Don't have an account? <a href="register.php">Register</a></p>
         </div>
     </div>
 </div>

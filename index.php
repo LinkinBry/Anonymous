@@ -67,19 +67,15 @@ body{font-family:'Inter',sans-serif;overflow-x:hidden;}
     position:relative;
     display:flex;align-items:center;
     padding:0 60px;
+    overflow:hidden;
 }
 /* Fallback gradient if image missing */
 .hero::before{
     content:'';position:absolute;inset:0;
-    background:linear-gradient(135deg,rgba(0,0,0,0.62) 0%,rgba(90,0,0,0.45) 50%,rgba(0,0,0,0.5) 100%);
+    background:linear-gradient(150deg,rgba(0,0,0,0.62) -60%,rgba(10,0,0,0.45) 30%,rgba(0,0,0,0.5) 100%);
 }
-.hero-content{position:relative;z-index:1;max-width:680px;}
-.hero-eyebrow{
-    display:inline-flex;align-items:center;gap:8px;
-    background:rgba(245,166,35,0.18);border:1px solid rgba(245,166,35,0.4);
-    color:#FFD700;font-size:12px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;
-    padding:6px 14px;border-radius:20px;margin-bottom:22px;
-}
+.hero-content{position:relative;z-index:1;max-width:680px; margin-top:60px; margin-left:-25px;}
+
 .hero h1{
     font-family:'Inter',sans-serif;
     font-size:clamp(36px,5vw,62px);
@@ -87,11 +83,14 @@ body{font-family:'Inter',sans-serif;overflow-x:hidden;}
     color:#fff;
     line-height:1.12;
     margin-bottom:6px;
+    margin-left:40px;
 }
 .hero h1 .highlight{color:#F5A623;}
 .hero-subtitle{
+ 
     font-size:clamp(14px,2vw,17px);color:rgba(255,255,255,0.78);
     line-height:1.7;margin-bottom:36px;max-width:540px;
+    margin-left:40px;
 }
 .hero-actions{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
 .hero-btn-primary{
@@ -99,6 +98,7 @@ body{font-family:'Inter',sans-serif;overflow-x:hidden;}
     background:#8B0000;color:#fff;text-decoration:none;
     padding:14px 30px;border-radius:8px;font-size:15px;font-weight:700;
     transition:all 0.22s;box-shadow:0 4px 20px rgba(139,0,0,0.45);
+    margin-left:40px;
 }
 .hero-btn-primary:hover{background:#a30000;transform:translateY(-2px);box-shadow:0 8px 28px rgba(139,0,0,0.5);}
 .hero-btn-secondary{
@@ -110,15 +110,36 @@ body{font-family:'Inter',sans-serif;overflow-x:hidden;}
 }
 .hero-btn-secondary:hover{background:rgba(255,255,255,0.22);border-color:#fff;}
 .hero-right{
-    position:absolute;right:80px;top:50%;transform:translateY(-50%);
+    position:absolute;right:-140px;top:68%;transform:translateY(-50%);
     z-index:1;
 }
-.hero-logo-circle{
-    width:220px;height:220px;border-radius:50%;
-    border:5px solid rgba(255,255,255,0.35);
-    box-shadow:0 8px 40px rgba(0,0,0,0.4),0 0 0 15px rgba(255,255,255,0.06);
+.hero-logo-container{
+    position:relative;
+    width:650px;height:600px;border-radius:50%;
+    border:8px solid rgba(255,255,255,0.18);
+    background:transparent;
+    backdrop-filter:blur(18px);
+    -webkit-backdrop-filter:blur(18px);
+    box-shadow:0 24px 64px rgba(0,0,0,0.65),
+               inset 0 0 40px rgba(255,255,255,0.08);
+    display:flex;align-items:center;justify-content:center;
+    overflow:hidden;
+}
+.hero-logo-container::before{
+    content:'';
+    position:absolute;
+    inset:0;
+    background:linear-gradient(180deg,rgba(255,255,255,0.06) 0%,rgba(255,255,255,0.01) 50%,rgba(255,255,255,0.06) 100%);
+    pointer-events:none;
+}
+.hero-logo-img{
+    position:relative;
+    width:450px;height:450px;border-radius:50%;
     object-fit:cover;
-    animation:floatLogo 4s ease-in-out infinite;
+    margin-right:90px;
+    margin-bottom:50px;
+    box-shadow:0 0 0 1px rgba(255,255,255,0.05),
+                0 18px 40px rgba(0,0,0,0.32);
 }
 @keyframes floatLogo{0%,100%{transform:translateY(0);}50%{transform:translateY(-12px);}}
 
@@ -333,10 +354,6 @@ footer{
 <!-- ══ HERO ══════════════════════════════════════════════════════════════ -->
 <section class="hero" id="home">
     <div class="hero-content">
-        <div class="hero-eyebrow">
-            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            OLSHCO Faculty Evaluation Portal
-        </div>
         <h1>
             Welcome to <span class="highlight">OLSHCO</span><br>
             <span class="highlight">Faculty Evaluation</span><br>
@@ -358,8 +375,10 @@ footer{
         </div>
     </div>
     <div class="hero-right">
-        <img src="image/logo.png" alt="OLSHCO Seal" class="hero-logo-circle"
-             onerror="this.style.display='none'">
+        <div class="hero-logo-container">
+            <img src="image/logo.png" alt="OLSHCO Seal" class="hero-logo-img"
+                 onerror="this.style.display='none'">
+        </div>
     </div>
 </section>
 

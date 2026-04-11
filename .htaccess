@@ -40,6 +40,9 @@ php_flag session.cookie_secure Off
     RewriteEngine On
     RewriteBase /
 
+    # Redirect /index to /home (make /home the canonical homepage URL)
+    RewriteRule ^index/?$ /home [R=301,L]
+
     # Redirect .php URLs to clean URLs (skip index.php at root)
     RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /([^/]+/)*([^.]+)\.php\ HTTP/
     RewriteRule ^(([^/]+/)*)([^.]+)\.php$ /$1$3 [R=301,L]

@@ -1108,6 +1108,10 @@ define('FACULTY_INITIAL', 5);
 <script>window.GROQ_API_KEY = '<?php $env = parse_ini_file(__DIR__ . '/.env'); echo $env['GROQ_API_KEY']; ?>';</script>
 
 <script src="assets/js/dashboard.js"></script>
+<script>
+  window.SESSION_IDLE_TIMEOUT = <?= SESSION_IDLE_TIMEOUT ?>;
+  window.SESSION_WARN_BEFORE  = <?= SESSION_WARN_BEFORE  ?>;
+</script>
 <script src="assets/js/session_timeout.js"></script>
 
 <script>

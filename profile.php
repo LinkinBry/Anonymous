@@ -298,6 +298,10 @@ $avatar = !empty($user['profile_pic']) && file_exists($user['profile_pic'])
 </div>
 
 <script src="assets/js/profile.js"></script>
+<script>
+  window.SESSION_IDLE_TIMEOUT = <?= SESSION_IDLE_TIMEOUT ?>;
+  window.SESSION_WARN_BEFORE  = <?= SESSION_WARN_BEFORE  ?>;
+</script>
 <script src="assets/js/session_timeout.js"></script>
 </body>
 </html>

@@ -581,75 +581,79 @@ footer{
             <div class="team-avatar-wrap">
                 <img
                     src="image/member1.jpg"
-                    alt="Lead Developer"
+                    alt="Juan dela Cruz"
                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
                 >
                 <div class="team-avatar-fallback" style="display:none;">
                     <svg width="44" height="44" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 </div>
             </div>
-            <div class="team-name">Lead Developer</div>
-            <div class="team-role">Full Stack Developer</div>
+            <div class="team-name">Juan dela Cruz</div>
+            <div class="team-role">Lead Developer</div>
             <div class="team-desc">Architected and built the entire evaluation platform from the ground up.</div>
         </div>
+ 
         <div class="team-card reveal">
             <div class="team-avatar-wrap">
                 <img
                     src="image/member2.jpg"
-                    alt="UI/UX Designer"
+                    alt="Maria Santos"
                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
                 >
                 <div class="team-avatar-fallback" style="display:none;">
                     <svg width="44" height="44" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 </div>
             </div>
-            <div class="team-name">UI/UX Designer</div>
-            <div class="team-role">Interface Designer</div>
+            <div class="team-name">Maria Santos</div>
+            <div class="team-role">UI/UX Designer</div>
             <div class="team-desc">Crafted the visual identity and user experience for a seamless journey.</div>
         </div>
+ 
         <div class="team-card reveal">
             <div class="team-avatar-wrap">
                 <img
                     src="image/member3.jpg"
-                    alt="AI Integration"
+                    alt="Carlo Reyes"
                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
                 >
                 <div class="team-avatar-fallback" style="display:none;">
                     <svg width="44" height="44" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 </div>
             </div>
-            <div class="team-name">AI Integration</div>
-            <div class="team-role">AI/ML Engineer</div>
+            <div class="team-name">Carlo Reyes</div>
+            <div class="team-role">AI Integration</div>
             <div class="team-desc">Integrated Groq AI for sentiment analysis, moderation, and chatbot features.</div>
         </div>
+ 
         <div class="team-card reveal">
             <div class="team-avatar-wrap">
                 <img
                     src="image/member4.jpg"
-                    alt="Data Analyst"
+                    alt="Ana Bautista"
                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
                 >
                 <div class="team-avatar-fallback" style="display:none;">
                     <svg width="44" height="44" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 </div>
             </div>
-            <div class="team-name">Data Analyst</div>
-            <div class="team-role">Systems Analyst</div>
+            <div class="team-name">Ana Bautista</div>
+            <div class="team-role">Data Analyst</div>
             <div class="team-desc">Designed the database schema and reporting analytics pipeline.</div>
         </div>
+ 
         <div class="team-card reveal">
             <div class="team-avatar-wrap">
                 <img
                     src="image/member5.jpg"
-                    alt="Security Lead"
+                    alt="Miguel Torres"
                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
                 >
                 <div class="team-avatar-fallback" style="display:none;">
                     <svg width="44" height="44" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 </div>
             </div>
-            <div class="team-name">Security Lead</div>
-            <div class="team-role">Security &amp; QA</div>
+            <div class="team-name">Miguel Torres</div>
+            <div class="team-role">Security Lead</div>
             <div class="team-desc">Ensured platform security, anonymity protocols, and quality assurance.</div>
         </div>
     </div>

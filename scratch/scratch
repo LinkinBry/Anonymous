@@ -3,5 +3,8 @@ git pull origin main
 git push origin main
 -use to push changes to repo
 ngrok http 8080
-
-
+$ sudo service mysql start
+DB_HOST=127.0.0.1
+DB_USER=root
+DB_PASS=root
+DB_NAME=faculty_review_system

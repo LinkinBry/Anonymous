@@ -15,7 +15,6 @@ if (isset($_SESSION['user_id'])) {
 
 include "email_helper.php";
 
-// ── Ensure OTP table exists ────────────────────────────────────────────────
 mysqli_query($conn, "
     CREATE TABLE IF NOT EXISTS `email_otps` (
         `id`            INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -33,16 +32,12 @@ mysqli_query($conn, "
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 ");
 
-// ── Purge expired OTPs ─────────────────────────────────────────────────────
 mysqli_query($conn, "DELETE FROM email_otps WHERE expires_at < NOW()");
 
 $error   = '';
 $success = '';
 $step    = isset($_SESSION['otp_pending_email']) ? 'verify' : 'register';
 
-// ══════════════════════════════════════════════════════════════════════════
-// STEP 1 — Registration form submitted → generate & send OTP
-// ══════════════════════════════════════════════════════════════════════════
 if (isset($_POST['send_otp'])) {
     $pseudo_name      = trim($_POST['pseudo_name']      ?? '');
     $username         = trim($_POST['username']         ?? '');
@@ -61,19 +56,16 @@ if (isset($_POST['send_otp'])) {
         $user_safe   = mysqli_real_escape_string($conn, $username);
         $email_safe  = mysqli_real_escape_string($conn, $email);
 
-        // Check duplicates in users table
         $dup = mysqli_query($conn, "SELECT id FROM users WHERE username='$user_safe' OR email='$email_safe' LIMIT 1");
         if (mysqli_num_rows($dup) > 0) {
             $error = "Username or Email is already registered.";
         } else {
-            // Generate secure 6-digit OTP
             $otp         = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
             $expires_at  = date('Y-m-d H:i:s', strtotime('+10 minutes'));
             $hashed_pass = password_hash($password, PASSWORD_DEFAULT);
             $hash_safe   = mysqli_real_escape_string($conn, $hashed_pass);
             $otp_safe    = mysqli_real_escape_string($conn, $otp);
 
-            // Upsert OTP record (replace if same email re-registers)
             mysqli_query($conn, "
                 INSERT INTO email_otps (email, pseudo_name, username, password_hash, otp, attempts, expires_at)
                 VALUES ('$email_safe', '$pseudo_safe', '$user_safe', '$hash_safe', '$otp_safe', 0, '$expires_at')
@@ -87,7 +79,6 @@ if (isset($_POST['send_otp'])) {
                     created_at    = NOW()
             ");
 
-            // Send OTP email via Brevo
             $sent = sendOtpEmail($email, $pseudo_name, $otp);
 
             if ($sent) {
@@ -95,7 +86,6 @@ if (isset($_POST['send_otp'])) {
                 $step    = 'verify';
                 $success = "A 6-digit verification code has been sent to <strong>" . htmlspecialchars($email) . "</strong>. Please check your inbox (and spam folder).";
             } else {
-                // Clean up if email fails so user can retry
                 mysqli_query($conn, "DELETE FROM email_otps WHERE email='$email_safe'");
                 $error = "Failed to send verification email. Please try again.";
             }
@@ -103,9 +93,6 @@ if (isset($_POST['send_otp'])) {
     }
 }
 
-// ══════════════════════════════════════════════════════════════════════════
-// STEP 2 — OTP verification form submitted
-// ══════════════════════════════════════════════════════════════════════════
 if (isset($_POST['verify_otp'])) {
     $entered_otp = trim($_POST['otp_code'] ?? '');
     $email       = $_SESSION['otp_pending_email'] ?? '';
@@ -137,13 +124,11 @@ if (isset($_POST['verify_otp'])) {
             $error = "Too many incorrect attempts. Please register again.";
             $step  = 'register';
         } elseif ($entered_otp !== $row['otp']) {
-            // Increment attempt counter
             mysqli_query($conn, "UPDATE email_otps SET attempts = attempts + 1 WHERE email='$email_safe'");
             $remaining = 2 - intval($row['attempts']);
             $error = "Incorrect code. " . max(0, $remaining) . " attempt(s) remaining.";
             $step  = 'verify';
         } else {
-            // ✅ OTP correct — create the user account
             $pseudo_safe = mysqli_real_escape_string($conn, $row['pseudo_name']);
             $user_safe   = mysqli_real_escape_string($conn, $row['username']);
             $hash_safe   = mysqli_real_escape_string($conn, $row['password_hash']);
@@ -153,10 +138,8 @@ if (isset($_POST['verify_otp'])) {
                 VALUES ('$pseudo_safe', '$user_safe', '$email_safe', '$hash_safe')
             ");
 
-            // Send welcome email
             sendBrevoEmail($email, $row['pseudo_name'], 'Welcome to OlshcoReview!', welcomeEmailHtml($row['pseudo_name']));
 
-            // Clean up OTP record and session
             mysqli_query($conn, "DELETE FROM email_otps WHERE email='$email_safe'");
             unset($_SESSION['otp_pending_email']);
 
@@ -166,9 +149,6 @@ if (isset($_POST['verify_otp'])) {
     }
 }
 
-// ══════════════════════════════════════════════════════════════════════════
-// STEP 2 — Resend OTP
-// ══════════════════════════════════════════════════════════════════════════
 if (isset($_POST['resend_otp'])) {
     $email = $_SESSION['otp_pending_email'] ?? '';
     if (!empty($email)) {
@@ -200,7 +180,6 @@ if (isset($_POST['resend_otp'])) {
     $step = 'verify';
 }
 
-// ── Cancel / go back to register form ─────────────────────────────────────
 if (isset($_POST['cancel_otp'])) {
     $email = $_SESSION['otp_pending_email'] ?? '';
     if (!empty($email)) {
@@ -211,9 +190,6 @@ if (isset($_POST['cancel_otp'])) {
     $step = 'register';
 }
 
-// ══════════════════════════════════════════════════════════════════════════
-// OTP Email helper (defined here, uses Brevo API same as email_helper.php)
-// ══════════════════════════════════════════════════════════════════════════
 function sendOtpEmail(string $to_email, string $to_name, string $otp): bool {
     $env      = parse_ini_file(__DIR__ . '/.env');
     $api_key  = $env['BREVO_API_KEY'];
@@ -290,8 +266,12 @@ function sendOtpEmail(string $to_email, string $to_name, string $otp): bool {
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
+html, body {
+    height: 100%;
+    overflow: hidden; /* prevent body scroll; panels scroll individually */
+}
 body{
-    font-family:'Inter',sans-serif;min-height:100vh;
+    font-family:'Inter',sans-serif;
     background:url('image/school_bg.jpg') center/cover no-repeat fixed;
     position:relative;display:flex;align-items:stretch;
 }
@@ -299,21 +279,24 @@ body::before{
     content:'';position:fixed;inset:0;
     background:rgba(0,0,0,0.48);z-index:0;
 }
-.page-wrap{position:relative;z-index:1;display:flex;width:100%;min-height:100vh;}
+.page-wrap{
+    position:relative;z-index:1;display:flex;
+    width:100%;height:100vh;
+}
 
-/* ── LEFT PANEL ─────────────────────── */
+/* ── LEFT PANEL — centered content, no scroll ── */
 .left-panel {
     flex: 1;
     display: flex;
     flex-direction: column;
-    align-items: center;        /* center logo + text horizontally */
+    align-items: center;
     justify-content: center;
     padding: 60px 50px;
+    /* no overflow needed — content fits */
 }
-
 .left-logo {
-    width: 300px;
-    height: 300px;
+    width: 200px;
+    height: 200px;
     border-radius: 50%;
     object-fit: cover;
     border: 4px solid rgba(255,255,255,0.35);
@@ -321,42 +304,47 @@ body::before{
     box-shadow: 0 8px 40px rgba(0,0,0,0.35);
     display: block;
 }
-
 .left-title {
-    font-size: clamp(22px, 2.8vw, 36px);
+    font-size: clamp(20px, 2.5vw, 32px);
     font-weight: 700;
     color: #fff;
-    line-height: 1.2;
-    text-align: center;         /* center text lines */
+    line-height: 1.25;
+    text-align: center;
 }
+.left-title .gold { color: #F5A623; }
 
-.left-title .gold {
-    color: #F5A623;
-}
-
-
-/* ── RIGHT PANEL ────────────────────── */
+/* ── RIGHT PANEL — scrollable form ── */
 .right-panel{
-    width:520px;flex-shrink:0;
-    display:flex;flex-direction:column;
-    align-items:center;justify-content:center;
-    padding:50px 56px;overflow-y:auto;
+    width: 520px;
+    flex-shrink: 0;
+    height: 100vh;
+    overflow-y: auto;       /* ← scrollable */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start; /* align to top so scroll works naturally */
+    padding: 50px 56px 60px;
 }
+/* Custom scrollbar styling */
+.right-panel::-webkit-scrollbar { width: 5px; }
+.right-panel::-webkit-scrollbar-track { background: transparent; }
+.right-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.25); border-radius: 10px; }
+
 .form-card{width:100%;max-width:420px;}
 .form-card h2{
-    font-size:clamp(30px,4vw,46px);font-weight:900;
+    font-size:clamp(28px,3.5vw,42px);font-weight:900;
     color:#fff;margin-bottom:24px;
     text-shadow:0 2px 12px rgba(0,0,0,0.3);
 }
 
-/* ── FIELD LABEL ────────────────────── */
+/* ── FIELD LABEL ── */
 .field-label{
     font-size:14px;font-weight:600;color:#fff;
     margin-bottom:7px;display:block;
     text-shadow:0 1px 4px rgba(0,0,0,0.3);
 }
 
-/* ── INPUT WRAP ─────────────────────── */
+/* ── INPUT WRAP ── */
 .input-wrap{position:relative;margin-bottom:16px;}
 .input-wrap .icon-left{
     position:absolute;left:16px;top:50%;transform:translateY(-50%);
@@ -369,12 +357,11 @@ body::before{
     font-family:'Inter',sans-serif;font-size:14px;color:#1a1a2e;
     outline:none;transition:box-shadow 0.2s;
 }
-/* Password inputs also need right padding for the eye button */
 .input-wrap.has-eye input{padding-right:48px;}
 .input-wrap input:focus{box-shadow:0 0 0 3px rgba(139,0,0,0.35);}
 .input-wrap input::placeholder{color:#aaa;}
 
-/* ── EYE TOGGLE ─────────────────────── */
+/* ── EYE TOGGLE ── */
 .eye-btn{
     position:absolute;right:14px;top:50%;transform:translateY(-50%);
     background:none;border:none;cursor:pointer;
@@ -383,7 +370,7 @@ body::before{
 }
 .eye-btn:hover{color:#8B0000;}
 
-/* ── BUTTONS ────────────────────────── */
+/* ── BUTTONS ── */
 .btn-primary{
     width:100%;padding:13px;background:#8B0000;color:#fff;border:none;
     border-radius:30px;font-size:16px;font-weight:700;cursor:pointer;
@@ -408,7 +395,7 @@ body::before{
 }
 .btn-ghost:hover{color:#fff;}
 
-/* ── OTP INPUT ──────────────────────── */
+/* ── OTP INPUT ── */
 .otp-fields{display:flex;gap:10px;justify-content:center;margin:8px 0 18px;}
 .otp-fields input{
     width:48px;height:56px;text-align:center;
@@ -421,7 +408,7 @@ body::before{
 .otp-fields input:focus{border-color:#8B0000;box-shadow:0 0 0 3px rgba(139,0,0,0.25);}
 .otp-fields input.filled{border-color:#8B0000;}
 
-/* ── ALERTS ─────────────────────────── */
+/* ── ALERTS ── */
 .alert-error{
     background:rgba(220,38,38,0.18);border:1px solid rgba(220,38,38,0.45);
     color:#fff;border-radius:12px;padding:11px 16px;
@@ -440,7 +427,7 @@ body::before{
 .bottom-link a{color:#F5A623;text-decoration:none;font-weight:700;}
 .bottom-link a:hover{text-decoration:underline;}
 
-/* ── EMAIL PILL ─────────────────────── */
+/* ── EMAIL PILL ── */
 .email-pill{
     display:inline-flex;align-items:center;gap:6px;
     background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);
@@ -449,11 +436,11 @@ body::before{
     word-break:break-all;
 }
 
-/* ── TIMER ──────────────────────────── */
+/* ── TIMER ── */
 .otp-timer{font-size:12px;color:rgba(255,255,255,0.6);text-align:center;margin-bottom:14px;}
 .otp-timer .countdown{color:#F5A623;font-weight:700;}
 
-/* ── BACK LINK ──────────────────────── */
+/* ── BACK LINK ── */
 .back-home{
     position:fixed;top:22px;left:26px;z-index:100;
     display:inline-flex;align-items:center;gap:7px;
@@ -462,27 +449,28 @@ body::before{
     border:1px solid rgba(255,255,255,0.2);transition:all 0.2s;backdrop-filter:blur(4px);
 }
 .back-home:hover{color:#fff;background:rgba(0,0,0,0.5);}
-@media(max-width:768px){
-    .left-panel{display:none;}
-    .right-panel{width:100%;padding:40px 24px;}
-}
 
-/* ── PROGRESS STEPS ─────────────────── */
-.progress-steps{display:flex;align-items:center;gap:0;margin-bottom:28px;}
+/* ── PROGRESS STEPS ── */
+.progress-steps{display:flex;align-items:center;gap:0;margin-bottom:24px;}
 .step-dot{
     width:32px;height:32px;border-radius:50%;
     display:flex;align-items:center;justify-content:center;
-    font-size:13px;font-weight:700;flex-shrink:0;
-    transition:all 0.3s;
+    font-size:13px;font-weight:700;flex-shrink:0;transition:all 0.3s;
 }
 .step-dot.active{background:#8B0000;color:#fff;box-shadow:0 0 0 3px rgba(139,0,0,0.3);}
 .step-dot.done{background:#10b981;color:#fff;}
 .step-dot.inactive{background:rgba(255,255,255,0.2);color:rgba(255,255,255,0.6);}
 .step-line{flex:1;height:2px;background:rgba(255,255,255,0.2);}
 .step-line.done{background:#10b981;}
-.step-labels{display:flex;justify-content:space-between;margin-top:6px;margin-bottom:24px;}
+.step-labels{display:flex;justify-content:space-between;margin-top:6px;margin-bottom:20px;}
 .step-labels span{font-size:10px;color:rgba(255,255,255,0.6);font-weight:500;text-align:center;width:80px;}
 .step-labels span.active-label{color:#fff;}
+
+@media(max-width:768px){
+    html, body { overflow: auto; }
+    .left-panel{display:none;}
+    .right-panel{width:100%;height:auto;overflow-y:visible;padding:40px 24px 60px;}
+}
 </style>
 </head>
 <body>
@@ -492,7 +480,7 @@ body::before{
 </a>
 <div class="page-wrap">
 
-    <!-- ── Left Panel ── -->
+    <!-- ── Left Panel — centered logo + text ── -->
     <div class="left-panel">
         <img src="image/logo.png" alt="OLSHCO" class="left-logo" onerror="this.style.display='none'">
         <div class="left-title">
@@ -502,7 +490,7 @@ body::before{
         </div>
     </div>
 
-    <!-- ── Right Panel ── -->
+    <!-- ── Right Panel — scrollable ── -->
     <div class="right-panel">
         <div class="form-card">
 
@@ -522,9 +510,6 @@ body::before{
             </div>
 
             <?php if ($step === 'register'): ?>
-            <!-- ════════════════════════════════
-                 STEP 1 — Registration Form
-                 ════════════════════════════════ -->
             <h2>Register</h2>
 
             <?php if (!empty($error)): ?>
@@ -569,9 +554,7 @@ body::before{
                     </span>
                     <input type="password" name="password" id="pw1" placeholder="Min. 6 characters" required autocomplete="new-password">
                     <button type="button" class="eye-btn" onclick="toggleEye('pw1', this)" aria-label="Show/hide password">
-                        <!-- Eye open (default: password hidden, show the "eye" icon) -->
                         <svg id="pw1-eye-open" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                        <!-- Eye closed (hidden by default) -->
                         <svg id="pw1-eye-closed" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display:none;"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
                     </button>
                 </div>
@@ -587,7 +570,6 @@ body::before{
                         <svg id="pw2-eye-closed" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display:none;"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
                     </button>
                 </div>
-                <!-- Password match hint -->
                 <div id="pwHint" style="font-size:12px;color:rgba(255,255,255,0.7);margin-top:-10px;margin-bottom:14px;min-height:18px;"></div>
 
                 <button type="submit" name="send_otp" class="btn-primary" id="sendOtpBtn">
@@ -598,9 +580,6 @@ body::before{
             <p class="bottom-link">Already have an account? <a href="login.php">Log in</a></p>
 
             <?php else: ?>
-            <!-- ════════════════════════════════
-                 STEP 2 — OTP Verification
-                 ════════════════════════════════ -->
             <h2>Verify Email</h2>
 
             <?php if (!empty($error)): ?>
@@ -626,14 +605,12 @@ body::before{
                 <?php echo htmlspecialchars($_SESSION['otp_pending_email'] ?? ''); ?>
             </div>
 
-            <!-- OTP countdown timer -->
             <div class="otp-timer">
                 Code expires in <span class="countdown" id="otpTimer">10:00</span>
             </div>
 
             <form method="POST" id="otpForm">
                 <label class="field-label" style="text-align:center;display:block;">Enter 6-Digit Code</label>
-                <!-- Hidden field to hold combined OTP value -->
                 <input type="hidden" name="otp_code" id="otpHidden">
 
                 <div class="otp-fields" id="otpFields">
@@ -651,7 +628,6 @@ body::before{
                 </button>
             </form>
 
-            <!-- Resend / cancel -->
             <div style="display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:4px;">
                 <form method="POST" style="width:100%;">
                     <button type="submit" name="resend_otp" class="btn-outline-white" id="resendBtn" disabled>
@@ -670,7 +646,6 @@ body::before{
 </div>
 
 <script>
-/* ── Eye toggle ─────────────────────────────────────────────── */
 function toggleEye(inputId, btn) {
     const inp    = document.getElementById(inputId);
     const isHide = inp.type === 'password';
@@ -679,7 +654,6 @@ function toggleEye(inputId, btn) {
     document.getElementById(inputId + '-eye-closed').style.display = isHide ? ''      : 'none';
 }
 
-/* ── Password match hint ─────────────────────────────────────── */
 const pw1   = document.getElementById('pw1');
 const pw2   = document.getElementById('pw2');
 const hint  = document.getElementById('pwHint');
@@ -697,7 +671,6 @@ if (pw1 && pw2 && hint) {
     pw1.addEventListener('input', checkMatch);
     pw2.addEventListener('input', checkMatch);
 
-    /* Prevent submit if mismatch */
     const regForm = document.getElementById('regForm');
     if (regForm) {
         regForm.addEventListener('submit', function(e) {
@@ -718,9 +691,8 @@ if (pw1 && pw2 && hint) {
     }
 }
 
-/* ── OTP digit-box auto-advance ─────────────────────────────── */
-const digits   = document.querySelectorAll('.otp-digit');
-const hidden   = document.getElementById('otpHidden');
+const digits    = document.querySelectorAll('.otp-digit');
+const hidden    = document.getElementById('otpHidden');
 const verifyBtn = document.getElementById('verifyBtn');
 
 function syncOtp() {
@@ -753,10 +725,8 @@ digits.forEach((inp, idx) => {
     });
 });
 
-/* Auto-focus first digit */
 if (digits.length) digits[0].focus();
 
-/* ── OTP expiry countdown (10 min) ─────────────────────────── */
 const timerEl = document.getElementById('otpTimer');
 if (timerEl) {
     let totalSec = 10 * 60;
@@ -776,8 +746,7 @@ if (timerEl) {
     }, 1000);
 }
 
-/* ── Resend cooldown (60 s) ─────────────────────────────────── */
-const resendBtn      = document.getElementById('resendBtn');
+const resendBtn       = document.getElementById('resendBtn');
 const resendCountdown = document.getElementById('resendCountdown');
 if (resendBtn && resendCountdown) {
     let cooldown = 60;

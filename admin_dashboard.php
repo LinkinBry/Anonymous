@@ -181,7 +181,6 @@ $total_admins    = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FRO
 $total_faculties = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM faculties"))['c'];
 $total_reviews   = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM reviews r JOIN users u ON r.user_id=u.id"))['c'];
 
-// ── CRITICAL: Single source of truth for pending count ──────────────────
 $pending_count   = intval(mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM reviews r JOIN users u ON r.user_id=u.id WHERE r.status='pending'"))['c']);
 $approved_count  = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM reviews r JOIN users u ON r.user_id=u.id WHERE r.status='approved'"))['c'];
 $rejected_count  = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM reviews r JOIN users u ON r.user_id=u.id WHERE r.status='rejected'"))['c'];
@@ -230,8 +229,14 @@ $week_users    = array_sum(array_column($weekly, 'users'));
 $af_d   = mysqli_query($conn, "SELECT DISTINCT department FROM faculties WHERE department IS NOT NULL AND department != '' ORDER BY department ASC");
 $af_arr = [];
 while ($ad = mysqli_fetch_assoc($af_d)) $af_arr[] = $ad['department'];
-
 $ef_arr = $af_arr;
+
+/* ── Fetch faculties with photos for JS use ─────────────────────────────── */
+$fac_photos_res = mysqli_query($conn, "SELECT id, COALESCE(photo,'') AS photo FROM faculties");
+$fac_photos_map = [];
+while ($fp = mysqli_fetch_assoc($fac_photos_res)) {
+    $fac_photos_map[$fp['id']] = $fp['photo'];
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -426,10 +431,8 @@ $ef_arr = $af_arr;
             </button>
         </div>
 
-        <!-- Pending rows — all rendered, JS handles pagination -->
         <div id="pending-rows-wrap">
-        <?php $has_pending = false; $pending_rows_data = []; while ($r = mysqli_fetch_assoc($pending_reviews)): $has_pending = true;
-            $pending_rows_data[] = $r;
+        <?php $has_pending = false; while ($r = mysqli_fetch_assoc($pending_reviews)): $has_pending = true;
             $s = $r['sentiment'] ?? 'neutral';
             $cls = $s === 'positive' ? 'ai-pos' : ($s === 'negative' ? 'ai-neg' : 'ai-neu');
         ?>
@@ -509,7 +512,7 @@ $ef_arr = $af_arr;
                     <input type="text" id="faculties-search" placeholder="Search faculty…" oninput="filterFacRows()">
                 </div>
                 <select id="faculties-dept-filter" class="filter-sel" style="font-size:11px;" onchange="filterFacRows()">
-                    <option value="">All Deparments</option>
+                    <option value="">All Departments</option>
                     <?php $depts_res = mysqli_query($conn, "SELECT DISTINCT department FROM faculties WHERE department IS NOT NULL AND department != '' ORDER BY department ASC");
                     while ($d = mysqli_fetch_assoc($depts_res)): ?>
                     <option value="<?php echo htmlspecialchars(strtolower($d['department'])); ?>"><?php echo htmlspecialchars($d['department']); ?></option>
@@ -545,7 +548,7 @@ $ef_arr = $af_arr;
                     <?php endif; ?>
                 </div>
                 <div style="margin-left:8px;display:flex;gap:3px;flex-shrink:0;">
-                    <button type="button" class="btn btn-outline" style="padding:3px 8px;font-size:10px;" onclick="openFacultyModal(<?php echo $f['id']; ?>,'<?php echo htmlspecialchars(addslashes($f['name'])); ?>','<?php echo htmlspecialchars(addslashes($f['department']??'')); ?>')">View</button>
+                    <button type="button" class="btn btn-outline" style="padding:3px 8px;font-size:10px;" onclick="openFacultyModal(<?php echo $f['id']; ?>,'<?php echo htmlspecialchars(addslashes($f['name'])); ?>','<?php echo htmlspecialchars(addslashes($f['department']??'')); ?>','<?php echo $fphoto ? $fphoto : ''; ?>')">View</button>
                     <button type="button" class="btn btn-outline" style="padding:3px 8px;font-size:10px;" onclick="openEditFacultyModal(<?php echo $f['id']; ?>,'<?php echo htmlspecialchars(addslashes($f['name'])); ?>','<?php echo htmlspecialchars(addslashes($f['department']??'')); ?>','<?php echo $fphoto ?? ''; ?>')">Edit</button>
                     <a href="?delete_faculty=<?php echo $f['id']; ?>#faculties" class="btn btn-red" style="padding:3px 8px;font-size:10px;" onclick="return confirm('Delete this faculty and all their reviews?')"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg></a>
                 </div>
@@ -590,12 +593,10 @@ $ef_arr = $af_arr;
                     <div class="fac-row-name"><?php echo htmlspecialchars($u['fullname']); ?></div>
                     <div class="fac-row-dept">@<?php echo htmlspecialchars($u['username']); ?></div>
                 </div>
-                <div style="text-align:right;flex-shrink:0;width:120px;">
-                    <!-- Empty space for alignment -->
-                </div>
+                <div style="text-align:right;flex-shrink:0;width:120px;"></div>
                 <div style="margin-left:8px;display:flex;gap:3px;flex-shrink:0;">
                     <button type="button" class="btn btn-outline" style="padding:3px 8px;font-size:10px;"
-                            onclick="openUserModal(<?php echo $u['id']; ?>,'<?php echo htmlspecialchars(addslashes($u['fullname'])); ?>','<?php echo htmlspecialchars(addslashes($u['username'])); ?>','<?php echo htmlspecialchars(addslashes($u['email'])); ?>','<?php echo (!empty($u['profile_pic'])&&file_exists($u['profile_pic']))?htmlspecialchars(addslashes($u['profile_pic'])):'https://ui-avatars.com/api/?name='.urlencode($u['fullname']).'&background=7C0A02&color=fff&size=80'; ?>')"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-right:3px;display:inline;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View</button>
+                            onclick="openUserModal(<?php echo $u['id']; ?>,'<?php echo htmlspecialchars(addslashes($u['fullname'])); ?>','<?php echo htmlspecialchars(addslashes($u['username'])); ?>','<?php echo htmlspecialchars(addslashes($u['email'])); ?>','<?php echo (!empty($u['profile_pic'])&&file_exists($u['profile_pic']))?htmlspecialchars(addslashes($u['profile_pic'])):'https://ui-avatars.com/api/?name='.urlencode($u['fullname']).'&background=7C0A02&color=fff&size=120'; ?>')"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-right:3px;display:inline;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View</button>
                     <button type="button" class="btn btn-red" style="padding:3px 8px;font-size:10px;"
                             onclick="confirmDeleteUser(<?php echo $u['id']; ?>,'<?php echo htmlspecialchars(addslashes($u['fullname'])); ?>')"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
                 </div>
@@ -634,7 +635,6 @@ $ef_arr = $af_arr;
             </select>
         </div>
         <form method="POST">
-        <!-- select all row -->
         <div style="padding:8px 16px;border-bottom:1px solid var(--gray-100);display:flex;align-items:center;gap:8px;background:var(--gray-50);">
             <input type="checkbox" id="select_all_approved" onchange="document.querySelectorAll('.approved_cb').forEach(c=>c.checked=this.checked);updateApprovedBulk();">
             <label for="select_all_approved" style="font-size:12px;color:var(--gray-500);cursor:pointer;">Select all visible</label>
@@ -747,23 +747,30 @@ $ef_arr = $af_arr;
     </div><!-- end .content -->
 </div><!-- end .main -->
 
-<!-- ══ User Profile Modal ════════════════════════════════════════════════ -->
+<!-- ══ User Profile Modal — ENLARGED AVATAR ══════════════════════════════ -->
 <div class="modal-overlay" id="userModal">
-    <div class="modal-box" style="max-width:420px;">
+    <div class="modal-box" style="max-width:440px;">
         <div class="modal-head"><h3>User Profile</h3><button class="modal-close" onclick="document.getElementById('userModal').classList.remove('open')">&times;</button></div>
-        <div style="padding:24px;text-align:center;">
-            <img id="userModalAvatar" src="" alt="" style="width:68px;height:68px;border-radius:50%;object-fit:cover;border:2px solid var(--maroon-pale);margin-bottom:12px;">
-            <div id="userModalName"     style="font-size:16px;font-weight:600;color:var(--gray-800);margin-bottom:3px;"></div>
-            <div id="userModalUsername" style="font-size:12px;color:var(--gray-400);margin-bottom:14px;"></div>
+        <div style="padding:28px;text-align:center;">
+            <!-- ENLARGED: 120px avatar with border ring -->
+            <div style="position:relative;display:inline-block;margin-bottom:16px;">
+                <img id="userModalAvatar" src="" alt=""
+                     style="width:120px;height:120px;border-radius:50%;object-fit:cover;
+                            border:3px solid var(--maroon-pale);
+                            box-shadow:0 4px 20px rgba(139,0,0,0.15);
+                            display:block;">
+            </div>
+            <div id="userModalName"     style="font-size:18px;font-weight:700;color:var(--gray-800);margin-bottom:4px;"></div>
+            <div id="userModalUsername" style="font-size:13px;color:var(--gray-400);margin-bottom:16px;"></div>
             <div style="background:var(--gray-100);border-radius:var(--radius-sm);padding:10px;">
-                <div style="display:flex;align-items:center;justify-content:center;gap:7px;font-size:12px;color:var(--gray-600);">
-                    <svg width="13" height="13" fill="none" stroke="var(--maroon)" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                <div style="display:flex;align-items:center;justify-content:center;gap:7px;font-size:13px;color:var(--gray-600);">
+                    <svg width="14" height="14" fill="none" stroke="var(--maroon)" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
                     <span id="userModalEmail"></span>
                 </div>
             </div>
         </div>
-        <div style="padding:0 18px 18px;">
-            <div style="font-size:11px;font-weight:600;color:var(--gray-600);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;padding-bottom:8px;border-top:1px solid var(--gray-100);padding-top:12px;">Reviews Made</div>
+        <div style="padding:0 20px 20px;">
+            <div style="font-size:11px;font-weight:600;color:var(--gray-600);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;padding-bottom:10px;border-top:1px solid var(--gray-100);padding-top:14px;">Reviews Made</div>
             <div id="userReviewsList" style="font-size:12px;color:var(--gray-400);">Loading...</div>
         </div>
     </div>
@@ -790,12 +797,25 @@ $ef_arr = $af_arr;
     </div>
 </div>
 
-<!-- ══ Faculty Reviews Modal ══════════════════════════════════════════════ -->
+<!-- ══ Faculty Reviews Modal — WITH FACULTY PHOTO ════════════════════════ -->
 <div class="modal-overlay" id="facultyModal">
     <div class="modal-box" style="max-width:660px;">
         <div class="modal-head" style="flex-direction:column;align-items:flex-start;gap:0;padding-bottom:0;">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;width:100%;padding-bottom:10px;">
-                <div><h3 id="facModalName" style="color:var(--maroon);font-size:15px;"></h3><div id="facModalDept" style="font-size:11px;color:var(--gray-400);margin-top:2px;"></div></div>
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;width:100%;padding-bottom:12px;">
+                <!-- Faculty photo + info side by side -->
+                <div style="display:flex;align-items:center;gap:14px;">
+                    <div style="position:relative;flex-shrink:0;">
+                        <img id="facModalPhoto" src="" alt=""
+                             style="width:120px;height:120px;border-radius:50%;object-fit:cover;
+                                    border:3px solid var(--maroon-pale);
+                                    box-shadow:0 4px 20px rgba(139,0,0,0.15);
+                                    display:block;">
+                    </div>
+                    <div>
+                        <h3 id="facModalName" style="color:var(--maroon);font-size:16px;margin-bottom:3px;"></h3>
+                        <div id="facModalDept" style="font-size:12px;color:var(--gray-400);"></div>
+                    </div>
+                </div>
                 <button class="modal-close" onclick="document.getElementById('facultyModal').classList.remove('open')">&times;</button>
             </div>
             <div style="display:flex;gap:5px;border-bottom:2px solid var(--gray-100);width:100%;">
@@ -951,7 +971,7 @@ $ef_arr = $af_arr;
     </div>
 </div>
 
-<!-- ══ PHP → JS data bridge (must stay inline) ═══════════════════════════ -->
+<!-- ══ PHP → JS data bridge ═══════════════════════════════════════════════ -->
 <script>const weeklyData = <?php echo json_encode($weekly); ?>;</script>
 
 <?php if (!empty($add_faculty_error)): ?>
@@ -963,5 +983,31 @@ $ef_arr = $af_arr;
 
 <script src="assets/js/admin.js"></script>
 <script src="assets/js/session_timeout.js"></script>
+
+<script>
+// Override openFacultyModal to also set the photo
+const _origOpenFacultyModal = window.openFacultyModal;
+window.openFacultyModal = function(fid, name, dept, photo) {
+    _cFid = fid;
+    document.getElementById('facModalName').textContent = name;
+    document.getElementById('facModalDept').textContent = dept || '—';
+
+    // Set faculty photo — use provided photo or fallback to ui-avatars
+    const photoEl = document.getElementById('facModalPhoto');
+    if (photo && photo.trim() !== '') {
+        photoEl.src = photo;
+        photoEl.onerror = function() {
+            this.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&background=8B0000&color=fff&size=120';
+        };
+    } else {
+        photoEl.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&background=8B0000&color=fff&size=120';
+    }
+
+    document.getElementById('facModalContent').innerHTML = '<div style="text-align:center;padding:40px;color:var(--gray-400);">Loading...</div>';
+    document.getElementById('facultyModal').classList.add('open');
+    setFacTab('reviews');
+    loadFacultyReviews(fid);
+};
+</script>
 </body>
 </html>

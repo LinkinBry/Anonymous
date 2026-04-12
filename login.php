@@ -38,8 +38,12 @@ if (isset($_POST['login'])) {
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
+html, body {
+    height: 100%;
+    overflow: hidden;
+}
 body{
-    font-family:'Inter',sans-serif;min-height:100vh;
+    font-family:'Inter',sans-serif;
     background:url('image/school_bg.jpg') center/cover no-repeat fixed;
     position:relative;display:flex;align-items:stretch;
 }
@@ -47,35 +51,52 @@ body::before{
     content:'';position:fixed;inset:0;
     background:rgba(0,0,0,0.48);z-index:0;
 }
-.page-wrap{position:relative;z-index:1;display:flex;width:100%;min-height:100vh;}
+.page-wrap{
+    position:relative;z-index:1;display:flex;
+    width:100%;height:100vh;
+}
 
-/* ── LEFT PANEL ─────────────────────────────── */
+/* ── LEFT PANEL — centered, matching register page ── */
 .left-panel{
     flex:1;display:flex;flex-direction:column;
-    align-items:flex-start;justify-content:center;
+    align-items:center;          /* centered horizontally */
+    justify-content:center;
     padding:60px 50px;
 }
 .left-logo{
-    width:200px;height:200px;border-radius:50%;
+    width:200px;
+    height:200px;
+    border-radius:50%;
     object-fit:cover;
     border:4px solid rgba(255,255,255,0.35);
-    margin-bottom:36px;
+    margin-bottom:32px;
     box-shadow:0 8px 40px rgba(0,0,0,0.35);
     display:block;
 }
 .left-title{
-    font-size:clamp(24px,3vw,38px);font-weight:700;
-    color:#fff;line-height:1.18;
+    font-size:clamp(20px,2.5vw,32px);
+    font-weight:700;
+    color:#fff;
+    line-height:1.25;
+    text-align:center;           /* centered text */
 }
 .left-title .gold{color:#F5A623;}
 
-/* ── RIGHT PANEL ────────────────────────────── */
+/* ── RIGHT PANEL — vertically centered, no scroll needed for login ── */
 .right-panel{
     width:520px;flex-shrink:0;
-    display:flex;flex-direction:column;
-    align-items:center;justify-content:center;
+    height:100vh;
+    overflow-y:auto;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
     padding:60px 56px;
 }
+.right-panel::-webkit-scrollbar { width: 5px; }
+.right-panel::-webkit-scrollbar-track { background: transparent; }
+.right-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.25); border-radius: 10px; }
+
 .form-card{width:100%;max-width:400px;}
 .form-card h2{
     font-size:clamp(32px,4vw,48px);font-weight:900;
@@ -88,10 +109,8 @@ body::before{
     text-shadow:0 1px 4px rgba(0,0,0,0.3);
 }
 
-/* ── INPUT WRAP ─────────────────────────────── */
-.input-wrap{
-    position:relative;margin-bottom:20px;
-}
+/* ── INPUT WRAP ── */
+.input-wrap{position:relative;margin-bottom:20px;}
 .input-wrap .icon-left{
     position:absolute;left:16px;top:50%;transform:translateY(-50%);
     color:#555;pointer-events:none;
@@ -104,12 +123,11 @@ body::before{
     font-family:'Inter',sans-serif;font-size:15px;color:#1a1a2e;
     outline:none;transition:box-shadow 0.2s;
 }
-/* Password field needs right padding for eye button */
 .input-wrap.has-eye input{padding-right:48px;}
 .input-wrap input:focus{box-shadow:0 0 0 3px rgba(139,0,0,0.35);}
 .input-wrap input::placeholder{color:#aaa;}
 
-/* ── EYE TOGGLE ─────────────────────────────── */
+/* ── EYE TOGGLE ── */
 .eye-btn{
     position:absolute;right:14px;top:50%;transform:translateY(-50%);
     background:none;border:none;cursor:pointer;
@@ -118,7 +136,7 @@ body::before{
 }
 .eye-btn:hover{color:#8B0000;}
 
-/* ── BUTTONS ────────────────────────────────── */
+/* ── BUTTONS ── */
 .btn-login{
     width:100%;padding:14px;
     background:#8B0000;color:#fff;border:none;
@@ -136,7 +154,7 @@ body::before{
 .bottom-link a{color:#F5A623;text-decoration:none;font-weight:700;}
 .bottom-link a:hover{text-decoration:underline;}
 
-/* ── ALERTS ─────────────────────────────────── */
+/* ── ALERTS ── */
 .alert-error{
     background:rgba(220,38,38,0.18);border:1px solid rgba(220,38,38,0.45);
     color:#fff;border-radius:12px;padding:12px 16px;
@@ -156,7 +174,7 @@ body::before{
     backdrop-filter:blur(4px);
 }
 
-/* ── BACK HOME ──────────────────────────────── */
+/* ── BACK HOME ── */
 .back-home{
     position:fixed;top:22px;left:26px;z-index:100;
     display:inline-flex;align-items:center;gap:7px;
@@ -165,9 +183,11 @@ body::before{
     border:1px solid rgba(255,255,255,0.2);transition:all 0.2s;backdrop-filter:blur(4px);
 }
 .back-home:hover{color:#fff;background:rgba(0,0,0,0.5);}
+
 @media(max-width:768px){
+    html, body { overflow: auto; }
     .left-panel{display:none;}
-    .right-panel{width:100%;padding:40px 24px;}
+    .right-panel{width:100%;height:auto;overflow-y:visible;padding:40px 24px;}
 }
 </style>
 </head>
@@ -177,13 +197,12 @@ body::before{
     Back to Home
 </a>
 <div class="page-wrap">
-    <!-- Left: Logo + Title -->
+    <!-- Left: Centered Logo + Title (matching register page) -->
     <div class="left-panel">
         <img src="image/logo.png" alt="OLSHCO" class="left-logo" onerror="this.style.display='none'">
         <div class="left-title">
-            Anonymous Online<br>
-            <span class="gold">Faculty Performance</span><br>
-            <span class="gold">Evaluation and</span><br>
+            OLSHCOReview<br>
+            <span class="gold">Faculty Evaluation and</span><br>
             <span class="gold">Feedback System</span>
         </div>
     </div>
@@ -230,12 +249,10 @@ body::before{
                     </span>
                     <input type="password" name="password" id="loginPw" placeholder="Enter your Password" required autocomplete="current-password">
                     <button type="button" class="eye-btn" onclick="toggleEye('loginPw', this)" aria-label="Show/hide password">
-                        <!-- Eye open icon (shown when password is hidden) -->
                         <svg id="loginPw-eye-open" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
                             <circle cx="12" cy="12" r="3"/>
                         </svg>
-                        <!-- Eye closed icon (shown when password is visible) -->
                         <svg id="loginPw-eye-closed" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display:none;">
                             <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/>
                             <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/>
@@ -252,7 +269,6 @@ body::before{
 </div>
 
 <script>
-/* ── Eye icon toggle ─────────────────────────────────────────── */
 function toggleEye(inputId, btn) {
     const inp    = document.getElementById(inputId);
     const isHide = inp.type === 'password';

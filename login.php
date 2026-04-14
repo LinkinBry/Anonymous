@@ -11,7 +11,7 @@ if (isset($_SESSION['user_id'])) {
 if (isset($_POST['login'])) {
     $username = $_POST['username'];
     $password = $_POST['password'];
-    $sql      = "SELECT * FROM users WHERE username='$username'";
+    $sql = "SELECT * FROM users WHERE username='$username' AND role='user' LIMIT 1";
     $result   = mysqli_query($conn, $sql);
     if (!$result) die("Query failed: " . mysqli_error($conn));
     $user = mysqli_fetch_assoc($result);
@@ -64,8 +64,8 @@ body::before{
     padding:60px 50px;
 }
 .left-logo{
-    width:200px;
-    height:200px;
+    width:330px;
+    height:330px;
     border-radius:50%;
     object-fit:cover;
     border:4px solid rgba(255,255,255,0.35);
@@ -74,11 +74,12 @@ body::before{
     display:block;
 }
 .left-title{
-    font-size:clamp(20px,2.5vw,32px);
+    font-size:clamp(35px,2.5vw,32px);
     font-weight:700;
     color:#fff;
     line-height:1.25;
     text-align:center;           /* centered text */
+    
 }
 .left-title .gold{color:#F5A623;}
 

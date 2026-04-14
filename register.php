@@ -295,8 +295,8 @@ body::before{
     /* no overflow needed — content fits */
 }
 .left-logo {
-    width: 200px;
-    height: 200px;
+    width: 330px;
+    height: 330px;
     border-radius: 50%;
     object-fit: cover;
     border: 4px solid rgba(255,255,255,0.35);
@@ -305,7 +305,7 @@ body::before{
     display: block;
 }
 .left-title {
-    font-size: clamp(20px, 2.5vw, 32px);
+    font-size: clamp(35px, 2.5vw, 32px);
     font-weight: 700;
     color: #fff;
     line-height: 1.25;
@@ -573,7 +573,7 @@ body::before{
                 <div id="pwHint" style="font-size:12px;color:rgba(255,255,255,0.7);margin-top:-10px;margin-bottom:14px;min-height:18px;"></div>
 
                 <button type="submit" name="send_otp" class="btn-primary" id="sendOtpBtn">
-                    Continue — Verify Email
+                    Verify Email
                     <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="display:inline;margin-left:8px;vertical-align:middle;"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
                 </button>
             </form>

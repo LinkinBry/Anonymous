@@ -100,7 +100,7 @@ body{font-family:'Inter',sans-serif;overflow-x:hidden;}
     border:2px solid rgba(255,255,255,0.35);transition:all 0.22s;backdrop-filter:blur(4px);
 }
 .hero-btn-secondary:hover{background:rgba(255,255,255,0.22);border-color:#fff;}
-.hero-right{position:absolute;right:-140px;top:68%;transform:translateY(-50%);z-index:1;}
+.hero-right{position:absolute;right:-130px;top:68%;transform:translateY(-45%);z-index:1;}
 .hero-logo-container{
     position:relative;width:650px;height:600px;border-radius:50%;
     border:8px solid rgba(255,255,255,0.18);background:transparent;
@@ -115,7 +115,7 @@ body{font-family:'Inter',sans-serif;overflow-x:hidden;}
 }
 .hero-logo-img{
     position:relative;width:450px;height:450px;border-radius:50%;
-    object-fit:cover;margin-right:90px;margin-bottom:50px;
+    object-fit:cover;margin-right:90px;margin-bottom:35px;
     box-shadow:0 0 0 1px rgba(255,255,255,0.05),0 18px 40px rgba(0,0,0,0.32);
 }
 
@@ -581,14 +581,14 @@ footer{
             <div class="team-avatar-wrap">
                 <img
                     src="image/member1.jpg"
-                    alt="Juan dela Cruz"
+                    alt="Bryan Jay Domingo"
                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
                 >
                 <div class="team-avatar-fallback" style="display:none;">
                     <svg width="44" height="44" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 </div>
             </div>
-            <div class="team-name">Juan dela Cruz</div>
+            <div class="team-name">Bryan Jay Domingo</div>
             <div class="team-role">Lead Developer</div>
             <div class="team-desc">Architected and built the entire evaluation platform from the ground up.</div>
         </div>
@@ -597,14 +597,14 @@ footer{
             <div class="team-avatar-wrap">
                 <img
                     src="image/member2.jpg"
-                    alt="Maria Santos"
+                    alt="Jamaica Estrada"
                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
                 >
                 <div class="team-avatar-fallback" style="display:none;">
                     <svg width="44" height="44" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 </div>
             </div>
-            <div class="team-name">Maria Santos</div>
+            <div class="team-name">Jamaica Estrada</div>
             <div class="team-role">UI/UX Designer</div>
             <div class="team-desc">Crafted the visual identity and user experience for a seamless journey.</div>
         </div>
@@ -613,14 +613,14 @@ footer{
             <div class="team-avatar-wrap">
                 <img
                     src="image/member3.jpg"
-                    alt="Carlo Reyes"
+                    alt="Jan Poul Domingo"
                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
                 >
                 <div class="team-avatar-fallback" style="display:none;">
                     <svg width="44" height="44" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 </div>
             </div>
-            <div class="team-name">Carlo Reyes</div>
+            <div class="team-name">Jan Poul Domingo</div>
             <div class="team-role">AI Integration</div>
             <div class="team-desc">Integrated Groq AI for sentiment analysis, moderation, and chatbot features.</div>
         </div>
@@ -629,14 +629,14 @@ footer{
             <div class="team-avatar-wrap">
                 <img
                     src="image/member4.jpg"
-                    alt="Ana Bautista"
+                    alt="John Patrick Del Campo"
                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
                 >
                 <div class="team-avatar-fallback" style="display:none;">
                     <svg width="44" height="44" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 </div>
             </div>
-            <div class="team-name">Ana Bautista</div>
+            <div class="team-name">John Patrick Del Campo</div>
             <div class="team-role">Data Analyst</div>
             <div class="team-desc">Designed the database schema and reporting analytics pipeline.</div>
         </div>
@@ -645,14 +645,14 @@ footer{
             <div class="team-avatar-wrap">
                 <img
                     src="image/member5.jpg"
-                    alt="Miguel Torres"
+                    alt="Prince Verlaine Busano"
                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
                 >
                 <div class="team-avatar-fallback" style="display:none;">
                     <svg width="44" height="44" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 </div>
             </div>
-            <div class="team-name">Miguel Torres</div>
+            <div class="team-name">Prince Verlaine Busano</div>
             <div class="team-role">Security Lead</div>
             <div class="team-desc">Ensured platform security, anonymity protocols, and quality assurance.</div>
         </div>

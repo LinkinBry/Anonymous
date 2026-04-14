@@ -1,0 +1,68 @@
+# ── /admin/.htaccess ──────────────────────────────────────────────────────────
+# Protects the entire /admin/ folder with TWO layers:
+#   1. HTTP Basic Auth (htpasswd) — browser-level password prompt
+#   2. PHP session check inside each page — role must be 'admin'
+#
+# HOW TO SET UP htpasswd ON INFINITYFREE:
+#   1. Generate a bcrypt hash for your password at: https://bcrypt-generator.com
+#      OR run locally: htpasswd -nbB adminuser yourpassword
+#   2. Create a file called .htpasswd in your /admin/ folder with this content:
+#         adminuser:$2y$12$XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+#   3. Set AuthUserFile below to the FULL server path to that file.
+#      On InfinityFree it is usually:
+#         /home/vol{N}_{account}/olshcoreview.great-site.net/htdocs/admin/.htpasswd
+#      Find your exact path in the InfinityFree control panel → File Manager
+#      → navigate to /admin/ → right-click .htpasswd → Properties → Full Path.
+
+Options -Indexes
+DirectoryIndex index.php
+
+php_flag display_errors Off
+php_flag log_errors     On
+php_value error_reporting 0
+
+# ── HTTP Basic Auth (htpasswd layer) ─────────────────────────────────────────
+AuthType Basic
+AuthName "OlshcoReview Admin — Restricted Area"
+
+# ▼ CHANGE THIS to your actual full server path ▼
+AuthUserFile /home/vol8_4/infinityfree.com/if0_41601634/htdocs/admin/.htpasswd
+Require valid-user
+
+# ── Protect .htpasswd itself ──────────────────────────────────────────────────
+<FilesMatch "^\.htpasswd$|^\.htaccess$|^\.env$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+<FilesMatch "\.(log|sh|sql|bak|old|swp|ini|gz|zip)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# ── URL rewriting inside /admin/ ──────────────────────────────────────────────
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /admin/
+
+    RewriteCond %{REQUEST_URI} \.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|webp|map)$ [NC]
+    RewriteRule ^ - [L]
+
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    RewriteRule ^$                    index.php            [L,NC]
+    RewriteRule ^login/?$             login.php            [L,NC]
+    RewriteRule ^logout/?$            logout.php           [L,NC]
+    RewriteRule ^dashboard/?$         admin_dashboard.php  [L,NC]
+    RewriteRule ^approve_review/?$    approve_review.php   [L,NC]
+    RewriteRule ^reject_review/?$     reject_review.php    [L,NC]
+    RewriteRule ^add_faculty/?$       add_faculty.php      [L,NC]
+    RewriteRule ^edit_faculty/?$      edit_faculty.php     [L,NC]
+    RewriteRule ^faculty_summary/?$   faculty_summary.php  [L,NC]
+    RewriteRule ^get_faculty_reviews/?$ get_faculty_reviews.php [L,NC]
+    RewriteRule ^get_user_reviews/?$    get_user_reviews.php    [L,NC]
+
+    RewriteRule (^|/)\.(?!htaccess) - [F]
+</IfModule>
